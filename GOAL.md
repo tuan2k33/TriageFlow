@@ -78,4 +78,5 @@ Chỉ **dùng lại nhãn đã có của repo** để gợi ý cho Issue/PR chư
   - [x] Gợi ý nhãn: loại bằng kNN, thành phần bằng đếm phiếu (5 láng giềng + liên kết, ≥ 2 phiếu), không LLM.
   - [x] Điểm tin cậy thống nhất: mỗi đề xuất mang tỉ lệ đúng đo được của loại đề xuất đó (so với nhãn bị giấu, với liên kết GitHub ghi nhận, hoặc chấm tay) kèm lý do.
   - [x] Xuất `report.md` và `actions.sh` (`gh issue close ... --comment ...`, `gh issue edit --add-label`; mọi dòng đều bị chú thích, người dùng bỏ chú thích dòng mình duyệt rồi chạy).
+- [x] Một lệnh từ link tới kết quả (`run.py`) và web local để dán link và xem bốn kết quả (`web.py`: Map có 2D/3D, Report, Actions, Database).
 - [ ] **Phase 4 (Mục tiêu cuối, chưa làm bây giờ):** zero-setup (dán URL là chạy), tự nhận diện trục nhãn của repo bất kỳ, giao diện đầy đủ, nút thực thi trực tiếp qua GitHub Token.

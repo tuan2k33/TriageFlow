@@ -13,7 +13,8 @@ similar(a, b, sim, rank): semantic links, pairs that are in each other's top 5 (
 pr_status(number, status, prs): for every open issue, what happened to the PRs that say they close it,
 dup_pairs(a, b, sim, level), dup_master(number, master): duplicate candidates among issues and the issue to keep,
 zombie(number, pr, sim): open issues that a later merged PR seems to fix without linking them,
-pr_compete(a, b, reason, issue, sim): open PRs after the same thing.
+pr_compete(a, b, reason, issue, sim): open PRs after the same thing,
+map3(number, tx, ty, tz, px, py, pz): 3D positions of the open items, t-SNE (made once, new items join their neighbors) and PCA.
 """
 import argparse, collections, json, re, sqlite3
 import numpy as np
@@ -233,6 +234,29 @@ def competing(db):
     print(f"competing open PRs: {n['close the same issue']} pairs close the same issue, {n['very similar']} pairs are very similar")
 
 
+def map3d(db):
+    """3D views of the open items for the page: t-SNE in 3D (kept stable like the 2D map) and the first three principal
+    components (a plain linear view of the 384 dimensions, recomputed each run)."""
+    nums, _, E = load_emb(db, "i.state = 'open'")
+    if len(nums) < 5:
+        return
+    db.execute("create table if not exists map3(number integer primary key, tx real, ty real, tz real, px real, py real, pz real)")
+    old = {r[0]: r[1:] for r in db.execute("select number, tx, ty, tz from map3")}
+    have = [i for i, n in enumerate(nums) if n in old]
+    if len(have) < len(nums) / 2:  # first run (or almost everything is new): lay all of them out
+        t = TSNE(n_components=3, perplexity=min(30, (len(nums) - 1) / 3), metric="cosine", init="pca", random_state=0).fit_transform(E)
+    else:
+        t = np.zeros((len(nums), 3))
+        t[have] = [old[nums[i]] for i in have]
+        for i in set(range(len(nums))) - set(have):
+            t[i] = t[have][np.argsort(-(E[have] @ E[i]))[:NEIGHBORS]].mean(0)
+    p = PCA(n_components=3, random_state=0).fit_transform(E)
+    db.execute("delete from map3")
+    db.executemany("insert into map3 values(?,?,?,?,?,?,?)", [(n, *map(float, t[i]), *map(float, p[i])) for i, n in enumerate(nums)])
+    db.commit()
+    print(f"map3: {len(nums)} open items in 3D ({len(nums) - len(have)} new)")
+
+
 def name_categories(db, members):
     titles = dict(db.execute("select number, title from items"))
     labels = {n: [l for l in (ls or "").split(",") if l] for n, ls in db.execute("select number, labels from items")}
@@ -321,6 +345,7 @@ def main():
     duplicates(db)
     zombies(db)
     competing(db)
+    map3d(db)
 
 
 if __name__ == "__main__":

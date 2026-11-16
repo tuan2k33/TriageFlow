@@ -10,7 +10,7 @@ Crawl toàn bộ issue/PR (mở và đóng) của một repo GitHub vào SQLite,
 
 Cần `gh` đã đăng nhập (crawler lấy token bằng `gh auth token`, không lưu ở đâu khác). Venv của project chỉ có datasette; `torch`, `transformers`, `sklearn`, `numpy` lấy từ env chung `~/.dev/venv` (qua `_base_env.pth` do `mkproj` tạo), nên không có trong `requirements.txt`.
 
-`python run.py <link repo hoặc owner/name>` chạy cả năm bước dưới đây theo thứ tự và in đường dẫn `repo.db`, `graph.html`, `report.md`, `actions.sh`. Từng bước, chạy **tuần tự**, mỗi bước chạy lại được và chỉ làm phần còn thiếu:
+`python run.py <link repo hoặc owner/name>` chạy cả năm bước dưới đây theo thứ tự và in đường dẫn `repo.db`, `graph.html`, `report.md`, `actions.sh`. `python web.py [port]` mở web local (chỉ nghe ở 127.0.0.1): ô dán link gọi `run.py` và hiện log, mỗi repo có bốn trang Map (`graph.html` trong iframe), Report, Actions, Database (mở `repo.db` chỉ đọc, có ô SQL). Từng bước, chạy **tuần tự**, mỗi bước chạy lại được và chỉ làm phần còn thiếu:
 
 ```bash
 R=data/numpy__numpy/repo.db
@@ -46,6 +46,7 @@ Mỗi repo một file SQLite `data/<owner>__<name>/repo.db` (`data` là symlink 
 | `pr_status` | analyze | mỗi issue mở: `merged` / `open` / `abandoned` / `none` theo các PR đóng nó (`closes_official`, `closes`), hoặc `tracking` nếu nó có issue con; tính lại mỗi lần |
 | `dup_pairs`, `dup_master` | analyze | cặp issue có thể trùng theo mức `github` / `likely` (cosine ≥ `DUP_SIM` 0,90) / `possible` (gần nhất của nhau); `dup_master`: issue nên giữ lại cho mỗi issue |
 | `zombie`, `pr_compete` | analyze | issue mở có vẻ đã được một PR merge sau đó sửa mà không link (`ZOMBIE_SIM` 0,86, gần nhất của nhau); cặp PR mở cùng đóng một issue hoặc rất giống nhau của hai tác giả khác nhau |
+| `map3` | analyze | toạ độ 3D của mục mở: t-SNE 3 chiều (dựng một lần, mục mới vào trung bình láng giềng) và 3 thành phần chính PCA (tính lại mỗi lần) |
 | `actions` | report | mọi đề xuất: `kind`, `number`, `target`, `confidence`, `reason`, `command`; tính lại mỗi lần |
 | `suggested` | suggest | `source`: `knn` (loại), `vote` (thành phần), tính lại mỗi lần |
 
@@ -70,5 +71,6 @@ Các ý cần đọc nhiều file mới thấy:
 - `AXES` trong `suggest.py` (trục loại và thành phần) viết theo nhãn của numpy; repo khác sẽ in "nothing to suggest". Chỉ gợi ý hai trục này, không tạo nhãn mới, không gợi ý nhãn quy trình (Close?, Needs decision).
 - GraphQL phía issue (`issue_links`): 100 issue mỗi truy vấn, khoảng 3 điểm hạn mức; toàn bộ numpy 142 truy vấn, ~9 phút, các lần sau chỉ lấy issue có thay đổi. Sự kiện "marked as duplicate" nằm trên dòng thời gian của issue **gốc** và phải đọc cả `duplicate` lẫn `canonical`. Tham chiếu chéo (`CROSS_REFERENCED_EVENT`) đã thử và bỏ: GitHub trả 502 hoặc RESOURCE_LIMITS_EXCEEDED ngay cả với 25 issue mỗi truy vấn; regex `#N` phủ phần đó.
 - Repo nhỏ là ca biên thật: `pypa/wheel` chỉ có 26 mục mở, từng làm t-SNE hỏng (perplexity phải nhỏ hơn số điểm). Khi đổi `analyze.py`, thử lại bằng `python run.py pypa/wheel` (crawl đầy đủ khoảng 50 request, 1 phút).
+- Bản đồ có ô chọn 2D t-SNE / 3D t-SNE / 3D PCA; 3D được xoay bằng yaw/pitch rồi vẽ phẳng lên cùng canvas (kéo để xoay, shift-kéo để dời), không dùng thư viện 3D.
 - Mức tồn đọng (hoạt động cuối trong 1 / 1–3 / 3–5 / trên 5 năm) và trang tổng quan được tính ngay trong JS của trang, không có bảng riêng; tổng quan đọc bảng `actions` nên phải chạy `report.py` trước `build_html.py`.
 - Khi dừng tiến trình chạy nền, dùng mẫu có `^` (`pgrep -f "^python -u triageflow.py"`); `pkill -f` không neo sẽ khớp cả chính shell đang gõ lệnh.

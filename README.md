@@ -4,9 +4,12 @@ Crawl all issues and PRs of a GitHub repo (open and closed, with conversation co
 
 ```bash
 python run.py https://github.com/numpy/numpy   # everything below in one go -> data/numpy__numpy/{repo.db, graph.html, report.md, actions.sh}
+python web.py                                   # local web view at http://127.0.0.1:8000: paste a link, then Map / Report / Actions / Database per repo
 ```
 
-The steps it runs, each rerunnable on its own:
+The map lays out the 384-dimensional embeddings in 2D (t-SNE) or, from the selector, in 3D (t-SNE or PCA; drag to rotate).
+
+The steps `run.py` runs, each rerunnable on its own:
 
 ```bash
 R=data/numpy__numpy/repo.db

@@ -36,6 +36,8 @@ a{color:inherit}.rel{display:block;padding:2px 0;cursor:pointer;text-decoration:
 @media (max-width:900px){body{grid-template-columns:1fr;grid-template-rows:auto 40vh 1fr auto}#list{display:none}}
 </style></head><body>
 <header><b id="home" style="cursor:pointer" title="Overview">__REPO__</b><input id="q" type="search" placeholder="Search title / body…">
+<select id="view" title="How the 384-dimensional embeddings are laid out"><option value="2d">2D map (t-SNE)</option><option value="t">3D t-SNE</option><option value="p">3D PCA</option></select>
+<label title="rotate slowly"><input id="spin" type="checkbox"> spin</label>
 <label><input id="showE" type="checkbox" checked> links</label>
 <label title="pairs that are among each other's 5 most similar items"><input id="showM" type="checkbox" checked> similar</label>
 <label title="count suggested labels when filtering by label"><input id="showS" type="checkbox" checked> suggested</label>
@@ -69,7 +71,12 @@ function passAll(d,skip){const k=keysOf(d),by={};for(const c of chosen){const g=
  for(const g in by){if(!by[g].some(c=>c===NONE?!lsOf(d).length:k.includes(c)))return false}return true}
 function fit(){const r=cv.getBoundingClientRect(),dpr=devicePixelRatio;W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr;g.setTransform(dpr,0,0,dpr,0,0);
  s=Math.min(W/(x1-x0),H/(y1-y0))*.92;tx=(W-(x1-x0)*s)/2-x0*s;ty=(H-(y1-y0)*s)/2-y0*s;draw()}
-const P=i=>[items[i].x*s+tx,items[i].y*s+ty];
+// 3D views: coordinates centered and scaled to the 2D map's size, rotated by yaw/pitch, then drawn flat
+let mode3='2d',yaw=.6,pitch=.35;const C={};
+for(const [m,o] of [['t',0],['p',3]]){const pts=items.map(d=>d.p?d.p.slice(o,o+3):[0,0,0]),mid=[0,1,2].map(k=>pts.reduce((a,p)=>a+p[k],0)/pts.length);
+ const r=Math.max(...pts.map(p=>Math.hypot(p[0]-mid[0],p[1]-mid[1],p[2]-mid[2])))||1,f=Math.min(x1-x0,y1-y0)/2/r;C[m]=pts.map(p=>p.map((v,k)=>(v-mid[k])*f))}
+const P=i=>{if(mode3==='2d')return [items[i].x*s+tx,items[i].y*s+ty];const [a,b,c]=C[mode3][i],cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
+ const x=a*cy+c*sy,z=-a*sy+c*cy;return [(x+(x0+x1)/2)*s+tx,(b*cp-z*sp+(y0+y1)/2)*s+ty]};
 const visible=i=>{const d=items[i];if(d.k==='pr'?!showP.checked:!showI.checked)return false;if(mode==='t'){if(cluster!==null&&d.c!==cluster)return false}else if(!passAll(d,null))return false;return !term||d.t.toLowerCase().includes(term)||d.s.toLowerCase().includes(term)};
 function draw(){g.clearRect(0,0,W,H);const vis=items.map((_,i)=>visible(i));let n=0;vis.forEach(v=>n+=v);count.textContent=n+' / '+items.length;
  const hl=sel>=0?new Set([sel,...nb[sel].map(e=>e[0])]):null;
@@ -92,20 +99,20 @@ function show(i){sel=i;draw();const d=items[i];
  <div>${d.ls.map(l=>`<span class="tag">${esc(l)}</span>`).join('')}${d.sg.map(([l,p,src])=>`<span class="tag sug" title="suggested by ${src}${src==='vote'?' ('+p+' votes)':p?' ('+p.toFixed(2)+' kNN)':''}">${esc(l)} ?</span>`).join('')}<span class="tag" style="border-color:${col(d.c)}">${esc(D.names[d.c])}</span></div>
  ${d.ps&&d.ps[0]!=='none'?`<div class="hint"><b>${PS['pr:'+d.ps[0]]}</b> ${d.ps[1].map(([n,f])=>`<a href="${D.repo}/pull/${n}" target="_blank">#${n}</a> ${f}`).join(', ')}</div>`:''}${d.zb?`<div class="hint"><b>Later merged PR looks like the fix</b> ${ref(d.zb[0])} ${esc(d.zb[2])} <small style="color:var(--mute)">${Math.round(d.zb[1]*100)}% similar, no link</small></div>`:''}${d.cp?`<div class="hint"><b>Open PRs after the same thing</b><br>${d.cp.map(([o,r,t])=>`${ref(o)} ${esc(t)} <small style="color:var(--mute)">${r}</small>`).join('<br>')}</div>`:''}${d.du?`<div class="hint"><b>${DUP['dup:'+d.du[1][0][1]]}</b>${d.du[0]?` · keep ${ref(d.du[0])} (original or oldest)`:''}<br>${d.du[1].map(([o,lv,s,st,t])=>`${ref(o)} [${st}] ${esc(t)} <small style="color:var(--mute)">${lv} ${Math.round(s*100)}%</small>`).join('<br>')}</div>`:''}${d.si?`<h3 style="font-size:12px;color:var(--mute);margin:10px 0 2px">Similar</h3>`+d.si.map(([o,s,t,st])=>{const j=byNum.get(o),lab=`${Math.round(s*100)}% #${o} [${st}] ${esc(t)}`;return j!==undefined?`<span class="rel" data-i="${j}">${lab}</span>`:`<a class="rel" href="${D.repo}/issues/${o}" target="_blank">${lab}</a>`}).join(''):''}${rel?`<h3 style="font-size:12px;color:var(--mute);margin:10px 0 2px">Timeline (links and similar items)</h3>${rel}`:''}<pre>${esc(d.b)}</pre>`;
  detail.querySelectorAll('.rel[data-i]').forEach(e=>e.onclick=()=>{const j=+e.dataset.i;focus(j);show(j)})}
-function focus(j){const [x,y]=[items[j].x,items[j].y];tx=W/2-x*s;ty=H/2-y*s;draw()}
-cv.onmousemove=e=>{const r=cv.getBoundingClientRect();if(drag){tx+=e.movementX;ty+=e.movementY;draw();return}
+function focus(j){const [px,py]=P(j);tx+=W/2-px;ty+=H/2-py;draw()}
+cv.onmousemove=e=>{const r=cv.getBoundingClientRect();if(drag){moved+=Math.abs(e.movementX)+Math.abs(e.movementY);if(mode3!=='2d'&&!e.shiftKey){yaw+=e.movementX*.008;pitch=Math.max(-1.5,Math.min(1.5,pitch+e.movementY*.008))}else{tx+=e.movementX;ty+=e.movementY}draw();return}
  const i=pick(e.clientX-r.left,e.clientY-r.top);if(i!==hov){hov=i;draw()}
  tip.style.display=i>=0?'block':'none';if(i>=0){tip.textContent='#'+items[i].n+' '+items[i].t;tip.style.left=Math.min(e.clientX-r.left+12,W-330)+'px';tip.style.top=(e.clientY-r.top+12)+'px'}};
 let drag=false,moved=0;cv.onmousedown=()=>{drag=true;moved=0;cv.style.cursor='grabbing'};
 addEventListener('mouseup',e=>{if(!drag)return;drag=false;cv.style.cursor='grab'});
-cv.onclick=e=>{const r=cv.getBoundingClientRect();const i=pick(e.clientX-r.left,e.clientY-r.top);if(i>=0)show(i);else{sel=-1;draw();overview()}};
+cv.onclick=e=>{const r=cv.getBoundingClientRect();if(moved>4)return;const i=pick(e.clientX-r.left,e.clientY-r.top);if(i>=0)show(i);else{sel=-1;draw();overview()}};
 const OV={close_duplicate_marked:'Marked duplicate on GitHub, still open',close_fixed_linked:'Closing PR merged, still open',close_duplicate_likely:'Likely duplicate of an older issue',close_fixed_similar:'Later merged PR looks like the fix',review_competing:'Open PRs after the same thing'};
 function overview(){const iss=items.filter(d=>d.k==='issue'),n=k=>items.filter(d=>keysOf(d).includes(k)).length;
  const cat={};items.forEach(d=>{const c=cat[d.c]=cat[d.c]||[0,0];c[0]++;c[1]+=d.cm});
  const hot=Object.entries(cat).sort((a,b)=>b[1][1]-a[1][1]).slice(0,8);
  const talk=items.slice().sort((a,b)=>b.cm-a.cm).slice(0,8);
  const sec=(t,h)=>`<h3 style="font-size:12px;color:var(--mute);margin:12px 0 2px">${t}</h3>${h}`;
- detail.innerHTML=`<h2>Overview</h2><div class="meta">${iss.length} open issues, ${items.length-iss.length} open PRs. Click a point for details; circle = issue, square = PR.</div>`+
+ detail.innerHTML=`<h2>Overview</h2><div class="meta">${iss.length} open issues, ${items.length-iss.length} open PRs. Click a point for details; circle = issue, square = PR. In a 3D view drag to rotate, shift-drag to pan.</div>`+
  sec('Last activity',Object.keys(AGE).map(k=>`${AGE[k]}: <b>${n(k)}</b>`).join('<br>'))+
  Object.keys(OV).filter(k=>D.over[k]).map(k=>sec(`${OV[k]} (${D.over[k].length})`,D.over[k].slice(0,8).map(([o,c,r])=>`${ref(o)} ${esc(items[byNum.get(o)]?.t||'')} <small style="color:var(--mute)">${Math.round(c*100)}% · ${esc(r)}</small>`).join('<br>')+(D.over[k].length>8?`<br><small style="color:var(--mute)">… ${D.over[k].length-8} more in report.md</small>`:''))).join('')+
  sec('Hot categories (comments on open items)',hot.map(([c,[m,cm]])=>`<span class="rel" data-c="${c}">${esc(D.names[c])}</span> <small style="color:var(--mute)">${m} open, ${cm} comments</small>`).join(''))+
@@ -143,6 +150,8 @@ list.onclick=e=>{const t=e.target.closest('.tab');if(t){mode=t.dataset.m;renderL
  renderList();draw()};
 renderList();
 q.oninput=()=>{term=q.value.trim().toLowerCase();draw()};[showE,showM,showI,showP].forEach(x=>x.onchange=draw);showS.onchange=()=>{renderList();draw()};
+view.onchange=()=>{mode3=view.value;fit()};if(!items.some(d=>d.p))view.style.display=spin.parentNode.style.display='none';
+setInterval(()=>{if(spin.checked&&mode3!=='2d'&&!drag){yaw+=.01;draw()}},40);
 addEventListener('resize',fit);fit();overview();
 </script></body></html>"""
 
@@ -207,6 +216,7 @@ def main(path):
     if has("actions"):
         for kind, n, target, conf, reason in db.execute("select kind, number, target, confidence, reason from actions where kind != 'add_label' order by confidence desc, number"):
             over.setdefault(kind, []).append([n, round(conf, 2), reason])
+    p3 = {r[0]: [round(v, 3) for v in r[1:]] for r in db.execute("select * from map3")} if has("map3") else {}
     sg = {}
     if has("suggested"):
         best = {}
@@ -228,6 +238,8 @@ def main(path):
             it["ps"] = ps[it["n"]]
         if it["n"] in du:
             it["du"] = du[it["n"]]
+        if it["n"] in p3:
+            it["p"] = p3[it["n"]]
         if it["n"] in zb:
             it["zb"] = zb[it["n"]]
         if it["n"] in cp:
