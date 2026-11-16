@@ -15,7 +15,7 @@ import numpy as np
 AXES = {"type": r"^(0[0-7]|17|23|33) - ", "component": r"^component:"}  # type regex fits numpy's numbered scheme
 MODEL = os.environ.get("LLM_MODEL", "nvidia/nemotron-3-ultra-550b-a55b:free")
 K = 5  # measured: same recall as 15 at a lower threshold, and closer to the item when labels are missing
-KC, MIN_VOTES = 7, 3  # component vote; measured on numpy: finds 63%, ~24% of items without a component get one
+KC, MIN_VOTES = 5, 2  # component vote; measured on numpy: finds 71%, ~34% of items without a component get one
 VAGUE = re.compile(r"(?i):\s*other$")  # "component: Other" says nothing; never suggested
 BATCH = 20
 
