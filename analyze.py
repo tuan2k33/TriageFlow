@@ -133,9 +133,12 @@ def name_categories(db, members, use_llm):
 def init(db, k, use_llm):
     nums, states, E = load_emb(db)
     n = len(nums)
-    # about 45 open items per category: a page a maintainer can skim in one go (numpy: 2248 open -> 50, tqdm: 685 -> 15).
-    # Measured on numpy: agreement with the repo's own component labels stops improving past ~50 (AMI 0.263 at 50, 0.268 at 80).
-    k = k or int(np.clip(round(sum(s == "open" for s in states) / OPEN_PER_CATEGORY), 8, 80))
+    # as many categories as the repo's numbered triage labels in use on open items ("00 - Bug" ... numpy: 36),
+    # the granularity its maintainers chose; repos without such labels: about 45 open items per category (tqdm: 685 -> 15).
+    numbered = {l for (ls,) in db.execute("select labels from items where state = 'open'")
+                for l in (ls or "").split(",") if re.match(r"^\d+ - ", l)}
+    k = k or (len(numbered) if len(numbered) >= 8 else
+              int(np.clip(round(sum(s == "open" for s in states) / OPEN_PER_CATEGORY), 8, 80)))
     print(f"init: {k} categories over {n} items", flush=True)
     z = PCA(n_components=min(50, n - 1), random_state=0).fit_transform(E)
     lab = KMeans(n_clusters=k, n_init=10, random_state=0).fit_predict(z)
@@ -192,7 +195,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("db")
     ap.add_argument("--init", action="store_true", help="rebuild categories and the map from scratch")
-    ap.add_argument("--k", type=int, default=0, help="number of categories at init (default: open items / 45, 8..80)")
+    ap.add_argument("--k", type=int, default=0, help="number of categories at init (default: numbered labels on open items, else open items / 45)")
     ap.add_argument("--llm-names", action="store_true", help="at init, let the free LLM name the categories (default: their most common labels)")
     a = ap.parse_args()
     db = sqlite3.connect(a.db, timeout=120)
