@@ -10,7 +10,8 @@ average position of their nearest already-placed neighbors, so categories and th
 Tables: emb(number, vec), categories(id, name, size, centroid), topics(number, cluster, sim, x, y),
 neighbors(number, rank, other, sim): the 5 most similar items of every item,
 similar(a, b, sim, rank): semantic links, pairs that are in each other's top 5 (rank 0 = each other's nearest),
-pr_status(number, status, prs): for every open issue, what happened to the PRs that say they close it.
+pr_status(number, status, prs): for every open issue, what happened to the PRs that say they close it,
+dup_pairs(a, b, sim, level), dup_master(number, master): duplicate candidates among issues and the issue to keep.
 """
 import argparse, collections, json, re, sqlite3
 import numpy as np
@@ -23,6 +24,7 @@ from transformers import AutoModel, AutoTokenizer
 MODEL = "BAAI/bge-small-en-v1.5"
 NEIGHBORS = 8
 OPEN_PER_CATEGORY = 45
+DUP_SIM = 0.90  # hand-graded on numpy: ~80% of issue pairs at or above this are the same problem (known duplicates: median 0.85)
 
 
 def embed(texts):
@@ -132,6 +134,51 @@ def pr_status(db):
     print("open issues by closing PR: " + ", ".join(f"{k} {v}" for k, v in count.most_common()))
 
 
+def duplicates(db):
+    """Duplicate candidates among issues, in three levels: 'github' (marked as duplicate on GitHub), 'likely' (cosine
+    >= DUP_SIM), 'possible' (each is the other's nearest issue). The issue to keep (master) is the
+    one GitHub names as the original, else the oldest among an issue's direct likely partners."""
+    nums, states, E = load_emb(db, "i.kind = 'issue'")
+    idx = {n: i for i, n in enumerate(nums)}
+    pairs = {}
+    for c in range(0, len(nums), 2000):
+        S = E[c:c + 2000] @ E.T
+        S[np.arange(S.shape[0]), np.arange(c, c + S.shape[0])] = -9
+        for r, j in enumerate(S.argmax(1)):
+            pairs[c + r] = (int(j), float(S[r, j]))
+        for r, j in zip(*np.where(S >= DUP_SIM)):
+            a, b = sorted((nums[c + r], nums[j]))
+            pairs[(a, b)] = (float(S[r, j]), "likely")
+    out = {k: v for k, v in pairs.items() if isinstance(k, tuple)}
+    for i, (j, s) in pairs.items():
+        if not isinstance(i, tuple) and pairs[j][0] == i:
+            out.setdefault(tuple(sorted((nums[i], nums[j]))), (s, "possible"))
+    # the issue to keep: GitHub's original if marked, else the oldest of the issue and its direct likely partners
+    # (pairs are not chained: chains drift from "same problem" to "same topic", one numpy chain reached 151 issues)
+    master = {}
+    for (a, b), (_, level) in out.items():
+        if level == "likely":
+            master[b] = min(master.get(b, b), a)
+            master.setdefault(a, a)
+    for d, c in db.execute("select src, dst from links where kind = 'duplicate_of'"):
+        if d in idx and c in idx:
+            out[tuple(sorted((d, c)))] = (float(E[idx[d]] @ E[idx[c]]), "github")
+            master[d] = c
+            master.setdefault(c, c)
+    db.execute("drop table if exists dup_pairs")
+    db.execute("create table dup_pairs(a integer, b integer, sim real, level text, primary key(a, b))")
+    db.executemany("insert into dup_pairs values(?,?,?,?)", [(a, b, s, l) for (a, b), (s, l) in out.items()])
+    db.execute("drop table if exists dup_master")
+    db.execute("create table dup_master(number integer primary key, master integer)")
+    db.executemany("insert into dup_master values(?,?)", master.items())
+    db.commit()
+    is_open = {n for n, s in zip(nums, states) if s == "open"}
+    extra = sum(1 for x, m in master.items() if x in is_open and m != x)
+    lv = collections.Counter(l for _, l in out.values())
+    print(f"duplicates: {lv['github']} github, {lv['likely']} likely, {lv['possible']} possible pairs; "
+          f"{len(is_open)} open issues are about {len(is_open) - extra} distinct problems ({extra} have an older or original issue)")
+
+
 def name_categories(db, members):
     titles = dict(db.execute("select number, title from items"))
     labels = {n: [l for l in (ls or "").split(",") if l] for n, ls in db.execute("select number, labels from items")}
@@ -215,6 +262,7 @@ def main():
         assign(db)
     neighbors(db)
     pr_status(db)
+    duplicates(db)
 
 
 if __name__ == "__main__":

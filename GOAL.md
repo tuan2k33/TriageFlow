@@ -16,7 +16,7 @@ Xây dựng công cụ phân tích, điều phối và dọn dẹp kho GitHub d�
 1. **Input:** link repo GitHub (hiện chạy bằng lệnh).
 2. **Crawl & Storage** ✅ Một lần crawl lấy mọi Issue/PR (mở và đóng), mọi comment hội thoại (comment gắn vào dòng code của PR mặc định bỏ qua), nhãn, trạng thái (`state_reason`, `merged`) vào SQLite. Liên kết do chính GitHub ghi nhận lấy qua GraphQL: PR nào đóng issue nào (kể cả PR đã bị bỏ), issue nào được đánh dấu trùng với issue nào, issue con của issue nào. Chạy lại chỉ lấy phần thay đổi.
 3. **Vectorize & Graph** ✅ Embedding cho mọi mục (mở và đóng). Graph liên kết cứng và liên kết ngữ nghĩa (hai mục nằm trong top 5 giống nhất của nhau).
-4. **Phân tích:** category chia một lần, mục mới gán vào category sẵn có ✅; gợi ý nhãn ✅; trạng thái PR của từng issue theo liên kết ✅; gom trùng / PR cạnh tranh / tồn đọng ⬜.
+4. **Phân tích:** category chia một lần, mục mới gán vào category sẵn có ✅; gợi ý nhãn ✅; trạng thái PR của từng issue theo liên kết ✅; gom trùng ✅; PR cạnh tranh / tồn đọng ⬜.
 5. **Output & Action:** trang tra cứu một file HTML (bản đồ chủ đề, lọc nhãn, chi tiết từng mục) ✅; dashboard, danh sách đề xuất dọn dẹp, xuất script ⬜.
 
 ---
@@ -31,7 +31,7 @@ Khi chọn một Issue/PR, hiển thị toàn bộ mạng lưới liên quan:
 * ✅ **Tìm kiếm toàn văn** trên tiêu đề, mô tả và bình luận.
 
 ### 3.2. Gợi ý Dọn dẹp, Gom gọn & Đóng (Actionable Cleanup)
-* ⬜ **Gom trùng lặp:** gom các Issue cùng nội dung vào một **Master Issue** (cũ nhất hoặc nhiều tương tác nhất, sẽ chọn khi làm). Gồm cả trường hợp issue mở trùng với issue đã đóng. Đề xuất đóng bản sao kèm lý do và câu bình luận mẫu.
+* 🟡 **Gom trùng lặp:** ✅ ba mức tin cậy cho cặp issue: GitHub đã đánh dấu trùng (numpy: 74 cặp), rất có thể trùng (độ giống ≥ 0,90; chấm tay ~80% là cùng vấn đề), có thể trùng (là issue gần nhất của nhau; chấm tay ~42%, còn lại là cùng chủ đề). **Master Issue** là issue gốc GitHub ghi nhận, nếu không thì issue cũ nhất trong các cặp trực tiếp (không nối chuỗi, vì chuỗi trôi từ "cùng vấn đề" sang "cùng chủ đề"). Gồm cả issue mở trùng với issue đã đóng (94 trong 135 ca). Giới hạn đo được: embedding chỉ tìm lại được 15% (mức ≥ 0,90) đến 28% (gần nhất của nhau) số cặp trùng đã biết; tên hàm, chữ trong tiêu đề, cùng tác giả không cải thiện xếp hạng. ⬜ Đề xuất đóng bản sao kèm lý do và câu bình luận mẫu (thuộc phần xuất script).
 * 🟡 **Zombie Issues (mở mà PR đã merge giải quyết):** ✅ theo luật trên liên kết và trạng thái PR (có PR đã merge đóng nó, có PR đang mở, chỉ có PR bị bỏ, không có PR; numpy: 14 / 137 / 154 / 1611 issue mở; issue có issue con được xếp riêng là tracking), lọc được trong trang. ⬜ Trường hợp tác giả quên link thì cần so khớp ngữ nghĩa Issue mở với PR đã merge.
 * ⬜ **PR cạnh tranh:** nhiều PR đang mở cùng sửa một lỗi hoặc làm một tính năng, để Maintainer chọn lọc và tránh lãng phí công review.
 * ⬜ **Tồn đọng & lỗi thời:** Issue/PR không tương tác quá lâu hoặc thuộc phiên bản cũ.
@@ -49,7 +49,7 @@ Chỉ **dùng lại nhãn đã có của repo** để gợi ý cho Issue/PR chư
 * Cần LLM nên đã bỏ khỏi phạm vi. Đã thử trước khi bỏ: tóm tắt chỉ từ tiêu đề + mô tả + trạng thái không thêm được gì (LLM chỉ viết lại mô tả). Kết cục của một thảo luận nay đọc từ liên kết và trạng thái PR, và từ dòng thời gian của mục.
 
 ### 3.5. Bức tranh toàn cảnh (Triage Health Dashboard) ⬜
-* **Chỉ số phân mảnh:** số Issue độc lập so với tổng số đang mở (VD: *500 Open Issues thực chất là 310 vấn đề*). Có được ngay khi gom trùng xong.
+* ✅ **Chỉ số phân mảnh:** số Issue độc lập so với tổng số đang mở, hiện ở góc trang (numpy: *1917 issue mở ≈ 1782 vấn đề*, tính theo mức GitHub đánh dấu và rất có thể trùng).
 * **Điểm nóng:** cụm vấn đề được quan tâm nhiều hoặc có nhiều PR cùng nhắm tới.
 * **Quick Wins:** danh sách có độ tin cậy cao có thể đóng hoặc gom ngay.
 
@@ -71,7 +71,8 @@ Chỉ **dùng lại nhãn đã có của repo** để gợi ý cho Issue/PR chư
 - [ ] **Phase 2 (Smart Cleanup):**
   - [x] Category chia một lần lúc init, mục mới gán vào category sẵn có, bản đồ ổn định.
   - [x] Trạng thái PR của từng issue theo liên kết (không cần LLM).
-  - [ ] Gom trùng lặp + Master Issue (hiệu chỉnh ngưỡng bằng issue `duplicate` thật), zombie theo ngữ nghĩa, PR cạnh tranh, tồn đọng.
+  - [x] Gom trùng lặp + Master Issue (ngưỡng chấm tay, đo lại bằng cặp trùng GitHub ghi nhận), chỉ số phân mảnh.
+  - [ ] Zombie theo ngữ nghĩa, PR cạnh tranh, tồn đọng.
   - [ ] Dashboard sức khỏe triage.
 - [ ] **Phase 3 (Labeling & Action):**
   - [x] Gợi ý nhãn: loại bằng kNN, thành phần bằng đếm phiếu (5 láng giềng + liên kết, ≥ 2 phiếu), không LLM.

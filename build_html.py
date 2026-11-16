@@ -40,7 +40,7 @@ a{color:inherit}.rel{display:block;padding:2px 0;cursor:pointer;text-decoration:
 <label title="pairs that are among each other's 5 most similar items"><input id="showM" type="checkbox" checked> similar</label>
 <label title="count suggested labels when filtering by label"><input id="showS" type="checkbox" checked> suggested</label>
 <label><input id="showI" type="checkbox" checked> issues</label>
-<label><input id="showP" type="checkbox" checked> PRs</label><span id="count" style="color:var(--mute)"></span></header>
+<label><input id="showP" type="checkbox" checked> PRs</label><span id="count" style="color:var(--mute)"></span><span id="frag" style="color:var(--mute);margin-left:auto"></span></header>
 <div id="list"></div>
 <div id="map"><canvas id="c"></canvas><div id="tip"></div></div>
 <div id="detail"><div class="meta">Click a point. Circle = issue, square = PR. Scroll to zoom, drag to pan.</div></div>
@@ -62,8 +62,8 @@ const grey=matchMedia('(prefers-color-scheme:dark)').matches?'#666':'#aaa';
 const colI=d=>{if(mode==='t')return col(d.c);const c=compOf(d);return c?col(comps.indexOf(c)):grey};
 let W,H,s=1,tx=0,ty=0,sel=-1,hov=-1,cluster=null,term='',mode='t';
 const chosen=new Set(),NONE='\0none',TYPE=/^(0[0-7]|17|23|33) - /;
-const grp=l=>l===NONE?'none':l.startsWith('pr:')?'pr':l.startsWith('component:')?'component':TYPE.test(l)?'type':'other';
-const keysOf=d=>{const k=lsOf(d).slice();if(d.ps)k.push('pr:'+d.ps[0]);return k};
+const grp=l=>l===NONE?'none':l.startsWith('pr:')?'pr':l.startsWith('dup:')?'dup':l.startsWith('component:')?'component':TYPE.test(l)?'type':'other';
+const keysOf=d=>{const k=lsOf(d).slice();if(d.ps)k.push('pr:'+d.ps[0]);if(d.du)k.push('dup:'+d.du[1][0][1]);return k};
 function passAll(d,skip){const k=keysOf(d),by={};for(const c of chosen){const g=grp(c);if(g!==skip)(by[g]=by[g]||[]).push(c)}
  for(const g in by){if(!by[g].some(c=>c===NONE?!lsOf(d).length:k.includes(c)))return false}return true}
 function fit(){const r=cv.getBoundingClientRect(),dpr=devicePixelRatio;W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr;g.setTransform(dpr,0,0,dpr,0,0);
@@ -82,13 +82,14 @@ function draw(){g.clearRect(0,0,W,H);const vis=items.map((_,i)=>visible(i));let 
  g.globalAlpha=1}
 function pick(mx,my){let b=-1,bd=100;for(let i=0;i<items.length;i++){if(!visible(i))continue;const [x,y]=P(i),d=(x-mx)**2+(y-my)**2;if(d<bd){bd=d;b=i}}return b}
 function esc(t){return t.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+const ref=o=>{const j=byNum.get(o);return j!==undefined?`<span class="rel" style="display:inline" data-i="${j}">#${o}</span>`:`<a href="${D.repo}/issues/${o}" target="_blank">#${o}</a>`};
 function show(i){sel=i;draw();const d=items[i];
  const row=([o,cr,st,t,r])=>{const j=byNum.get(o),lab=`#${o} [${st}] ${esc(t)} <small>${r}</small>`;return `<time>${cr}</time>`+(j!==undefined?`<span class="rel" data-i="${j}">${lab}</span>`:`<a class="rel" href="${D.repo}/issues/${o}" target="_blank">${lab}</a>`)};
  const me=`<time>${d.cr}</time><span class="me">#${d.n} this ${d.k==='pr'?'PR':'issue'}</span>`;
  const rel=d.tl?`<div class="tl">${d.tl.filter(e=>e[1]<d.cr).map(row).join('')}${me}${d.tl.filter(e=>e[1]>=d.cr).map(row).join('')}</div>`:'';
  detail.innerHTML=`<h2>${esc(d.t)}</h2><div class="meta">${d.k==='pr'?'PR':'Issue'} <a href="${d.u}" target="_blank">#${d.n}</a> · ${esc(d.a||'')} · ${d.cm} comments · updated ${d.up.slice(0,10)}</div>
  <div>${d.ls.map(l=>`<span class="tag">${esc(l)}</span>`).join('')}${d.sg.map(([l,p,src])=>`<span class="tag sug" title="suggested by ${src}${src==='vote'?' ('+p+' votes)':p?' ('+p.toFixed(2)+' kNN)':''}">${esc(l)} ?</span>`).join('')}<span class="tag" style="border-color:${col(d.c)}">${esc(D.names[d.c])}</span></div>
- ${d.ps&&d.ps[0]!=='none'?`<div class="hint"><b>${PS['pr:'+d.ps[0]]}</b> ${d.ps[1].map(([n,f])=>`<a href="${D.repo}/pull/${n}" target="_blank">#${n}</a> ${f}`).join(', ')}</div>`:''}${d.si?`<h3 style="font-size:12px;color:var(--mute);margin:10px 0 2px">Similar</h3>`+d.si.map(([o,s,t,st])=>{const j=byNum.get(o),lab=`${Math.round(s*100)}% #${o} [${st}] ${esc(t)}`;return j!==undefined?`<span class="rel" data-i="${j}">${lab}</span>`:`<a class="rel" href="${D.repo}/issues/${o}" target="_blank">${lab}</a>`}).join(''):''}${rel?`<h3 style="font-size:12px;color:var(--mute);margin:10px 0 2px">Timeline (links and similar items)</h3>${rel}`:''}<pre>${esc(d.b)}</pre>`;
+ ${d.ps&&d.ps[0]!=='none'?`<div class="hint"><b>${PS['pr:'+d.ps[0]]}</b> ${d.ps[1].map(([n,f])=>`<a href="${D.repo}/pull/${n}" target="_blank">#${n}</a> ${f}`).join(', ')}</div>`:''}${d.du?`<div class="hint"><b>${DUP['dup:'+d.du[1][0][1]]}</b>${d.du[0]?` · keep ${ref(d.du[0])} (original or oldest)`:''}<br>${d.du[1].map(([o,lv,s,st,t])=>`${ref(o)} [${st}] ${esc(t)} <small style="color:var(--mute)">${lv} ${Math.round(s*100)}%</small>`).join('<br>')}</div>`:''}${d.si?`<h3 style="font-size:12px;color:var(--mute);margin:10px 0 2px">Similar</h3>`+d.si.map(([o,s,t,st])=>{const j=byNum.get(o),lab=`${Math.round(s*100)}% #${o} [${st}] ${esc(t)}`;return j!==undefined?`<span class="rel" data-i="${j}">${lab}</span>`:`<a class="rel" href="${D.repo}/issues/${o}" target="_blank">${lab}</a>`}).join(''):''}${rel?`<h3 style="font-size:12px;color:var(--mute);margin:10px 0 2px">Timeline (links and similar items)</h3>${rel}`:''}<pre>${esc(d.b)}</pre>`;
  detail.querySelectorAll('.rel[data-i]').forEach(e=>e.onclick=()=>{const j=+e.dataset.i;focus(j);show(j)})}
 function focus(j){const [x,y]=[items[j].x,items[j].y];tx=W/2-x*s;ty=H/2-y*s;draw()}
 cv.onmousemove=e=>{const r=cv.getBoundingClientRect();if(drag){tx+=e.movementX;ty+=e.movementY;draw();return}
@@ -101,19 +102,20 @@ cv.onwheel=e=>{e.preventDefault();const r=cv.getBoundingClientRect(),mx=e.client
 const counts={};items.forEach(d=>counts[d.c]=(counts[d.c]||0)+1);
 const order=Object.keys(counts).map(Number).sort((a,b)=>counts[b]-counts[a]);
 const PS={'pr:merged':'Closing PR merged: still open?','pr:open':'Closing PR open','pr:abandoned':'Closing PR abandoned','pr:tracking':'Tracking issue (has sub-issues)','pr:none':'No closing PR'};
-const HINT=PS;
-const GN={pr:'Issues by closing PR',type:'Type',component:'Component',other:'Other'};
+const DUP={'dup:github':'Marked duplicate on GitHub','dup:likely':'Likely duplicate (very similar)','dup:possible':'Possible duplicate (nearest of each other)'};
+const HINT={...PS,...DUP};frag.textContent=D.frag||'';
+const GN={dup:'Duplicates',pr:'Issues by closing PR',type:'Type',component:'Component',other:'Other'};
 function renderList(){const tab=(m,t)=>`<span class="tab${mode===m?' on':''}" data-m="${m}">${t}</span>`;
  let h=`<div class="tabs">${tab('t','Categories')}${tab('l','Labels')}</div>`;
  if(mode==='t'){h+=`<div class="cl${cluster===null?' on':''}" data-c="">All categories <em>${items.length}</em></div>`+order.map(c=>`<div class="cl${cluster===c?' on':''}" data-c="${c}"><i style="background:${col(c)}"></i><span>${esc(D.names[c])}</span><em>${counts[c]}</em></div>`).join('');list.innerHTML=h;return}
- const gl={pr:{},type:{},component:{},other:{}},tot={},cnt={};
+ const gl={dup:{},pr:{},type:{},component:{},other:{}},tot={},cnt={};
  for(const d of items)for(const l of keysOf(d)){tot[l]=(tot[l]||0)+1;gl[grp(l)][l]=1}
  for(const g in gl)for(const l in gl[g])cnt[l]=0;
  for(const d of items){if(d.k==='pr'?!showP.checked:!showI.checked)continue;const k=new Set(keysOf(d));for(const g of Object.keys(gl)){if(!passAll(d,g))continue;for(const l of k)if(grp(l)===g)cnt[l]++}}
  const nl=items.filter(d=>(d.k==='pr'?showP.checked:showI.checked)&&!lsOf(d).length&&passAll(d,'none')).length;
  h+=`<div class="chips">${[...chosen].map(c=>`<span class="chip" data-l="${esc(c)}">${esc(c===NONE?'(no label)':HINT[c]||c)} ×</span>`).join('')}${chosen.size?'<span class="clear">clear all</span>':'<span class="mute">Pick labels: OR within a group, AND across groups</span>'}</div>`;
  h+=`<div class="cl${chosen.has(NONE)?' on':''}" data-l="${NONE}"><i style="background:${grey}"></i><span>(no label)</span><em>${nl}</em></div>`;
- for(const g of ['pr','type','component','other']){const ls=Object.keys(gl[g]).sort((a,b)=>tot[b]-tot[a]);if(!ls.length)continue;
+ for(const g of ['dup','pr','type','component','other']){const ls=Object.keys(gl[g]).sort((a,b)=>tot[b]-tot[a]);if(!ls.length)continue;
   h+=`<div class="gh">${GN[g]}</div>`+ls.map(l=>{const ci=comps.indexOf(l);return `<div class="cl${chosen.has(l)?' on':''}${cnt[l]?'':' zero'}" data-l="${esc(l)}"><i style="background:${ci>=0?col(ci):'transparent'};border:1px solid var(--line)"></i><span>${esc(HINT[l]||l)}</span><em>${cnt[l]}</em></div>`}).join('')}
  const top=list.scrollTop;list.innerHTML=h;list.scrollTop=top}
 list.onclick=e=>{const t=e.target.closest('.tab');if(t){mode=t.dataset.m;renderList();draw();return}
@@ -164,6 +166,20 @@ def main(path):
                 if me in is_open and other not in tl.get(me, {}):
                     tl.setdefault(me, {})[other] = "nearest match" if rank == 0 else "similar"
     ps = {n: [st, json.loads(prs)] for n, st, prs in db.execute("select number, status, prs from pr_status")} if has("pr_status") else {}
+    du, frag = {}, ""
+    if has("dup_pairs"):
+        master = dict(db.execute("select number, master from dup_master where master != number"))
+        best = {"github": 0, "likely": 1, "possible": 2}
+        for a, b, s, lv in db.execute("select a, b, sim, level from dup_pairs"):
+            for me, other in ((a, b), (b, a)):
+                if me in is_open:
+                    du.setdefault(me, [None, []])[1].append([other, lv, round(s, 2), *info[other][1:]])
+        for n, d in du.items():
+            d[1].sort(key=lambda e: (best[e[1]], -e[2]))
+            d[0] = master.get(n)
+        issues = sum(1 for it in items if it["k"] == "issue")
+        extra = sum(1 for it in items if it["n"] in master)
+        frag = f"{issues} open issues ≈ {issues - extra} distinct problems"
     sg = {}
     if has("suggested"):
         best = {}
@@ -183,11 +199,13 @@ def main(path):
             it["tl"].sort(key=lambda e: e[1])
         if it["n"] in ps:
             it["ps"] = ps[it["n"]]
+        if it["n"] in du:
+            it["du"] = du[it["n"]]
         if it["n"] in si:
             it["si"] = si[it["n"]]
         if it["n"] in sg:
             it["sg"] = sg[it["n"]]
-    html = PAGE.replace("__REPO__", repo).replace("__DATA__", json.dumps(dict(items=items, names=names, links=links, repo=f"https://github.com/{repo}"), ensure_ascii=False).replace("</", "<\\/"))
+    html = PAGE.replace("__REPO__", repo).replace("__DATA__", json.dumps(dict(items=items, names=names, links=links, frag=frag, repo=f"https://github.com/{repo}"), ensure_ascii=False).replace("</", "<\\/"))
     out = Path(path).with_name("graph.html")
     out.write_text(html, encoding="utf-8")
     print(f"{out}  {out.stat().st_size/1e6:.1f} MB")
