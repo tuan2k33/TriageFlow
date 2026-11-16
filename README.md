@@ -1,10 +1,10 @@
-# repolens
+# TriageFlow
 
 Crawl all issues and PRs of a GitHub repo (open and closed, with comments, content only, no code) into SQLite, then browse, cluster, label-suggest and graph the open ones.
 
 ```bash
 R=data/numpy__numpy/repo.db
-python repolens.py numpy/numpy         # all issues/PRs + all comments + official PR->issue links; reruns sync only what changed
+python triageflow.py numpy/numpy         # all issues/PRs + all comments + official PR->issue links; reruns sync only what changed
                                        #   (inline PR review comments are skipped; add --review-comments to fetch them)
 python analyze.py $R                   # embed every item once (bge-small, fp16); topics + 2D map for open items
 python suggest.py $R                   # suggest existing type/component labels for unlabeled open items (kNN over all labeled items, then free LLM)

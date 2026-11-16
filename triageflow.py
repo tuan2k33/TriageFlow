@@ -1,6 +1,6 @@
 """Crawl all issues/PRs (open + closed) of a GitHub repo with their comments into SQLite. Content only, no code.
 
-usage: python repolens.py <repo url | owner/name> [--csv] [--full] [--no-comments] [--review-comments]
+usage: python triageflow.py <repo url | owner/name> [--csv] [--full] [--no-comments] [--review-comments]
 Reruns are incremental (GitHub `since` = updated_at) and resume after an interruption or rate limit.
 
 Stages and request cost (100 rows per request):

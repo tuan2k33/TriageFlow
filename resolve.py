@@ -1,6 +1,6 @@
 """For open issues that mention a merged PR: should a maintainer close it, or decide? (suggestion only)
 
-usage: python resolve.py data/<owner>__<name>/repo.db   (needs repolens.py run first)
+usage: python resolve.py data/<owner>__<name>/repo.db   (needs triageflow.py run first)
 """
 import collections, json, os, re, sqlite3, sys, time
 import importlib.util
