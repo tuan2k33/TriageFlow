@@ -8,7 +8,9 @@ nearest existing category (or -1 "Unsorted" when it is far from all of them) and
 average position of their nearest already-placed neighbors, so categories and the map do not move between runs.
 
 Tables: emb(number, vec), categories(id, name, size, centroid), topics(number, cluster, sim, x, y),
-neighbors(number, rank, other, sim): the 5 most similar items of every item.
+neighbors(number, rank, other, sim): the 5 most similar items of every item,
+similar(a, b, sim, rank): semantic links, pairs that are in each other's top 5 (rank 0 = each other's nearest),
+pr_status(number, status, prs): for every open issue, what happened to the PRs that say they close it.
 """
 import argparse, collections, json, os, re, sqlite3, time
 import importlib.util
@@ -98,8 +100,35 @@ def neighbors(db, k=5):
     db.execute("drop table if exists neighbors")
     db.execute("create table neighbors(number integer, rank integer, other integer, sim real, primary key(number, rank))")
     db.executemany("insert into neighbors values(?,?,?,?)", rows)
+    # semantic link = each is among the other's nearest: a relative test, since a raw cosine cut does not separate
+    # (numpy: every item has a neighbor at ~0.87, an issue and the PR that fixes it are at ~0.81)
+    rank = {(a, b): r for a, r, b, _ in rows}
+    db.execute("drop table if exists similar")
+    db.execute("create table similar(a integer, b integer, sim real, rank integer, primary key(a, b))")
+    db.executemany("insert into similar values(?,?,?,?)",
+                   [(a, b, s, max(r, rank[(b, a)])) for a, r, b, s in rows if a < b and (b, a) in rank])
     db.commit()
-    print(f"neighbors: top {k} for {len(nums)} items")
+    print(f"neighbors: top {k} for {len(nums)} items; {db.execute('select count(*) from similar').fetchone()[0]} mutual pairs")
+
+
+def pr_status(db):
+    """Open issues by the fate of the PRs that close them (GitHub's closing links and 'Fixes #N' in a PR)."""
+    prs = collections.defaultdict(list)
+    for issue, pr, state, merged in db.execute(
+            "select distinct l.dst, l.src, p.state, p.merged from links l join items p on p.number = l.src "
+            "join items i on i.number = l.dst where l.kind in ('closes_official', 'closes') "
+            "and p.kind = 'pr' and i.kind = 'issue' and i.state = 'open'"):
+        prs[issue].append((pr, "merged" if merged else "open" if state == "open" else "abandoned"))
+    db.execute("drop table if exists pr_status")
+    db.execute("create table pr_status(number integer primary key, status text, prs text)")
+    count = collections.Counter()
+    for (n,) in db.execute("select number from items where kind = 'issue' and state = 'open'").fetchall():
+        fates = {f for _, f in prs[n]}
+        status = next((f for f in ("merged", "open", "abandoned") if f in fates), "none")
+        count[status] += 1
+        db.execute("insert into pr_status values(?,?,?)", (n, status, json.dumps(sorted(prs[n]))))
+    db.commit()
+    print("open issues by closing PR: " + ", ".join(f"{k} {v}" for k, v in count.most_common()))
 
 
 def name_categories(db, members, use_llm):
@@ -207,6 +236,7 @@ def main():
     else:
         assign(db)
     neighbors(db)
+    pr_status(db)
 
 
 if __name__ == "__main__":

@@ -30,6 +30,7 @@ h2{font-size:15px;margin:2px 0 6px}.meta{color:var(--mute);margin-bottom:8px}
 .sum{border:1px solid var(--line);border-left:3px solid #4a7fd1;border-radius:6px;padding:6px 8px;margin:8px 0;background:var(--bg)}
 .hint{border:1px solid var(--line);border-left:3px solid #d9822b;border-radius:6px;padding:6px 8px;margin:8px 0;background:var(--bg)}
 .tag.sug{border-style:dashed;color:var(--mute)}
+.tl{display:grid;grid-template-columns:auto 1fr;gap:0 8px;border-left:2px solid var(--line);padding-left:8px;margin:2px 0}.tl .me{font-weight:600}.tl time{color:var(--mute);white-space:nowrap}.tl small{color:var(--mute)}
 .tag{display:inline-block;border:1px solid var(--line);border-radius:10px;padding:0 7px;margin:0 4px 4px 0;font-size:11px}
 pre{white-space:pre-wrap;word-break:break-word;font:12px/1.5 inherit;background:var(--bg);padding:8px;border-radius:6px}
 a{color:inherit}.rel{display:block;padding:2px 0;cursor:pointer;text-decoration:underline dotted}
@@ -37,6 +38,7 @@ a{color:inherit}.rel{display:block;padding:2px 0;cursor:pointer;text-decoration:
 </style></head><body>
 <header><b>__REPO__</b><input id="q" type="search" placeholder="Search title / body…">
 <label><input id="showE" type="checkbox" checked> links</label>
+<label title="pairs that are among each other's 5 most similar items"><input id="showM" type="checkbox" checked> similar</label>
 <label title="count suggested labels when filtering by label"><input id="showS" type="checkbox" checked> suggested</label>
 <label><input id="showI" type="checkbox" checked> issues</label>
 <label><input id="showP" type="checkbox" checked> PRs</label><span id="count" style="color:var(--mute)"></span></header>
@@ -61,8 +63,8 @@ const grey=matchMedia('(prefers-color-scheme:dark)').matches?'#666':'#aaa';
 const colI=d=>{if(mode==='t')return col(d.c);const c=compOf(d);return c?col(comps.indexOf(c)):grey};
 let W,H,s=1,tx=0,ty=0,sel=-1,hov=-1,cluster=null,term='',mode='t';
 const chosen=new Set(),NONE='\0none',TYPE=/^(0[0-7]|17|23|33) - /;
-const grp=l=>l===NONE?'none':l.startsWith('hint:')?'hint':l.startsWith('component:')?'component':TYPE.test(l)?'type':'other';
-const keysOf=d=>{const k=lsOf(d).slice();if(d.rh)k.push('hint:'+d.rh[0]);return k};
+const grp=l=>l===NONE?'none':l.startsWith('pr:')?'pr':l.startsWith('hint:')?'hint':l.startsWith('component:')?'component':TYPE.test(l)?'type':'other';
+const keysOf=d=>{const k=lsOf(d).slice();if(d.rh)k.push('hint:'+d.rh[0]);if(d.ps)k.push('pr:'+d.ps[0]);return k};
 function passAll(d,skip){const k=keysOf(d),by={};for(const c of chosen){const g=grp(c);if(g!==skip)(by[g]=by[g]||[]).push(c)}
  for(const g in by){if(!by[g].some(c=>c===NONE?!lsOf(d).length:k.includes(c)))return false}return true}
 function fit(){const r=cv.getBoundingClientRect(),dpr=devicePixelRatio;W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr;g.setTransform(dpr,0,0,dpr,0,0);
@@ -71,8 +73,8 @@ const P=i=>[items[i].x*s+tx,items[i].y*s+ty];
 const visible=i=>{const d=items[i];if(d.k==='pr'?!showP.checked:!showI.checked)return false;if(mode==='t'){if(cluster!==null&&d.c!==cluster)return false}else if(!passAll(d,null))return false;return !term||d.t.toLowerCase().includes(term)||d.s.toLowerCase().includes(term)};
 function draw(){g.clearRect(0,0,W,H);const vis=items.map((_,i)=>visible(i));let n=0;vis.forEach(v=>n+=v);count.textContent=n+' / '+items.length;
  const hl=sel>=0?new Set([sel,...nb[sel].map(e=>e[0])]):null;
- if(showE.checked){for(const [a,b,k] of edges){if(!vis[a]||!vis[b])continue;const on=hl&&(a===sel||b===sel);if(hl&&!on)continue;
-  const [ax,ay]=P(a),[bx,by]=P(b);g.beginPath();g.moveTo(ax,ay);g.lineTo(bx,by);g.strokeStyle=on?getComputedStyle(document.body).getPropertyValue('--sel'):k==='closes'?'rgba(220,80,60,.45)':getComputedStyle(document.body).getPropertyValue('--edge');g.lineWidth=on?1.4:k==='closes'?1:.8;g.stroke()}}
+ {for(const [a,b,k] of edges){if(!vis[a]||!vis[b]||!(k==='similar'?showM:showE).checked)continue;const on=hl&&(a===sel||b===sel);if(hl&&!on)continue;
+  const [ax,ay]=P(a),[bx,by]=P(b);g.beginPath();g.moveTo(ax,ay);g.lineTo(bx,by);g.setLineDash(k==='similar'?[3,3]:[]);g.strokeStyle=on?getComputedStyle(document.body).getPropertyValue('--sel'):k==='closes'?'rgba(220,80,60,.45)':k==='similar'?'rgba(60,130,220,.45)':getComputedStyle(document.body).getPropertyValue('--edge');g.lineWidth=on?1.4:k==='closes'?1:.8;g.stroke()}g.setLineDash([])}
  const r=Math.max(2,Math.min(5,s*.6));
  for(let i=0;i<items.length;i++){if(!vis[i])continue;const [x,y]=P(i);if(x<-9||y<-9||x>W+9||y>H+9)continue;const dim=hl&&!hl.has(i);
   g.globalAlpha=dim?.15:.9;g.fillStyle=colI(items[i]);const q=i===sel?r*1.8:r;
@@ -81,10 +83,13 @@ function draw(){g.clearRect(0,0,W,H);const vis=items.map((_,i)=>visible(i));let 
  g.globalAlpha=1}
 function pick(mx,my){let b=-1,bd=100;for(let i=0;i<items.length;i++){if(!visible(i))continue;const [x,y]=P(i),d=(x-mx)**2+(y-my)**2;if(d<bd){bd=d;b=i}}return b}
 function esc(t){return t.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
-function show(i){sel=i;draw();const d=items[i];const rel=nb[i].map(([j,k,out])=>`<span class="rel" data-i="${j}">${out?'':'← '}${k==='closes'?(out?'closes':'closed by'):(out?'mentions':'mentioned by')} #${items[j].n} ${esc(items[j].t)}</span>`).join('');
+function show(i){sel=i;draw();const d=items[i];
+ const row=([o,cr,st,t,r])=>{const j=byNum.get(o),lab=`#${o} [${st}] ${esc(t)} <small>${r}</small>`;return `<time>${cr}</time>`+(j!==undefined?`<span class="rel" data-i="${j}">${lab}</span>`:`<a class="rel" href="${D.repo}/issues/${o}" target="_blank">${lab}</a>`)};
+ const me=`<time>${d.cr}</time><span class="me">#${d.n} this ${d.k==='pr'?'PR':'issue'}</span>`;
+ const rel=d.tl?`<div class="tl">${d.tl.filter(e=>e[1]<d.cr).map(row).join('')}${me}${d.tl.filter(e=>e[1]>=d.cr).map(row).join('')}</div>`:'';
  detail.innerHTML=`<h2>${esc(d.t)}</h2><div class="meta">${d.k==='pr'?'PR':'Issue'} <a href="${d.u}" target="_blank">#${d.n}</a> · ${esc(d.a||'')} · ${d.cm} comments · updated ${d.up.slice(0,10)}</div>
  <div>${d.ls.map(l=>`<span class="tag">${esc(l)}</span>`).join('')}${d.sg.map(([l,p,src])=>`<span class="tag sug" title="suggested by ${src}${src==='vote'?' ('+p+' votes)':p?' ('+p.toFixed(2)+' kNN)':''}">${esc(l)} ?</span>`).join('')}<span class="tag" style="border-color:${col(d.c)}">${esc(D.names[d.c])}</span></div>
- ${d.rh?`<div class="hint"><b>${d.rh[0]==='close'?'Close?':'Needs decision?'}</b> ${esc(d.rh[1])}<br>${d.rh[2].map(n=>`<a href="${D.repo}/pull/${n}" target="_blank">#${n}</a>`).join(' ')} <span style="color:var(--mute)">(suggestion)</span></div>`:''}${d.sm?`<div class="sum"><b>Discussion</b> <span class="tag">${esc(d.sm[1])}</span><br>${esc(d.sm[0])}</div>`:''}${d.si?`<h3 style="font-size:12px;color:var(--mute);margin:10px 0 2px">Similar</h3>`+d.si.map(([o,s,t,st])=>{const j=byNum.get(o),lab=`${Math.round(s*100)}% #${o} [${st}] ${esc(t)}`;return j!==undefined?`<span class="rel" data-i="${j}">${lab}</span>`:`<a class="rel" href="${D.repo}/issues/${o}" target="_blank">${lab}</a>`}).join(''):''}${rel?`<h3 style="font-size:12px;color:var(--mute);margin:10px 0 2px">Links</h3>${rel}`:''}<pre>${esc(d.b)}</pre>`;
+ ${d.ps&&d.ps[0]!=='none'?`<div class="hint"><b>${PS['pr:'+d.ps[0]]}</b> ${d.ps[1].map(([n,f])=>`<a href="${D.repo}/pull/${n}" target="_blank">#${n}</a> ${f}`).join(', ')}</div>`:''}${d.rh?`<div class="hint"><b>${d.rh[0]==='close'?'Close?':'Needs decision?'}</b> ${esc(d.rh[1])}<br>${d.rh[2].map(n=>`<a href="${D.repo}/pull/${n}" target="_blank">#${n}</a>`).join(' ')} <span style="color:var(--mute)">(suggestion)</span></div>`:''}${d.sm?`<div class="sum"><b>Discussion</b> <span class="tag">${esc(d.sm[1])}</span><br>${esc(d.sm[0])}</div>`:''}${d.si?`<h3 style="font-size:12px;color:var(--mute);margin:10px 0 2px">Similar</h3>`+d.si.map(([o,s,t,st])=>{const j=byNum.get(o),lab=`${Math.round(s*100)}% #${o} [${st}] ${esc(t)}`;return j!==undefined?`<span class="rel" data-i="${j}">${lab}</span>`:`<a class="rel" href="${D.repo}/issues/${o}" target="_blank">${lab}</a>`}).join(''):''}${rel?`<h3 style="font-size:12px;color:var(--mute);margin:10px 0 2px">Timeline (links and similar items)</h3>${rel}`:''}<pre>${esc(d.b)}</pre>`;
  detail.querySelectorAll('.rel[data-i]').forEach(e=>e.onclick=()=>{const j=+e.dataset.i;focus(j);show(j)})}
 function focus(j){const [x,y]=[items[j].x,items[j].y];tx=W/2-x*s;ty=H/2-y*s;draw()}
 cv.onmousemove=e=>{const r=cv.getBoundingClientRect();if(drag){tx+=e.movementX;ty+=e.movementY;draw();return}
@@ -96,19 +101,20 @@ cv.onclick=e=>{const r=cv.getBoundingClientRect();const i=pick(e.clientX-r.left,
 cv.onwheel=e=>{e.preventDefault();const r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top,f=Math.exp(-e.deltaY*.0015);tx=mx-(mx-tx)*f;ty=my-(my-ty)*f;s*=f;draw()};
 const counts={};items.forEach(d=>counts[d.c]=(counts[d.c]||0)+1);
 const order=Object.keys(counts).map(Number).sort((a,b)=>counts[b]-counts[a]);
-const HINT={'hint:close':'Mentions merged PR: close?','hint:needs_decision':'Mentions merged PR: needs decision'};
-const GN={hint:'Resolve hints',type:'Type',component:'Component',other:'Other'};
+const PS={'pr:merged':'Closing PR merged: still open?','pr:open':'Closing PR open','pr:abandoned':'Closing PR abandoned','pr:none':'No closing PR'};
+const HINT={'hint:close':'Mentions merged PR: close?','hint:needs_decision':'Mentions merged PR: needs decision',...PS};
+const GN={hint:'Resolve hints',pr:'Issues by closing PR',type:'Type',component:'Component',other:'Other'};
 function renderList(){const tab=(m,t)=>`<span class="tab${mode===m?' on':''}" data-m="${m}">${t}</span>`;
  let h=`<div class="tabs">${tab('t','Categories')}${tab('l','Labels')}</div>`;
  if(mode==='t'){h+=`<div class="cl${cluster===null?' on':''}" data-c="">All categories <em>${items.length}</em></div>`+order.map(c=>`<div class="cl${cluster===c?' on':''}" data-c="${c}"><i style="background:${col(c)}"></i><span>${esc(D.names[c])}</span><em>${counts[c]}</em></div>`).join('');list.innerHTML=h;return}
- const gl={hint:{},type:{},component:{},other:{}},tot={},cnt={};
+ const gl={hint:{},pr:{},type:{},component:{},other:{}},tot={},cnt={};
  for(const d of items)for(const l of keysOf(d)){tot[l]=(tot[l]||0)+1;gl[grp(l)][l]=1}
  for(const g in gl)for(const l in gl[g])cnt[l]=0;
  for(const d of items){if(d.k==='pr'?!showP.checked:!showI.checked)continue;const k=new Set(keysOf(d));for(const g of Object.keys(gl)){if(!passAll(d,g))continue;for(const l of k)if(grp(l)===g)cnt[l]++}}
  const nl=items.filter(d=>(d.k==='pr'?showP.checked:showI.checked)&&!lsOf(d).length&&passAll(d,'none')).length;
  h+=`<div class="chips">${[...chosen].map(c=>`<span class="chip" data-l="${esc(c)}">${esc(c===NONE?'(no label)':HINT[c]||c)} ×</span>`).join('')}${chosen.size?'<span class="clear">clear all</span>':'<span class="mute">Pick labels: OR within a group, AND across groups</span>'}</div>`;
  h+=`<div class="cl${chosen.has(NONE)?' on':''}" data-l="${NONE}"><i style="background:${grey}"></i><span>(no label)</span><em>${nl}</em></div>`;
- for(const g of ['hint','type','component','other']){const ls=Object.keys(gl[g]).sort((a,b)=>tot[b]-tot[a]);if(!ls.length)continue;
+ for(const g of ['hint','pr','type','component','other']){const ls=Object.keys(gl[g]).sort((a,b)=>tot[b]-tot[a]);if(!ls.length)continue;
   h+=`<div class="gh">${GN[g]}</div>`+ls.map(l=>{const ci=comps.indexOf(l);return `<div class="cl${chosen.has(l)?' on':''}${cnt[l]?'':' zero'}" data-l="${esc(l)}"><i style="background:${ci>=0?col(ci):'transparent'};border:1px solid var(--line)"></i><span>${esc(HINT[l]||l)}</span><em>${cnt[l]}</em></div>`}).join('')}
  const top=list.scrollTop;list.innerHTML=h;list.scrollTop=top}
 list.onclick=e=>{const t=e.target.closest('.tab');if(t){mode=t.dataset.m;renderList();draw();return}
@@ -118,7 +124,7 @@ list.onclick=e=>{const t=e.target.closest('.tab');if(t){mode=t.dataset.m;renderL
  else{const l=el.dataset.l;if(chosen.has(l))chosen.delete(l);else{if(l===NONE)chosen.clear();else chosen.delete(NONE);chosen.add(l)}}
  renderList();draw()};
 renderList();
-q.oninput=()=>{term=q.value.trim().toLowerCase();draw()};[showE,showI,showP].forEach(x=>x.onchange=draw);showS.onchange=()=>{renderList();draw()};
+q.oninput=()=>{term=q.value.trim().toLowerCase();draw()};[showE,showM,showI,showP].forEach(x=>x.onchange=draw);showS.onchange=()=>{renderList();draw()};
 addEventListener('resize',fit);fit();
 </script></body></html>"""
 
@@ -126,16 +132,37 @@ addEventListener('resize',fit);fit();
 def main(path, with_llm=False):
     db = sqlite3.connect(path, timeout=120)
     repo = db.execute("select v from meta where k='repo'").fetchone()[0]
-    items = [dict(n=n, k=k, t=t, b=(b or "")[:2000], s=(b or "")[:600], a=a, l=l or "", cm=cm, up=up, u=u, c=c, x=x, y=y)
-             for n, k, t, b, a, l, cm, up, u, c, x, y in db.execute(
-                 "select i.number,kind,title,body,author,labels,comments,updated_at,url,cluster,x,y "
+    items = [dict(n=n, k=k, t=t, b=(b or "")[:2000], s=(b or "")[:600], a=a, l=l or "", cm=cm, up=up, cr=cr[:10], u=u, c=c, x=x, y=y)
+             for n, k, t, b, a, l, cm, up, cr, u, c, x, y in db.execute(
+                 "select i.number,kind,title,body,author,labels,comments,updated_at,created_at,url,cluster,x,y "
                  "from items i join topics t on t.number=i.number where i.state='open' and t.x is not null")]
     names = dict(db.execute("select id, name from categories")) | {-1: "Unsorted"}
     links = [list(r) for r in db.execute(
         "select distinct src, dst, replace(kind,'closes_official','closes') from links "
         "where src in (select number from items where state='open') and dst in (select number from items where state='open')")]
+    has = lambda t: db.execute("select 1 from sqlite_master where name=?", (t,)).fetchone()
+    is_open = {it["n"] for it in items}
+    # timeline: everything tied to an open item by a link (either direction, any state) or a semantic link, oldest first
+    info = {n: (cr[:10], f"{k} " + ("merged" if m else st), t[:100]) for n, cr, k, m, st, t in db.execute(
+        "select number, created_at, kind, merged, state, title from items")}
+    tl = {}
+    for a, b, k in db.execute("select src, dst, kind from links"):
+        k = "closes" if k.startswith("closes") else k
+        for me, other, out in ((a, b, True), (b, a, False)):
+            if me in is_open and other in info:
+                rel = {("closes", True): "closes", ("closes", False): "closed by", ("mentions", True): "mentions", ("mentions", False): "mentioned by"}[(k, out)]
+                if rel.startswith("clos") or other not in tl.get(me, {}):
+                    tl.setdefault(me, {})[other] = rel
+    if has("similar"):
+        for a, b, rank in db.execute("select a, b, rank from similar"):
+            if a in is_open and b in is_open:
+                links.append([a, b, "similar"])
+            for me, other in ((a, b), (b, a)):
+                if me in is_open and other not in tl.get(me, {}):
+                    tl.setdefault(me, {})[other] = "nearest match" if rank == 0 else "similar"
+    ps = {n: [st, json.loads(prs)] for n, st, prs in db.execute("select number, status, prs from pr_status")} if has("pr_status") else {}
     sg = {}
-    if db.execute("select 1 from sqlite_master where name='suggested'").fetchone():
+    if has("suggested"):
         best = {}
         for n, ax, lab, sc, src in db.execute("select number,axis,label,score,source from suggested where source != 'llm' or ? order by source='llm'", (with_llm,)):
             best[(n, ax, lab) if src == "vote" else (n, ax)] = [lab, round(sc or 0, 2), src]
@@ -155,6 +182,11 @@ def main(path, with_llm=False):
                 "where n.number in (select number from items where state='open') order by n.number, n.rank"):
             si.setdefault(n, []).append([o, round(sim, 3), t[:100], f"{k} " + ("merged" if m else st)])
     for it in items:
+        if it["n"] in tl:
+            it["tl"] = sorted([o, *info[o], rel] for o, rel in tl[it["n"]].items())[:60]
+            it["tl"].sort(key=lambda e: e[1])
+        if it["n"] in ps:
+            it["ps"] = ps[it["n"]]
         if it["n"] in si:
             it["si"] = si[it["n"]]
         if it["n"] in sm:

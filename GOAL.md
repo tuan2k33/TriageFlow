@@ -15,8 +15,8 @@ Xây dựng công cụ phân tích, điều phối và dọn dẹp kho GitHub d�
 ## 2. Luồng hoạt động (Pipeline)
 1. **Input:** link repo GitHub (hiện chạy bằng lệnh).
 2. **Crawl & Storage** ✅ Một lần crawl lấy mọi Issue/PR (mở và đóng), mọi comment hội thoại (comment gắn vào dòng code của PR mặc định bỏ qua), nhãn, trạng thái (`state_reason`, `merged`) vào SQLite. Liên kết "PR nào đóng issue nào" lấy từ GraphQL của GitHub. Chạy lại chỉ lấy phần thay đổi.
-3. **Vectorize & Graph** 🟡 Embedding cho mọi mục (mở và đóng) ✅. Graph liên kết cứng ✅, liên kết mềm (độ tương đồng ngữ nghĩa) ⬜.
-4. **Phân tích:** category chia một lần, mục mới gán vào category sẵn có ✅; gợi ý nhãn ✅; trạng thái PR của từng issue theo liên kết ⬜; gom trùng / PR cạnh tranh / tồn đọng ⬜. (Tóm tắt thảo luận và phán xét close bằng LLM: để sau.)
+3. **Vectorize & Graph** ✅ Embedding cho mọi mục (mở và đóng). Graph liên kết cứng và liên kết ngữ nghĩa (hai mục nằm trong top 5 giống nhất của nhau).
+4. **Phân tích:** category chia một lần, mục mới gán vào category sẵn có ✅; gợi ý nhãn ✅; trạng thái PR của từng issue theo liên kết ✅; gom trùng / PR cạnh tranh / tồn đọng ⬜. (Tóm tắt thảo luận và phán xét close bằng LLM: để sau.)
 5. **Output & Action:** trang tra cứu một file HTML (bản đồ chủ đề, lọc nhãn, chi tiết từng mục) ✅; dashboard, danh sách đề xuất dọn dẹp, xuất script ⬜.
 
 ---
@@ -26,13 +26,13 @@ Xây dựng công cụ phân tích, điều phối và dọn dẹp kho GitHub d�
 ### 3.1. Tra cứu "Dây mơ rễ má" (Context Graph & Semantic Search)
 Khi chọn một Issue/PR, hiển thị toàn bộ mạng lưới liên quan:
 * ✅ **Liên kết cứng:** PR đóng issue (cả liên kết chính thức của GitHub lẫn từ khóa `Fixes #12`), và nhắc chéo `#56` trong mô tả, bình luận.
-* ⬜ **Liên kết ngữ nghĩa:** các Issue/PR cùng một vấn đề dù không nhắc số hiệu của nhau, kể cả với mục đã đóng.
-* ⬜ **Dòng chảy tiến độ:** cụm liên kết xếp theo thời gian: lỗi phát sinh ở đâu → bị báo trùng bao nhiêu lần → đã có PR xử lý chưa → PR đó mở, đã merge hay bị bỏ hoang.
+* ✅ **Liên kết ngữ nghĩa:** các Issue/PR cùng một vấn đề dù không nhắc số hiệu của nhau, kể cả với mục đã đóng. Tiêu chí: hai mục nằm trong top 5 giống nhất của nhau (ngưỡng cosine tuyệt đối không tách được: mục nào cũng có láng giềng ở ~0,87, còn issue và PR sửa nó chỉ ~0,81). Trên numpy: 35 nghìn cặp, 15% đã có sẵn liên kết cứng; cặp là láng giềng gần nhất của nhau thì 40% đã có liên kết cứng, phần còn lại đọc tay đa số đúng là cùng vấn đề.
+* ✅ **Dòng chảy tiến độ:** trong chi tiết từng mục, mọi mục có liên kết cứng hoặc ngữ nghĩa với nó (cả mở lẫn đóng) xếp theo thời gian: lỗi phát sinh ở đâu → bị báo trùng bao nhiêu lần → đã có PR xử lý chưa → PR đó mở, đã merge hay bị bỏ hoang.
 * ✅ **Tìm kiếm toàn văn** trên tiêu đề, mô tả và bình luận.
 
 ### 3.2. Gợi ý Dọn dẹp, Gom gọn & Đóng (Actionable Cleanup)
 * ⬜ **Gom trùng lặp:** gom các Issue cùng nội dung vào một **Master Issue** (cũ nhất hoặc nhiều tương tác nhất, sẽ chọn khi làm). Gồm cả trường hợp issue mở trùng với issue đã đóng. Đề xuất đóng bản sao kèm lý do và câu bình luận mẫu.
-* ⬜ **Zombie Issues (mở mà PR đã merge giải quyết):** làm theo luật trên liên kết và trạng thái PR (có PR đã merge đóng nó, có PR đang mở, chỉ có PR bị bỏ, không có PR). Trường hợp tác giả quên link thì cần so khớp ngữ nghĩa Issue mở với PR đã merge. (Bản LLM xếp `close / needs_decision / none` đã có code, để sau.)
+* 🟡 **Zombie Issues (mở mà PR đã merge giải quyết):** ✅ theo luật trên liên kết và trạng thái PR (có PR đã merge đóng nó, có PR đang mở, chỉ có PR bị bỏ, không có PR; numpy: 14 / 137 / 121 / 1645 issue mở), lọc được trong trang. ⬜ Trường hợp tác giả quên link thì cần so khớp ngữ nghĩa Issue mở với PR đã merge. (Bản LLM xếp `close / needs_decision / none` đã có code, để sau.)
 * ⬜ **PR cạnh tranh:** nhiều PR đang mở cùng sửa một lỗi hoặc làm một tính năng, để Maintainer chọn lọc và tránh lãng phí công review.
 * ⬜ **Tồn đọng & lỗi thời:** Issue/PR không tương tác quá lâu hoặc thuộc phiên bản cũ.
 
@@ -69,10 +69,10 @@ Chỉ **dùng lại nhãn đã có của repo** để gợi ý cho Issue/PR chư
 
 ## 5. Lộ trình
 - [x] **Phase 1 (Core Data & Search):** crawler → SQLite → embedding → tìm kiếm và trang xem (bản đồ chủ đề, lọc nhiều nhãn, graph liên kết cứng).
-  - [ ] Còn thiếu: cạnh ngữ nghĩa trong graph, dòng thời gian của cụm.
+  - [x] Cạnh ngữ nghĩa trong graph, dòng thời gian trong chi tiết từng mục.
 - [ ] **Phase 2 (Smart Cleanup):**
   - [x] Category chia một lần lúc init, mục mới gán vào category sẵn có, bản đồ ổn định.
-  - [ ] Trạng thái PR của từng issue theo liên kết (thay cho phán xét close bằng LLM).
+  - [x] Trạng thái PR của từng issue theo liên kết (thay cho phán xét close bằng LLM).
   - [ ] Gom trùng lặp + Master Issue (hiệu chỉnh ngưỡng bằng issue `duplicate` thật), zombie theo ngữ nghĩa, PR cạnh tranh, tồn đọng.
   - [ ] Dashboard sức khỏe triage.
 - [ ] **Phase 3 (Labeling & Action):**
