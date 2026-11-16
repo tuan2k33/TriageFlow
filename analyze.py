@@ -27,7 +27,7 @@ import digest
 MODEL = "BAAI/bge-small-en-v1.5"
 OPEN_PER_CATEGORY = 45
 ZOMBIE_SIM = 0.88  # issue and merged PR nearest to each other: on closed numpy issues with a known closer, the PR is one of them 87% of the time
-DUP_SIM = 0.91  # as strict as 0.90 was on the old title+description embedding (hand-graded there: ~80% same problem): 2752 vs 2228 numpy issue pairs
+DUP_SIM = 0.92  # hand-graded on numpy (24 pairs, description + maintainer comments read): >= 0.92 ~79% same problem, 0.91-0.92 only ~29%
 
 
 def encoder():

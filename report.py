@@ -12,10 +12,10 @@ from pathlib import Path
 RULES = {  # action kind: (confidence or None when it comes per item, how it was measured, title in the report)
     "close_duplicate_marked": (1.0, "a maintainer marked it as a duplicate on GitHub", "Open issues already marked as duplicates"),
     "close_fixed_linked": (0.7, "hand check of the 14 numpy cases: about 10 are done, the rest track larger work", "Open issues whose closing PR is merged"),
-    "close_duplicate_likely": (0.8, "hand-graded sample of 25 numpy pairs at the same strictness on the previous embedding; not re-graded", "Likely duplicates of an older open issue"),
+    "close_duplicate_likely": (0.8, "hand-graded numpy pairs with similarity >= 0.92 (description and maintainer comments read): 9.5 of 12 the same problem", "Likely duplicates of an older open issue"),
     "check_recurrence": (0.8, "same sample: the two are the same problem; whether it came back or was never fixed is for a person to judge",
                          "Open issues very similar to an older closed one (came back, or a duplicate of something settled?)"),
-    "close_fixed_similar": (0.5, "hand-graded sample of 25 numpy cases on the previous embedding (87% on closed issues with a known closing PR)", "Open issues that a later merged PR seems to fix"),
+    "close_fixed_similar": (0.6, "hand-graded 20 numpy cases: 10 fixed, 6 partly fixed, 4 only related (87% on closed issues with a known closing PR)", "Open issues that a later merged PR seems to fix"),
     "review_competing": (None, "two open PRs with a closing link to the same issue: certain; similar PRs by different authors: similarity", "Open PRs after the same thing"),
     "add_label": (None, "share of suggestions with this score that matched the hidden real label (a lower bound: real labels are often missing)", "Labels to add"),
 }
