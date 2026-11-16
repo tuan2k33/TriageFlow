@@ -3,8 +3,9 @@ commands (every line commented out: nothing runs until a person enables it).
 
 Each kind of proposal has a level (certain / likely / check) and the evidence behind it, with raw counts: a GitHub
 record, a hand-graded sample (numpy only, so small and borrowed by other repos), or the hidden-label test of this repo.
-Each row shows its own signal (similarity, votes, kNN score) and rows are sorted by it; there is no per-row
-percentage, because a sample of 12-30 cases cannot give one.
+The confidence column is each row's own raw signal (cosine similarity, kNN score, vote count, 1.00 for a GitHub
+record), never a percentage derived from it: a sample of 12-30 cases cannot give one per row. What the number means
+is written at the top of each section.
 
 usage: python report.py data/<owner>__<name>/repo.db   ->  report.md, actions.sh next to the db; table `actions`
 """
@@ -27,6 +28,15 @@ RULES = {  # action kind: (level or None when it comes per row, evidence, graded
                   "A lower bound, since real labels are often missing; by hand on numpy ~88% of component and ~77% of type suggestions were related", False,
                   "Labels to add"),
 }
+MEANS = {  # what the confidence number of each kind is
+    "close_duplicate_marked": "1.00 = recorded on GitHub",
+    "close_fixed_linked": "1.00 = GitHub links a merged PR that closes it",
+    "close_duplicate_likely": "cosine similarity of the two issues (0-1)",
+    "check_recurrence": "cosine similarity of the two issues (0-1)",
+    "close_fixed_similar": "cosine similarity of the issue and the PR (0-1)",
+    "review_competing": "1.00 = both PRs link the same issue, otherwise their cosine similarity",
+    "add_label": "type: kNN score (0-1, weighted share of the 10 nearest labeled items carrying it); component/label: votes of the 5 nearest labeled items plus linked items",
+}
 
 
 def main(path):
@@ -43,11 +53,11 @@ def main(path):
     tracking = {r[0] for r in db.execute("select number from pr_status where status = 'tracking'")}
     for d, c in db.execute("select src, dst from links where kind = 'duplicate_of'"):
         if d in is_open:
-            add("close_duplicate_marked", d, c, f"marked as duplicate of #{c}", f'gh issue close {d} -R {repo} --reason "not planned" --comment "Duplicate of #{c}"', 1, "GitHub")
+            add("close_duplicate_marked", d, c, f"marked as duplicate of #{c}", f'gh issue close {d} -R {repo} --reason "not planned" --comment "Duplicate of #{c}"', 1, "1.00")
     for n, prs in db.execute("select number, prs from pr_status where status = 'merged'"):
         merged = [p for p, f in json.loads(prs) if f == "merged"]
         add("close_fixed_linked", n, merged[0], "closing PR merged: " + ", ".join(f"#{p}" for p in merged),
-            f'gh issue close {n} -R {repo} --reason completed --comment "Closed by #{merged[0]}"', 1, "linked")
+            f'gh issue close {n} -R {repo} --reason completed --comment "Closed by #{merged[0]}"', 1, "1.00")
     marked = {a[1] for a in acts if a[0] == "close_duplicate_marked"}
     sim = {}
     for a, b, s, lv in db.execute("select a, b, sim, level from dup_pairs where level = 'likely'"):
@@ -56,19 +66,19 @@ def main(path):
         if n in is_open and n not in marked and n not in tracking and (n, m) in sim:
             if m in is_open:
                 add("close_duplicate_likely", n, m, f"duplicate of the older open #{m}",
-                    f'gh issue close {n} -R {repo} --reason "not planned" --comment "Duplicate of #{m}"', sim[(n, m)], f"sim {sim[(n, m)]:.2f}")
+                    f'gh issue close {n} -R {repo} --reason "not planned" --comment "Duplicate of #{m}"', sim[(n, m)], f"{sim[(n, m)]:.2f}")
             else:  # closing it as a duplicate would be wrong if the old problem came back
                 add("check_recurrence", n, m, f"like #{m}, closed as {how_closed.get(m, info[m][1]).replace('_', ' ')}",
-                    f"gh issue view {m} -R {repo}; gh issue view {n} -R {repo}", sim[(n, m)], f"sim {sim[(n, m)]:.2f}")
+                    f"gh issue view {m} -R {repo}; gh issue view {n} -R {repo}", sim[(n, m)], f"{sim[(n, m)]:.2f}")
     for n, p, s in db.execute("select number, pr, sim from zombie"):
         if n not in tracking:
             add("close_fixed_similar", n, p, f"merged PR #{p} is its nearest match and has no link to it",
-                f'gh issue close {n} -R {repo} --reason completed --comment "Looks fixed by #{p}"', s, f"sim {s:.2f}")
+                f'gh issue close {n} -R {repo} --reason completed --comment "Looks fixed by #{p}"', s, f"{s:.2f}")
     for a, b, reason, issue, s in db.execute("select a, b, reason, issue, sim from pr_compete"):
         same = issue is not None
         add("review_competing", a, b, f"#{b} ({info[b][2][:60]}) also closes #{issue}: keep one" if same
             else f"looks like #{b} ({info[b][2][:60]}) by another author",
-            f"gh pr view {a} -R {repo}; gh pr view {b} -R {repo}", 2 if same else s, "same issue" if same else f"sim {s:.2f}",
+            f"gh pr view {a} -R {repo}; gh pr view {b} -R {repo}", 2 if same else s, "1.00" if same else f"{s:.2f}",
             "certain" if same else "check")
     cal = json.loads((db.execute("select v from meta where k='calibration'").fetchone() or ["{}"])[0])
 
@@ -80,9 +90,9 @@ def main(path):
     for n, ax, lab, sc, src in db.execute("select number, axis, label, score, source from suggested order by number") if has_sug else []:
         conf = measured(ax, sc)
         if n in is_open and conf is not None:
-            sig = f"{sc:g} votes" if src == "vote" else f"kNN {sc:.2f}"
+            sig = f"{sc:g} votes" if src == "vote" else f"{sc:.2f}"
             add("add_label", n, None, lab, f"gh {'pr' if info[n][0] == 'pr' else 'issue'} edit {n} -R {repo} --add-label {shlex.quote(lab)}",
-                conf, f"{sig} · {conf:.0%} in test", "likely" if conf >= 0.8 else "check")
+                conf, sig, "likely" if conf >= 0.8 else "check")
 
     db.execute("drop table if exists actions")
     db.execute("create table actions(kind text, number integer, target integer, level text, score real, signal text, reason text, command text)")
@@ -97,7 +107,7 @@ def main(path):
     md = [f"# Triage report: {repo}", "",
           f"{len(is_open)} open items ({issues} issues, about {issues - extra} distinct problems). Proposals only: nothing here changes GitHub.",
           "Level: **certain** = GitHub records it; **likely** = most of a hand-graded sample was right; **check** = worth a look, often wrong. "
-          "Rows are sorted by their own signal (similarity, votes, kNN score).", ""]
+          "Confidence = the row's own signal, as measured (similarity, kNN score, votes); each section says which. Rows are sorted by it.", ""]
     sh = ["#!/bin/sh", f"# Proposed actions for {repo}. Review report.md, then remove the leading '# ' from the lines you agree with.", ""]
     for kind, (level, how, graded, title) in RULES.items():
         rows = sorted(by[kind], key=lambda a: (-a[4], a[1]))
@@ -105,8 +115,15 @@ def main(path):
             continue
         borrowed = f" Graded on {GRADED_ON} only; not checked on this repo." if graded and repo != GRADED_ON else ""
         head = f"Level: **{level}**. " if level else ""
-        md += [f"## {title} ({len(rows)})", "", f"{head}Evidence: {how}.{borrowed}", "",
-               "| Signal | Item | Proposal |" if level else "| Level | Signal | Item | Proposal |", "|---|---|---|" if level else "|---|---|---|---|"]
+        test = ""
+        if kind == "add_label":
+            def span(bins, i):
+                lo, hi = bins[i][0], bins[i + 1][0] if i + 1 < len(bins) else None
+                return f"{lo:g}+" if hi is None else f"{lo:g}" if hi - lo == 1 else f"{lo:g}-{hi:g}"
+            test = " This repo: " + "; ".join(f"{ax} {span(bins, i)}{' votes' if ax != 'type' else ''}: {p:.0%} matched"
+                                              for ax, bins in cal.items() for i, (lo, p) in enumerate(bins) if p is not None) + "."
+        md += [f"## {title} ({len(rows)})", "", f"{head}Evidence: {how}.{test}{borrowed}", "", f"Confidence: {MEANS[kind]}.", "",
+               "| Confidence | Item | Proposal |" if level else "| Level | Confidence | Item | Proposal |", "|---|---|---|" if level else "|---|---|---|---|"]
         sh += [f"# --- {title} ({len(rows)})"]
         for _, n, target, lv, _, sig, reason, cmd in rows:
             cells = [sig, f"[#{n}](https://github.com/{repo}/issues/{n}) {info[n][2][:80].replace('|', '/')}", reason.replace("|", "/")]
