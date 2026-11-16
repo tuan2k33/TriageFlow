@@ -22,23 +22,30 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from transformers import AutoModel, AutoTokenizer
 
+import digest
+
 MODEL = "BAAI/bge-small-en-v1.5"
 OPEN_PER_CATEGORY = 45
-ZOMBIE_SIM = 0.86  # issue and merged PR nearest to each other: on closed numpy issues the PR is a known closer >= 82% of the time
-DUP_SIM = 0.90  # hand-graded on numpy: ~80% of issue pairs at or above this are the same problem (known duplicates: median 0.85)
+ZOMBIE_SIM = 0.88  # issue and merged PR nearest to each other: on closed numpy issues with a known closer, the PR is one of them 87% of the time
+DUP_SIM = 0.91  # as strict as 0.90 was on the old title+description embedding (hand-graded there: ~80% same problem): 2752 vs 2228 numpy issue pairs
 
 
-def embed(texts):
+def encoder():
+    """(tokenizer, embed(texts, max_length) -> unit vectors in the input order)."""
     tok = AutoTokenizer.from_pretrained(MODEL)
     dev = "cuda" if torch.cuda.is_available() else "cpu"  # fp16 on the GPU; a machine without one still works, slower
     model = AutoModel.from_pretrained(MODEL, dtype=torch.float16 if dev == "cuda" else torch.float32).to(dev).eval()
-    out = []
-    with torch.no_grad():
-        for i in range(0, len(texts), 64):
-            b = tok(texts[i:i + 64], padding=True, truncation=True, max_length=256, return_tensors="pt").to(dev)
-            v = model(**b).last_hidden_state[:, 0].float()
-            out.append(torch.nn.functional.normalize(v, dim=-1).cpu())
-    return torch.cat(out).numpy()
+
+    def embed(texts, max_length=512):
+        order = sorted(range(len(texts)), key=lambda i: len(texts[i]))  # similar lengths per batch = less padding
+        out = np.zeros((len(texts), 384), dtype=np.float32)
+        with torch.no_grad():
+            for c in range(0, len(order), 128):
+                idx = order[c:c + 128]
+                b = tok([texts[i] for i in idx], padding=True, truncation=True, max_length=max_length, return_tensors="pt").to(dev)
+                out[idx] = torch.nn.functional.normalize(model(**b).last_hidden_state[:, 0].float(), dim=-1).cpu().numpy()
+        return out
+    return tok, embed
 
 
 def unit(x):
@@ -53,24 +60,30 @@ def load_emb(db, where="1"):
 
 
 def embed_new(db):
-    """Embed items that are new or whose title/description changed since they were embedded (hash of the text)."""
+    """Embed items that are new, edited or have new comments (hash of title, description and human comments).
+
+    vector = mean of two embeddings: title + description, and the digest of the whole thread (digest.py).
+    Measured on numpy against GitHub's own links: the right original of a marked duplicate ranks first 47% of the
+    time (title + description alone, 256 tokens: 36%), an issue's merged closing PR ranks first 41% (34%)."""
     if "hash" not in [c[1] for c in db.execute("pragma table_info(emb)")]:
         db.execute("alter table emb add column hash text")
     done = dict(db.execute("select number, hash from emb"))
-    todo, texts = [], []
+    comments = collections.defaultdict(list)
+    for n, assoc, b in db.execute("select number, assoc, coalesce(body,'') from comments where kind = 'comment' and bot = 0 order by number, created_at"):
+        comments[n].append((assoc in digest.TEAM, b))
+    todo = []
     for n, t, b in db.execute("select number, title, coalesce(body,'') from items order by number"):
-        text = f"{t}\n{b[:1500]}"
-        h = hashlib.md5(text.encode()).hexdigest()
+        h = hashlib.md5("\n".join([t, b] + [c for _, c in comments[n]]).encode()).hexdigest()
         if done.get(n) != h:
-            todo.append((n, h))
-            texts.append(text)
-    print(f"embedding {len(todo)} new or edited items", flush=True)
+            todo.append((n, t, b, h))
+    print(f"embedding {len(todo)} new, edited or commented items", flush=True)
     if not todo:
         return
-    order = sorted(range(len(texts)), key=lambda i: len(texts[i]))  # similar lengths per batch = less padding
-    vecs = embed([texts[i] for i in order])
-    for j, i in enumerate(order):
-        db.execute("insert or replace into emb(number, vec, hash) values(?,?,?)", (todo[i][0], vecs[j].astype(np.float16).tobytes(), todo[i][1]))
+    tok, embed = encoder()
+    passages = digest.build({n: digest.units(t, b, comments[n]) for n, t, b, _ in todo}, tok, embed)
+    V = unit(embed([f"{t}\n{b[:1500]}" for _, t, b, _ in todo]) + embed([passages[n] for n, *_ in todo]))
+    for (n, *_, h), v in zip(todo, V):
+        db.execute("insert or replace into emb(number, vec, hash) values(?,?,?)", (n, v.astype(np.float16).tobytes(), h))
     db.commit()
 
 

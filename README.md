@@ -12,8 +12,8 @@ The steps `run.py` runs, each rerunnable on its own:
 ```bash
 R=data/numpy__numpy/repo.db
 python triageflow.py numpy/numpy       # all issues/PRs + comments + GitHub's own links: PR closes issue, duplicate of, sub-issue (GitHub API; token from `gh auth token`); reruns sync only what changed
-python analyze.py $R                   # embed new items (bge-small, fp16); categories once (--init to redo); semantic links; PR status of open issues; duplicate candidates
-python suggest.py $R                   # labels for open items that lack them, by votes of the 5 nearest labeled items and linked items (any repo)
+python analyze.py $R                   # embed new or changed threads (bge-small, fp16; title+description averaged with an extractive digest of the comments); categories once (--init to redo); semantic links; PR status of open issues; duplicate candidates
+python suggest.py $R                   # labels for open items that lack them, by kNN over the 10 nearest labeled items (type) and votes of the 5 nearest and linked items (components) (any repo)
 python report.py $R                    # proposals with confidence -> report.md + actions.sh (gh commands, all commented out)
 python build_html.py $R                # -> data/numpy__numpy/browse.html: filters, list of open items, details with a timeline
 datasette $R                           # browse / SQL / full-text search

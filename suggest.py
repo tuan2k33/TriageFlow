@@ -18,8 +18,8 @@ import argparse, collections, json, random, re, sqlite3
 import numpy as np
 
 AXES = {"type": r"^(0[0-7]|17|23|33) - ", "component": r"^component:"}  # type regex fits numpy's numbered scheme
-K = 5  # measured: same recall as 15 at a lower threshold, and closer to the item when labels are missing
-KC, MIN_VOTES = 5, 2  # component vote; measured on numpy: finds 71%, ~34% of items without a component get one
+K = 10  # numpy, at confidence >= 0.5: K=3 0.85 coverage / 0.84 precision, 5 0.82/0.86, 10 0.79/0.88, 15+ no better
+KC, MIN_VOTES = 5, 2  # component vote; numpy: finds 73%, 36% of items without a component get one. KC=7 m=3 or KC=10 m=3 lie on the same curve
 VAGUE = re.compile(r"(?i):\s*other$")  # "component: Other" says nothing; never suggested
 MIN_LABEL_PRECISION, MIN_LABEL_TRIES = 0.5, 10  # other repos: a label is suggested only if the hidden-label test got it right this often
 
