@@ -6,6 +6,7 @@ then closed ones by most recently updated. Re-summarizes an item only when its c
 usage: python summarize.py data/<owner>__<name>/repo.db [--max-calls 500] [--min-comments 2] [--only-open]
 """
 import argparse, json, os, re, sqlite3, time
+from concurrent.futures import ThreadPoolExecutor
 import importlib.util
 
 spec = importlib.util.spec_from_file_location("suggest", os.path.join(os.path.dirname(os.path.abspath(__file__)), "suggest.py"))
@@ -13,7 +14,8 @@ sg = importlib.util.module_from_spec(spec); spec.loader.exec_module(sg)
 
 STATUS = ("resolved", "agreed_plan", "disagreement", "waiting", "abandoned", "unclear")
 MAINT = {"OWNER", "MEMBER", "COLLABORATOR"}
-PER_CALL_CHARS = 20000
+PER_CALL_CHARS = 30000
+WORKERS = 3
 
 
 def thread_text(item, comments):
@@ -61,38 +63,41 @@ def main():
            and not exists (select 1 from summaries s where s.number=i.number and s.n_comments=n)
         order by (i.state='open') desc, i.updated_at desc""", (a.min_comments,)).fetchall()
     print(f"{len(todo)} discussions to summarize (min {a.min_comments} human comments)", flush=True)
-    calls = done = 0
-    batch, size = [], 0
 
-    def flush():
-        nonlocal calls, done, batch, size
-        if not batch:
-            return
-        res = ask([t for _, _, t in batch], key)
-        for n, nc, _ in batch:
-            if n in res:
-                db.execute("insert or replace into summaries values(?,?,?,?,?)", (n, res[n][0], res[n][1], nc, sg.MODEL))
-                done += 1
-        db.commit()
-        calls += 1
-        print(f"  call {calls}: {done} summarized", flush=True)
-        batch, size = [], 0
-        time.sleep(3.5)
-
+    batches, batch, size = [], [], 0
     for row in todo:
         n, nc = row[0], row[7]
         cs = db.execute("select author, assoc, body from comments where number=? and bot=0 and kind='comment' order by created_at", (n,)).fetchall()
         t = thread_text(row[:7], cs)
-        if size + len(t) > PER_CALL_CHARS:
-            flush()
-            if calls >= a.max_calls:
+        if batch and size + len(t) > PER_CALL_CHARS:
+            batches.append(batch)
+            batch, size = [], 0
+            if len(batches) >= a.max_calls:
                 break
         batch.append((n, nc, t))
         size += len(t)
-    if calls < a.max_calls:
-        flush()
-    left = len(todo) - done
-    print(f"done: {done} summarized in {calls} calls; {max(0, left)} left (rerun to continue)")
+    if batch and len(batches) < a.max_calls:
+        batches.append(batch)
+
+    def run(b):
+        time.sleep(3.5)  # stay well under the free tier's 20 requests/minute with WORKERS in flight
+        try:
+            return b, ask([t for _, _, t in b], key)
+        except Exception as e:  # one bad answer should not stop the others; those items are retried next run
+            print(f"  batch failed: {str(e)[:100]}", flush=True)
+            return b, {}
+
+    calls = done = 0
+    with ThreadPoolExecutor(WORKERS) as ex:  # LLM calls in parallel, writes stay in this thread
+        for b, res in ex.map(run, batches):
+            for n, nc, _ in b:
+                if n in res:
+                    db.execute("insert or replace into summaries values(?,?,?,?,?)", (n, res[n][0], res[n][1], nc, sg.MODEL))
+                    done += 1
+            db.commit()
+            calls += 1
+            print(f"  call {calls}/{len(batches)}: {done} summarized", flush=True)
+    print(f"done: {done} summarized in {calls} calls; {len(todo) - done} left (rerun to continue)")
 
 
 if __name__ == "__main__":
