@@ -32,6 +32,9 @@ def main(path):
     nums = [r[0] for r in rows]
     texts = [f"{r[1]}\n{r[2][:1500]}" for r in rows]
     x = embed(texts)
+    db.execute("drop table if exists emb")
+    db.execute("create table emb(number integer primary key, vec blob)")
+    db.executemany("insert into emb values(?,?)", [(n, v.astype(np.float16).tobytes()) for n, v in zip(nums, x)])
 
     z = PCA(n_components=min(50, len(x) - 1), random_state=0).fit_transform(x)
     k = int(round((len(x) / 2) ** 0.5))
