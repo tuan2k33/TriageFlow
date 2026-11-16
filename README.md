@@ -1,17 +1,19 @@
 # repolens
 
-Crawl open issues and PRs of a GitHub repo (content only, no code) into SQLite, then browse, cluster and graph them.
+Crawl all issues and PRs of a GitHub repo (open and closed, with comments, content only, no code) into SQLite, then browse, cluster, label-suggest and graph the open ones.
 
 ```bash
 R=data/numpy__numpy/repo.db
-python repolens.py numpy/numpy --csv   # crawl -> $R (+ csv); rerun to sync only what changed
-python analyze.py $R                   # embed (bge-small, fp16), KMeans topics, t-SNE 2D -> table `topics`
+python repolens.py numpy/numpy         # all issues/PRs + all comments + official PR->issue links; reruns sync only what changed
+python analyze.py $R                   # embed every item once (bge-small, fp16); topics + 2D map for open items
+python suggest.py $R                   # suggest existing type/component labels for unlabeled open items (kNN over all labeled items, then free LLM)
+python resolve.py $R                   # open issues that mention a merged PR: close / needs_decision / none (free LLM)
+python summarize.py $R --max-calls 500 # one short summary per discussion (free LLM, ~1000 req/day, resumable, open first)
 python build_html.py $R                # -> data/numpy__numpy/graph.html (open in a browser)
-python suggest.py $R                   # suggest existing labels (type + component) for unlabeled items: kNN, then OpenRouter free LLM -> table `suggested`
 datasette $R                           # browse / SQL / full-text search
 ```
 
-Needs `gh` logged in. Tables: `items`, `comments`, `links` (closes/mentions), `topics`, `suggested`, `fts`.
+Needs `gh` logged in. Tables: `items` (all states), `comments`, `links` (closes_official / closes / mentions), `emb`, `topics` (open only), `suggested`, `resolve_hints`, `summaries`, `fts`.
 
 ## AI Disclosure
 

@@ -1,4 +1,5 @@
-"""Embed items, cluster by topic, project to 2D. Writes table `topics` into the repo db.
+"""Embed all items (open + closed, once), cluster open ones by topic, project to 2D.
+Writes tables `emb` (all items) and `topics` (open items) into the repo db.
 
 usage: python analyze.py data/<owner>__<name>/repo.db
 """
@@ -27,14 +28,25 @@ def embed(texts):
 
 
 def main(path):
-    db = sqlite3.connect(path)
-    rows = db.execute("select number, title, coalesce(body,'') from items order by number").fetchall()
+    db = sqlite3.connect(path, timeout=120)
+    db.execute("create table if not exists emb(number integer primary key, vec blob)")
+
+    # embed every item once (open and closed), later runs only embed what is new
+    todo = db.execute("select number, title, coalesce(body,'') from items where number not in (select number from emb) order by number").fetchall()
+    print(f"embedding {len(todo)} new items", flush=True)
+    if todo:
+        texts = [f"{t}\n{b[:1500]}" for _, t, b in todo]
+        order = sorted(range(len(texts)), key=lambda i: len(texts[i]))  # similar lengths per batch = less padding
+        vecs = embed([texts[i] for i in order])
+        for j, i in enumerate(order):
+            db.execute("insert or replace into emb values(?,?)", (todo[i][0], vecs[j].astype(np.float16).tobytes()))
+        db.commit()
+
+    # topics and 2D map only for open items
+    rows = db.execute("select i.number, i.title, e.vec from items i join emb e using(number) where i.state='open' order by i.number").fetchall()
     nums = [r[0] for r in rows]
-    texts = [f"{r[1]}\n{r[2][:1500]}" for r in rows]
-    x = embed(texts)
-    db.execute("drop table if exists emb")
-    db.execute("create table emb(number integer primary key, vec blob)")
-    db.executemany("insert into emb values(?,?)", [(n, v.astype(np.float16).tobytes()) for n, v in zip(nums, x)])
+    x = np.stack([np.frombuffer(r[2], dtype=np.float16) for r in rows]).astype(np.float32)
+    x /= np.linalg.norm(x, axis=1, keepdims=True)
 
     z = PCA(n_components=min(50, len(x) - 1), random_state=0).fit_transform(x)
     k = int(round((len(x) / 2) ** 0.5))
@@ -42,23 +54,21 @@ def main(path):
     xy = TSNE(n_components=2, perplexity=30, metric="cosine", init="pca", random_state=0).fit_transform(x)
 
     # cluster names: top tf-idf terms of titles, per cluster
-    ids = sorted(set(lab) - {-1})
+    ids = sorted(set(lab))
     docs = [" ".join(rows[i][1] for i in np.where(lab == c)[0]) for c in ids]
-    names = {-1: "unclustered"}  # kept for -1, unused with kmeans
-    if ids:
-        tf = TfidfVectorizer(stop_words="english", token_pattern=r"[A-Za-z_][A-Za-z0-9_.]{2,}", sublinear_tf=True, max_df=0.25)
-        m = tf.fit_transform(docs)
-        vocab = np.array(tf.get_feature_names_out())
-        for k, c in enumerate(ids):
-            row = m[k].toarray()[0]
-            names[c] = ", ".join(vocab[row.argsort()[::-1][:3]])
+    names = {}
+    tf = TfidfVectorizer(stop_words="english", token_pattern=r"[A-Za-z_][A-Za-z0-9_.]{2,}", sublinear_tf=True, max_df=0.25)
+    m = tf.fit_transform(docs)
+    vocab = np.array(tf.get_feature_names_out())
+    for j, c in enumerate(ids):
+        names[c] = ", ".join(vocab[m[j].toarray()[0].argsort()[::-1][:3]])
 
     db.execute("drop table if exists topics")
     db.execute("create table topics(number integer primary key, cluster integer, label text, x real, y real)")
     db.executemany("insert into topics values(?,?,?,?,?)",
                    [(n, int(l), names[int(l)], float(p[0]), float(p[1])) for n, l, p in zip(nums, lab, xy)])
     db.commit()
-    print(f"{len(ids)} clusters, {int((lab == -1).sum())}/{len(lab)} unclustered")
+    print(f"{len(ids)} clusters over {len(nums)} open items")
     for c in ids:
         print(f"  [{c}] {int((lab == c).sum()):4d}  {names[c]}")
 
