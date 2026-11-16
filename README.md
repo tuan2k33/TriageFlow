@@ -3,6 +3,12 @@
 Crawl all issues and PRs of a GitHub repo (open and closed, with conversation comments, content only, no code) into SQLite, then sort them into categories, suggest labels from the repo's existing ones and browse the open ones on a map. Everything after the crawl is local data analysis and classic machine learning (a small embedding model, KMeans, kNN votes); no LLM anywhere.
 
 ```bash
+python run.py https://github.com/numpy/numpy   # everything below in one go -> data/numpy__numpy/{repo.db, graph.html, report.md, actions.sh}
+```
+
+The steps it runs, each rerunnable on its own:
+
+```bash
 R=data/numpy__numpy/repo.db
 python triageflow.py numpy/numpy       # all issues/PRs + comments + GitHub's own links: PR closes issue, duplicate of, sub-issue (GitHub API; token from `gh auth token`); reruns sync only what changed
 python analyze.py $R                   # embed new items (bge-small, fp16); categories once (--init to redo); semantic links; PR status of open issues; duplicate candidates

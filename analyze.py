@@ -258,7 +258,9 @@ def init(db, k):
     names = name_categories(db, members)
 
     op = [i for i in range(n) if states[i] == "open"]
-    xy = TSNE(n_components=2, perplexity=30, metric="cosine", init="pca", random_state=0).fit_transform(E[op])
+    perplexity = min(30, (len(op) - 1) / 3)  # t-SNE needs perplexity < number of points: small repos have few open items
+    xy = (TSNE(n_components=2, perplexity=perplexity, metric="cosine", init="pca", random_state=0).fit_transform(E[op])
+          if len(op) > 4 else np.random.default_rng(0).normal(size=(len(op), 2)))
     pos = {nums[i]: p for i, p in zip(op, xy)}
 
     db.execute("drop table if exists categories")
