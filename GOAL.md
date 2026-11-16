@@ -13,9 +13,9 @@ Xây dựng công cụ phân tích, điều phối và dọn dẹp kho GitHub d�
 
 ## 2. Luồng hoạt động (Pipeline)
 1. **Input:** link repo GitHub (hiện chạy bằng lệnh).
-2. **Crawl & Storage** ✅ Một lần crawl lấy mọi Issue/PR (mở và đóng), mọi comment, nhãn, trạng thái (`state_reason`, `merged`) vào SQLite. Liên kết "PR nào đóng issue nào" lấy từ GraphQL của GitHub. Chạy lại chỉ lấy phần thay đổi.
+2. **Crawl & Storage** ✅ Một lần crawl lấy mọi Issue/PR (mở và đóng), mọi comment hội thoại (comment gắn vào dòng code của PR mặc định bỏ qua), nhãn, trạng thái (`state_reason`, `merged`) vào SQLite. Liên kết "PR nào đóng issue nào" lấy từ GraphQL của GitHub. Chạy lại chỉ lấy phần thay đổi.
 3. **Vectorize & Graph** 🟡 Embedding cho mọi mục (mở và đóng) ✅. Graph liên kết cứng ✅, liên kết mềm (độ tương đồng ngữ nghĩa) ⬜.
-4. **Phân tích:** gợi ý nhãn ✅, phát hiện issue mở đã được PR merge giải quyết 🟡, tóm tắt thảo luận ✅, gom trùng / PR cạnh tranh / tồn đọng ⬜.
+4. **Phân tích:** gợi ý nhãn ✅, phát hiện issue mở đã được PR merge giải quyết 🟡, tóm tắt thảo luận 🟡, gom trùng / PR cạnh tranh / tồn đọng ⬜.
 5. **Output & Action:** trang tra cứu một file HTML (bản đồ chủ đề, lọc nhãn, chi tiết từng mục) ✅; dashboard, danh sách đề xuất dọn dẹp, xuất script ⬜.
 
 ---
@@ -45,7 +45,7 @@ Chỉ **dùng lại nhãn đã có của repo** để gợi ý cho Issue/PR chư
 * ⬜ **Tự nhận diện trục nhãn của repo bất kỳ** (hiện mẫu trục đang viết theo nhãn của numpy). Thuộc Phase 4.
 
 ### 3.4. Tóm tắt thảo luận (Discussion Summary)
-* ✅ Mỗi thảo luận (từ 2 bình luận của người thật) nén thành một đoạn ngắn: vấn đề, điều đã thống nhất hoặc bất đồng, kết cục, kèm trạng thái (`resolved / agreed_plan / disagreement / waiting / abandoned / unclear`). Làm mục mở trước, tiếp tục được qua nhiều ngày vì hạn mức LLM free.
+* 🟡 (code xong, mới thử trên tqdm, chưa chạy cho numpy) Mỗi thảo luận (từ 2 bình luận của người thật) nén thành một đoạn ngắn: vấn đề, điều đã thống nhất hoặc bất đồng, kết cục, kèm trạng thái (`resolved / agreed_plan / disagreement / waiting / abandoned / unclear`). Làm mục mở trước, tiếp tục được qua nhiều ngày vì hạn mức LLM free.
 
 ### 3.5. Bức tranh toàn cảnh (Triage Health Dashboard) ⬜
 * **Chỉ số phân mảnh:** số Issue độc lập so với tổng số đang mở (VD: *500 Open Issues thực chất là 310 vấn đề*). Có được ngay khi gom trùng xong.
@@ -68,7 +68,8 @@ Chỉ **dùng lại nhãn đã có của repo** để gợi ý cho Issue/PR chư
 - [x] **Phase 1 (Core Data & Search):** crawler → SQLite → embedding → tìm kiếm và trang xem (bản đồ chủ đề, lọc nhiều nhãn, graph liên kết cứng).
   - [ ] Còn thiếu: cạnh ngữ nghĩa trong graph, dòng thời gian của cụm.
 - [ ] **Phase 2 (Smart Cleanup):**
-  - [x] Tóm tắt thảo luận, zombie theo liên kết/nhắc số.
+  - [x] Zombie theo liên kết/nhắc số.
+  - [ ] Tóm tắt thảo luận: code xong, chưa chạy cho numpy.
   - [ ] Gom trùng lặp + Master Issue (hiệu chỉnh ngưỡng bằng issue `duplicate` thật), zombie theo ngữ nghĩa, PR cạnh tranh, tồn đọng.
   - [ ] Dashboard sức khỏe triage.
 - [ ] **Phase 3 (Labeling & Action):**
