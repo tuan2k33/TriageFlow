@@ -1,12 +1,12 @@
 """Crawl all issues/PRs (open + closed) of a GitHub repo with their comments into SQLite. Content only, no code.
 
-usage: python repolens.py <repo url | owner/name> [--csv] [--full] [--no-comments]
+usage: python repolens.py <repo url | owner/name> [--csv] [--full] [--no-comments] [--review-comments]
 Reruns are incremental (GitHub `since` = updated_at) and resume after an interruption or rate limit.
 
 Stages and request cost (100 rows per request):
   items     issues?state=all                   ~ N/100
   comments  issues/comments (whole repo)       ~ C/100   (issue + PR conversation comments)
-  reviews   pulls/comments  (whole repo)       ~ R/100   (inline review comments, diff hunk dropped)
+  reviews   pulls/comments  (whole repo)       ~ R/30    (inline review comments; only with --review-comments)
   links     GraphQL closingIssuesReferences    ~ P/100   (PR -> issue it really closes)
 """
 import argparse, csv, json, re, sqlite3, subprocess, sys, time
@@ -60,16 +60,22 @@ def wait_budget(need=0):
         time.sleep(wait)
 
 
-def stream(db, path, jq, meta_key, insert, label, full):
+def stream(db, path, jq, meta_key, insert, label, full, per_page=100):
     """Stream a paginated listing sorted by updated asc, resumable via meta[meta_key]."""
-    total = 0
+    total, failures = 0, 0
     while True:
         since = None if full else (db.execute("select v from meta where k=?", (meta_key,)).fetchone() or [None])[0]
-        q = f"{path}{'&' if '?' in path else '?'}per_page=100&sort=updated&direction=asc" + (f"&since={since}" if since else "")
+        q = f"{path}{'&' if '?' in path else '?'}per_page={per_page}&sort=updated&direction=asc" + (f"&since={since}" if since else "")
         p = subprocess.Popen(["gh", "api", "--paginate", q, "--jq", jq], stdout=subprocess.PIPE, text=True)
-        n, last = 0, None
+        n, last, bad = 0, None, False
         for line in p.stdout:
-            o = json.loads(line)
+            try:
+                o = json.loads(line)
+                o["updated_at"]
+            except (ValueError, KeyError, TypeError):  # gh prints the error body on a 5xx mid-stream
+                bad = True
+                p.terminate()
+                break
             insert(o)
             n += 1
             total += 1
@@ -78,18 +84,25 @@ def stream(db, path, jq, meta_key, insert, label, full):
                 db.execute("insert or replace into meta values(?,?)", (meta_key, last))
                 db.commit()
                 print(f"  {label}: {total}", flush=True)
-        if p.wait() == 0:
-            if last:
-                db.execute("insert or replace into meta values(?,?)", (meta_key, last))
-            db.commit()
-            print(f"  {label}: {total} fetched", flush=True)
-            return total
+        ok = p.wait() == 0 and not bad
         if last:
             db.execute("insert or replace into meta values(?,?)", (meta_key, last))
         db.commit()
-        if rate()[0] >= 50:
+        if ok and n >= 300 * per_page - 100:  # GitHub stops a listing at 300 pages: continue from the last updated_at
+            print(f"  {label}: {total} (page cap reached, continuing)", flush=True)
+            full = False
+            continue
+        if ok:
+            print(f"  {label}: {total} fetched", flush=True)
+            return total
+        failures += 1
+        if rate()[0] < 50:
+            wait_budget()
+        elif failures > 6:
             raise RuntimeError(f"gh failed on {path} (progress kept, rerun to resume)")
-        wait_budget()
+        else:
+            print(f"  gh error on {label}, retry {failures}/6 in {30 * failures}s", flush=True)
+            time.sleep(30 * failures)
         full = False
 
 
@@ -102,8 +115,13 @@ def official_links(db, owner, name):
     cursor, newest, n, pages = None, None, 0, 0
     while True:
         cmd = ["gh", "api", "graphql", "-f", f"query={q}", "-f", f"o={owner}", "-f", f"n={name}"] + (["-f", f"c={cursor}"] if cursor else [])
-        r = subprocess.run(cmd, capture_output=True, text=True)
-        if r.returncode:
+        for attempt in range(6):
+            r = subprocess.run(cmd, capture_output=True, text=True)
+            if r.returncode == 0:
+                break
+            print(f"  graphql error ({r.stderr.strip()[:80]}), retry {attempt + 1}/6", flush=True)
+            time.sleep(15 * (attempt + 1))
+        else:
             raise RuntimeError(r.stderr.strip())
         prs = json.loads(r.stdout)["data"]["repository"]["pullRequests"]
         pages += 1
@@ -164,6 +182,7 @@ def main():
     ap.add_argument("--csv", action="store_true", help="also export items/comments/links csv")
     ap.add_argument("--full", action="store_true", help="ignore previous sync, refetch everything")
     ap.add_argument("--no-comments", action="store_true", help="skip the comment stages")
+    ap.add_argument("--review-comments", action="store_true", help="also fetch inline PR review comments (many requests, low value, off by default)")
     a = ap.parse_args()
     owner, name = parse_repo(a.repo)
     outdir = Path("data") / f"{owner}__{name}"
@@ -192,7 +211,11 @@ def main():
         print("comments:", flush=True)
         wait_budget(300)
         stream(db, f"{base}/issues/comments", COMMENT_JQ, "comments_since", put_comment("comment"), "comments", a.full)
-        stream(db, f"{base}/pulls/comments", REVIEW_JQ, "reviews_since", put_comment("review_comment"), "review comments", a.full)
+        if a.review_comments:
+            try:  # this endpoint often answers 502 on big repos; smaller pages help
+                stream(db, f"{base}/pulls/comments", REVIEW_JQ, "reviews_since", put_comment("review_comment"), "review comments", a.full, per_page=30)
+            except RuntimeError as e:
+                print(f"  WARNING: review comments incomplete ({e}); rerun to continue", flush=True)
     print("links:", flush=True)
     wait_budget(200)
     official_links(db, owner, name)
