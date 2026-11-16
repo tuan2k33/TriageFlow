@@ -39,7 +39,7 @@ Khi chọn một Issue/PR, hiển thị toàn bộ mạng lưới liên quan:
 ### 3.3. Gợi ý Label từ nhãn sẵn có (Smart Labeling)
 Chỉ **dùng lại nhãn đã có của repo** để gợi ý cho Issue/PR chưa có nhãn. Không tạo nhãn mới.
 * ✅ **Dựa trên lịch sử:** láng giềng gần nhất (kNN trên embedding) của các mục đã có nhãn, tính cả mục đã đóng nên tập học lớn (hàng chục nghìn mục).
-* ✅ **Thành phần bằng bỏ phiếu:** kNN + nhãn của mục có liên kết (liên kết chính thức nặng nhất) + từ khoá tiêu đề và mô tả, đo trên mẫu cân bằng có và không có thành phần. Ngưỡng chọn theo độ chính xác đo được ≥ 0,7 (số đo là cận dưới, vì nhiều ca "sai" là nhãn bị thiếu); mục đã là Documentation thì không gợi ý `component: documentation`.
+* ✅ **Thành phần bằng đếm phiếu:** 7 mục có nhãn giống nhất, mỗi mục một phiếu cho mỗi thành phần của nó, cộng phiếu từ mục có liên kết (liên kết chính thức nặng nhất); thành phần nào ≥ 3 phiếu thì gợi ý, có thể nhiều hơn một. Đo trên mẫu cân bằng có và không có thành phần: tìm được 63%, khoảng 24% mục không có thành phần vẫn bị gợi ý (chấm tay phần lớn là nhãn bị thiếu, nên tiêu chí "có liên quan" cao hơn nhiều số đo khớp đúng). Không gợi ý `component: Other`, không gợi ý cho PR của bot, mục đã là Documentation thì không gợi ý `component: documentation`.
 * ✅ **Hai trục gợi ý:** loại (Bug, Enhancement, Documentation...) và thành phần (`component: ...`). **Không** gợi ý nhãn quy trình (Close?, Needs decision, triaged...) vì đó là phán đoán của maintainer.
 * (để sau) **LLM chọn trong danh sách cho phép:** đã có code (`suggest.py --llm`), không dùng trong flow chính.
 * ✅ **Gợi ý luôn tách khỏi nhãn thật** (bảng riêng, hiển thị nét đứt), không ghi đè.
@@ -76,7 +76,7 @@ Chỉ **dùng lại nhãn đã có của repo** để gợi ý cho Issue/PR chư
   - [ ] Gom trùng lặp + Master Issue (hiệu chỉnh ngưỡng bằng issue `duplicate` thật), zombie theo ngữ nghĩa, PR cạnh tranh, tồn đọng.
   - [ ] Dashboard sức khỏe triage.
 - [ ] **Phase 3 (Labeling & Action):**
-  - [x] Gợi ý nhãn: loại bằng kNN, thành phần bằng bỏ phiếu (kNN + liên kết + từ khoá), không LLM.
+  - [x] Gợi ý nhãn: loại bằng kNN, thành phần bằng đếm phiếu (7 láng giềng + liên kết, ≥ 3 phiếu), không LLM.
   - [ ] Điểm tin cậy thống nhất cho mọi loại gợi ý.
   - [ ] Xuất báo cáo Markdown và script (`gh issue close ... --comment ...`, `gh issue edit --add-label`) để người dùng duyệt rồi chạy.
 - [ ] **Phase 4 (Mục tiêu cuối, chưa làm bây giờ):** zero-setup (dán URL là chạy), tự nhận diện trục nhãn của repo bất kỳ, giao diện đầy đủ, nút thực thi trực tiếp qua GitHub Token.

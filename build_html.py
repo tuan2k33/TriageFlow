@@ -83,7 +83,7 @@ function pick(mx,my){let b=-1,bd=100;for(let i=0;i<items.length;i++){if(!visible
 function esc(t){return t.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
 function show(i){sel=i;draw();const d=items[i];const rel=nb[i].map(([j,k,out])=>`<span class="rel" data-i="${j}">${out?'':'← '}${k==='closes'?(out?'closes':'closed by'):(out?'mentions':'mentioned by')} #${items[j].n} ${esc(items[j].t)}</span>`).join('');
  detail.innerHTML=`<h2>${esc(d.t)}</h2><div class="meta">${d.k==='pr'?'PR':'Issue'} <a href="${d.u}" target="_blank">#${d.n}</a> · ${esc(d.a||'')} · ${d.cm} comments · updated ${d.up.slice(0,10)}</div>
- <div>${d.ls.map(l=>`<span class="tag">${esc(l)}</span>`).join('')}${d.sg.map(([l,p,src])=>`<span class="tag sug" title="suggested by ${src}${p?' ('+p.toFixed(2)+' kNN)':''}">${esc(l)} ?</span>`).join('')}<span class="tag" style="border-color:${col(d.c)}">${esc(D.names[d.c])}</span></div>
+ <div>${d.ls.map(l=>`<span class="tag">${esc(l)}</span>`).join('')}${d.sg.map(([l,p,src])=>`<span class="tag sug" title="suggested by ${src}${src==='vote'?' ('+p+' votes)':p?' ('+p.toFixed(2)+' kNN)':''}">${esc(l)} ?</span>`).join('')}<span class="tag" style="border-color:${col(d.c)}">${esc(D.names[d.c])}</span></div>
  ${d.rh?`<div class="hint"><b>${d.rh[0]==='close'?'Close?':'Needs decision?'}</b> ${esc(d.rh[1])}<br>${d.rh[2].map(n=>`<a href="${D.repo}/pull/${n}" target="_blank">#${n}</a>`).join(' ')} <span style="color:var(--mute)">(suggestion)</span></div>`:''}${d.sm?`<div class="sum"><b>Discussion</b> <span class="tag">${esc(d.sm[1])}</span><br>${esc(d.sm[0])}</div>`:''}${d.si?`<h3 style="font-size:12px;color:var(--mute);margin:10px 0 2px">Similar</h3>`+d.si.map(([o,s,t,st])=>{const j=byNum.get(o),lab=`${Math.round(s*100)}% #${o} [${st}] ${esc(t)}`;return j!==undefined?`<span class="rel" data-i="${j}">${lab}</span>`:`<a class="rel" href="${D.repo}/issues/${o}" target="_blank">${lab}</a>`}).join(''):''}${rel?`<h3 style="font-size:12px;color:var(--mute);margin:10px 0 2px">Links</h3>${rel}`:''}<pre>${esc(d.b)}</pre>`;
  detail.querySelectorAll('.rel[data-i]').forEach(e=>e.onclick=()=>{const j=+e.dataset.i;focus(j);show(j)})}
 function focus(j){const [x,y]=[items[j].x,items[j].y];tx=W/2-x*s;ty=H/2-y*s;draw()}
@@ -138,9 +138,9 @@ def main(path, with_llm=False):
     if db.execute("select 1 from sqlite_master where name='suggested'").fetchone():
         best = {}
         for n, ax, lab, sc, src in db.execute("select number,axis,label,score,source from suggested where source != 'llm' or ? order by source='llm'", (with_llm,)):
-            best[(n, ax)] = [lab, round(sc or 0, 2), src]
-        for (n, ax), v in best.items():
-            sg.setdefault(n, []).append(v)
+            best[(n, ax, lab) if src == "vote" else (n, ax)] = [lab, round(sc or 0, 2), src]
+        for key, v in best.items():
+            sg.setdefault(key[0], []).append(v)
     sm = {}
     if with_llm and db.execute("select 1 from sqlite_master where name='summaries'").fetchone():
         sm = {n: [t, st] for n, t, st in db.execute("select number,summary,status from summaries")}

@@ -1,9 +1,9 @@
 """Suggest existing labels (type + component axes) for unlabeled open items. No LLM by default.
 
 type:       kNN vote over embeddings of already-labeled items (open + closed).
-component:  weighted vote of three sources, each measured on a balanced held-out sample (items with and without a
-            component): kNN, labels of linked items (GitHub's closing links weigh most), and keywords of the title and
-            description (naive Bayes learned from labeled items).
+component:  vote count: each of the 7 most similar labeled items gives one vote to each of its components, linked
+            items add theirs (GitHub's closing links weigh most); every component with >= 3 votes is suggested.
+            Measured on a balanced held-out sample (items with and without a component).
 --llm:      optionally let an OpenRouter free model pick from the allowed labels with kNN hints (kept for later).
 Written to table `suggested`; nothing touches the real labels.
 
@@ -15,6 +15,8 @@ import numpy as np
 AXES = {"type": r"^(0[0-7]|17|23|33) - ", "component": r"^component:"}  # type regex fits numpy's numbered scheme
 MODEL = os.environ.get("LLM_MODEL", "nvidia/nemotron-3-ultra-550b-a55b:free")
 K = 5  # measured: same recall as 15 at a lower threshold, and closer to the item when labels are missing
+KC, MIN_VOTES = 7, 3  # component vote; measured on numpy: finds 63%, ~24% of items without a component get one
+VAGUE = re.compile(r"(?i):\s*other$")  # "component: Other" says nothing; never suggested
 BATCH = 20
 
 
@@ -54,46 +56,11 @@ def knn_probs(E, ax_all, allowed_ax, has_label, queries):
     return out
 
 
-TOKEN = re.compile(r"[a-z_][a-z0-9_.]+")
 LINK_W = {"closes_official": 3.0, "closes": 2.0, "mentions": 1.0}
-COMBOS = {"knn": (1, 0, 0), "links": (0, 1, 0), "keywords": (0, 0, 1), "knn+keywords": (1, 0, 1),
-          "all 1:1:1": (1, 1, 1), "all 1:2:1": (1, 2, 1), "all 2:1:1": (2, 1, 1), "all 1:1:2": (1, 1, 2)}
-
-
-def tokens(title, body):
-    return set(TOKEN.findall((title or "").lower())) | set(TOKEN.findall((body or "")[:1500].lower()))
-
-
-class KeywordNB:
-    """Binary naive Bayes over title/description tokens; classes are component labels and None."""
-
-    def fit(self, docs, ys):
-        self.prior = collections.Counter()
-        self.cnt = collections.defaultdict(collections.Counter)
-        df = collections.Counter()
-        for d, labs in zip(docs, ys):
-            df.update(d)
-            for y in labs or {None}:
-                self.prior[y] += 1
-                self.cnt[y].update(d)
-        self.vocab = {t for t, c in df.items() if c >= 3}
-        self.total = sum(self.prior.values())
-        V = len(self.vocab)
-        self.denom = {y: sum(c for t, c in self.cnt[y].items() if t in self.vocab) + V for y in self.prior}  # tokens of class + |V|
-        return self
-
-    def proba(self, d):
-        d = d & self.vocab
-        s = {y: np.log(py / self.total) + sum(np.log((self.cnt[y][t] + 1) / self.denom[y]) for t in d) for y, py in self.prior.items()}
-        m = max(s.values())
-        T = max(1.0, len(d) ** 0.5)  # NB is overconfident on long texts: soften by the number of tokens
-        e = {y: np.exp((v - m) / T) for y, v in s.items()}
-        z = sum(e.values())
-        return {y: v / z for y, v in e.items()}
 
 
 def link_votes(db, nums, truth_c):
-    """{index: {label: weight share}} from the component labels of linked items (both directions)."""
+    """{index: {label: votes}} from the component labels of linked items (both directions)."""
     idx = {n: i for i, n in enumerate(nums)}
     acc = collections.defaultdict(lambda: collections.defaultdict(float))
     for s, d, k in db.execute("select src, dst, kind from links"):
@@ -104,15 +71,21 @@ def link_votes(db, nums, truth_c):
     return acc
 
 
-def combine(w, pk, pl, pn):
-    """Weighted mix of the three distributions; a source with no evidence for this item is left out."""
-    parts = [(w[0], pk), (w[1], {l: v / sum(pl.values()) for l, v in pl.items()} if pl else None), (w[2], pn)]
-    parts = [(a, p) for a, p in parts if a and p]
-    z = sum(a for a, _ in parts)
-    out = collections.defaultdict(float)
-    for a, p in parts:
-        for l, v in p.items():
-            out[l] += a * v / z
+def component_votes(E, truth_c, has_label, queries, links):
+    """{query index: {label: votes}}: one vote from each of the KC most similar labeled items carrying the label
+    (an item never votes for itself), plus the votes of linked items."""
+    pop = np.where(has_label)[0]
+    P = E[pop]
+    out = {}
+    for c in range(0, len(queries), 512):
+        q = queries[c:c + 512]
+        S = E[q] @ P.T
+        for r, i in enumerate(q):
+            S[r, pop == i] = -9
+            v = collections.Counter(l for j in np.argpartition(-S[r], KC)[:KC] for l in truth_c[pop[j]])
+            for l, w in links.get(i, {}).items():
+                v[l] += w
+            out[i] = dict(v)
     return out
 
 
@@ -163,9 +136,6 @@ def main():
     ap.add_argument("--llm", action="store_true", help="also ask the free LLM (off by default)")
     ap.add_argument("--eval-only", action="store_true", help="with --llm: only measure LLM vs kNN, do not touch the suggested table")
     ap.add_argument("--eval-n", type=int, default=60)
-    ap.add_argument("--min-precision", type=float, default=0.7,
-                    help="component votes are kept only above the threshold reaching this measured precision; the measure is a "
-                         "lower bound, since items counted as wrong are often items whose component label is just missing")
     a = ap.parse_args()
     db = sqlite3.connect(a.db, timeout=120)
     rows, nums, E = load(db)
@@ -174,7 +144,7 @@ def main():
     has_label = [bool(ls) for ls in labels]
     is_open = [r[4] == "open" for r in rows]
     ax_all = {ax: [{l for l in ls if re.search(rx, l)} for ls in labels] for ax, rx in AXES.items()}
-    allowed = {ax: {l for i in range(n) if is_open[i] for l in ax_all[ax][i]} for ax in AXES}  # labels of the current scheme
+    allowed = {ax: {l for i in range(n) if is_open[i] for l in ax_all[ax][i] if not VAGUE.search(l)} for ax in AXES}  # current scheme
     truth = {ax: [ax_all[ax][i] & allowed[ax] for i in range(n)] for ax in AXES}
     if not all(allowed.values()):
         print("this repo's labels do not match the type/component patterns in AXES; nothing to suggest")
@@ -205,36 +175,21 @@ def main():
         hit = sum(p[0] in truth["type"][i] for i, p in pred)
         print(f"    conf>={t:.1f}: coverage {len(pred)/len(e):.2f}  precision {hit/max(1,len(pred)):.2f}")
 
-    # component: three sources, measured on the balanced sample, precision rescaled to the real share of items with a component
-    docs = [tokens(r[1], r[2]) for r in rows]
-    held = set(bal)
-    train = [i for i in range(n) if has_label[i] and i not in held and (truth["component"][i] or not ax_all["component"][i])]
-    nb = KeywordNB().fit([docs[i] for i in train], [truth["component"][i] for i in train])
+    # component: vote count, measured on the balanced sample; tag precision rescaled to the real share of items with a component
     lv = link_votes(db, nums, truth["component"])
-    print(f"component, balanced sample {len(bal)} ({min(600, len(pos))} with /{min(600, len(neg))} without);"
-          f" {base_rate:.0%} of labeled items have one; links available for {sum(1 for i in bal if lv.get(i)) / len(bal):.0%} of the sample")
-    best = None
-    for name, w in COMBOS.items():
-        pred = {}
-        for i in bal:
-            p = combine(w, kn["component"][i], lv.get(i), nb.proba(docs[i]))
-            pred[i] = max(p.items(), key=lambda t: t[1]) if p else (None, 0.0)
-        line = []
-        for t in (0.3, 0.4, 0.5, 0.6, 0.7):
-            sp = [i for i in bal if truth["component"][i] and pred[i][0] is not None and pred[i][1] >= t]
-            tp = sum(pred[i][0] in truth["component"][i] for i in sp) / min(600, len(pos))   # right label, among items with one
-            wrong = (len(sp) / min(600, len(pos))) - tp                                      # wrong label, among items with one
-            fa = sum(1 for i in bal if not ax_all["component"][i] and pred[i][0] is not None and pred[i][1] >= t) / min(600, len(neg))
-            prec = tp * base_rate / max(1e-9, (tp + wrong) * base_rate + fa * (1 - base_rate))
-            line.append(f"t{t}: found {tp:.2f} false-alarm {fa:.2f} precision {prec:.2f}")
-            if prec >= a.min_precision and (best is None or tp > best[0]):
-                best = (tp, name, w, t, prec)
-        print(f"  {name:12} " + " | ".join(line))
-    if best:
-        print(f"  -> using {best[1]} at conf>={best[3]} (finds {best[0]:.0%} of components, precision {best[4]:.2f};"
-              f" a lower bound, many 'false alarms' are missing labels)")
-    else:
-        print(f"  -> no combination reaches precision {a.min_precision}; no component suggestions")
+    cv = component_votes(E, truth["component"], has_label, sorted(set(bal) | set(targets)), lv)
+    bp, bn = [i for i in bal if truth["component"][i]], [i for i in bal if not ax_all["component"][i]]
+    print(f"component vote over {KC} neighbors + links, balanced sample {len(bp)} with / {len(bn)} without;"
+          f" {base_rate:.0%} of labeled items have one (exact match: a lower bound, missing labels count as wrong):")
+    for m in (2, 3, 4):
+        sug = {i: {l for l, v in cv[i].items() if v >= m} for i in bal}
+        right = np.mean([len(sug[i] & truth["component"][i]) for i in bp])
+        tags_p, tags_n = np.mean([len(sug[i]) for i in bp]), np.mean([len(sug[i]) for i in bn])
+        prec = right * base_rate / max(1e-9, tags_p * base_rate + tags_n * (1 - base_rate))
+        print(f"  {'->' if m == MIN_VOTES else '  '} >={m} votes: finds {np.mean([bool(sug[i] & truth['component'][i]) for i in bp]):.2f}"
+              f"  none {np.mean([not sug[i] for i in bp]):.2f}  items without one get one {np.mean([bool(sug[i]) for i in bn]):.2f}"
+              f"  tag precision {prec:.2f}")
+    bots = {r[0] for r in db.execute("select number from items where author like '%[bot]' or author like 'dependabot%'")}
     print(f"targets: {len(targets)} open items")
 
     if not a.eval_only:
@@ -246,13 +201,12 @@ def main():
             if l is not None and p >= 0.5:
                 db.execute("insert into suggested values(?,?,?,?,'knn')", (nums[i], "type", l, float(p)))
                 typ.add(l)
-            if best and not ax_all["component"][i]:
-                pr = combine(best[2], kn["component"][i], lv.get(i), nb.proba(docs[i]))
-                l, p = max(pr.items(), key=lambda t: t[1])
-                if l and "documentation" in l.lower() and any("documentation" in t.lower() for t in typ):
-                    continue  # says the same thing as the type label
-                if l is not None and p >= best[3]:
-                    db.execute("insert into suggested values(?,?,?,?,'vote')", (nums[i], "component", l, float(p)))
+            if ax_all["component"][i] or nums[i] in bots:
+                continue
+            for l, v in cv[i].items():
+                if v < MIN_VOTES or ("documentation" in l.lower() and any("documentation" in t.lower() for t in typ)):
+                    continue  # too few votes, or says the same thing as the type label
+                db.execute("insert into suggested values(?,?,?,?,'vote')", (nums[i], "component", l, float(v)))
         db.commit()
 
     if a.llm:
