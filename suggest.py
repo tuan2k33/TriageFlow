@@ -14,7 +14,7 @@ import numpy as np
 
 AXES = {"type": r"^(0[0-7]|17|23|33) - ", "component": r"^component:"}  # type regex fits numpy's numbered scheme
 MODEL = os.environ.get("LLM_MODEL", "nvidia/nemotron-3-ultra-550b-a55b:free")
-K = 15
+K = 5  # measured: same recall as 15 at a lower threshold, and closer to the item when labels are missing
 BATCH = 20
 
 
@@ -26,7 +26,10 @@ def load(db):
 
 
 def knn_probs(E, ax_all, allowed_ax, has_label, queries):
-    """{query index: {label|None: prob}} from the top-K most similar already-labeled items (open or closed).
+    """{query index: {label|None: score}} from the top-K most similar already-labeled items (open or closed).
+
+    Each label is scored on its own: the weighted share of neighbors that carry it (labels overlap, so scores of
+    one item may add up to more than 1).
 
     ax_all[i]: labels of item i on this axis; allowed_ax: labels of the current scheme (those used by open items).
     A neighbor whose only labels on this axis are obsolete is skipped; one with other labels but none on this axis votes None."""
@@ -44,10 +47,9 @@ def knn_probs(E, ax_all, allowed_ax, has_label, queries):
             w = np.exp(S[r, top] / 0.05)
             votes = collections.defaultdict(float)
             for j, wj in zip(top, w):
-                labs = ax[pop[j]] or {None}
-                for l in labs:
-                    votes[l] += float(wj) / len(labs)
-            t = sum(votes.values())
+                for l in ax[pop[j]] or {None}:
+                    votes[l] += float(wj)
+            t = float(w.sum())
             out[i] = {l: v / t for l, v in votes.items()}
     return out
 

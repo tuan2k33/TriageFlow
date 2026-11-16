@@ -7,7 +7,8 @@ category stored as a normalized centroid and named after its most common labels 
 nearest existing category (or -1 "Unsorted" when it is far from all of them) and place new open items on the map at the
 average position of their nearest already-placed neighbors, so categories and the map do not move between runs.
 
-Tables: emb(number, vec), categories(id, name, size, centroid), topics(number, cluster, sim, x, y).
+Tables: emb(number, vec), categories(id, name, size, centroid), topics(number, cluster, sim, x, y),
+neighbors(number, rank, other, sim): the 5 most similar items of every item.
 """
 import argparse, collections, json, os, re, sqlite3, time
 import importlib.util
@@ -40,6 +41,8 @@ def unit(x):
 
 def load_emb(db, where="1"):
     rows = db.execute(f"select i.number, i.state, e.vec from items i join emb e using(number) where {where} order by i.number").fetchall()
+    if not rows:
+        return [], [], np.zeros((0, 384), dtype=np.float32)
     return [r[0] for r in rows], [r[1] for r in rows], unit(np.stack([np.frombuffer(r[2], dtype=np.float16) for r in rows]).astype(np.float32))
 
 
@@ -78,6 +81,24 @@ def distinctive_names(members, titles, labels):
         lab = max(lab, key=lambda l: lift(lc[l], lab_all[l]), default=None)
         names[c] = ": ".join(x for x in (lab, ", ".join(top)) if x) or titles[ns[0]][:60]
     return names
+
+
+def neighbors(db, k=5):
+    """Top-k most similar items for every item (open or closed), recomputed each run: new items can be anyone's neighbor."""
+    nums, _, E = load_emb(db)
+    rows = []
+    for c in range(0, len(nums), 1000):
+        S = E[c:c + 1000] @ E.T
+        S[np.arange(S.shape[0]), np.arange(c, c + S.shape[0])] = -9  # not itself
+        top = np.argpartition(-S, k, axis=1)[:, :k]
+        for r, t in enumerate(top):
+            t = t[np.argsort(-S[r, t])]
+            rows += [(nums[c + r], rank, nums[j], float(S[r, j])) for rank, j in enumerate(t)]
+    db.execute("drop table if exists neighbors")
+    db.execute("create table neighbors(number integer, rank integer, other integer, sim real, primary key(number, rank))")
+    db.executemany("insert into neighbors values(?,?,?,?)", rows)
+    db.commit()
+    print(f"neighbors: top {k} for {len(nums)} items")
 
 
 def name_categories(db, members, use_llm):
@@ -179,6 +200,7 @@ def main():
         init(db, a.k, a.llm_names)
     else:
         assign(db)
+    neighbors(db)
 
 
 if __name__ == "__main__":
