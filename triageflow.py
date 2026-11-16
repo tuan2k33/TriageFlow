@@ -1,7 +1,8 @@
 """Crawl all issues/PRs (open + closed) of a GitHub repo with their comments into SQLite. Content only, no code.
 
 usage: python triageflow.py <repo url | owner/name> [--csv] [--full] [--no-comments] [--review-comments]
-Reruns are incremental (GitHub `since` = updated_at) and resume after an interruption or rate limit.
+Reruns are incremental (GitHub `since` = updated_at, plus an ETag on the first page, so "nothing new" costs no quota)
+and resume after an interruption or rate limit. Talks to the GitHub REST/GraphQL API directly; the token comes from `gh auth token`.
 
 Stages and request cost (100 rows per request):
   items     issues?state=all                   ~ N/100
@@ -9,8 +10,10 @@ Stages and request cost (100 rows per request):
   reviews   pulls/comments  (whole repo)       ~ R/30    (inline review comments; only with --review-comments)
   links     GraphQL closingIssuesReferences    ~ P/100   (PR -> issue it really closes)
 """
-import argparse, csv, json, re, sqlite3, subprocess, sys, time
+import argparse, csv, json, re, sqlite3, subprocess, sys, time, urllib.error, urllib.parse, urllib.request
 from pathlib import Path
+
+API = "https://api.github.com"
 
 SCHEMA = """
 create table if not exists items(
@@ -25,17 +28,67 @@ create table if not exists links(src integer, dst integer, kind text, primary ke
 create table if not exists meta(k text primary key, v text);
 """
 
-ITEM_JQ = ('.[] | {number, kind:(if .pull_request then "pr" else "issue" end), title, body, author:.user.login,'
-           ' assoc:.author_association, state, state_reason, merged:((.pull_request.merged_at // null) != null),'
-           ' draft:(.draft // false), labels:([.labels[].name]|join(",")), milestone:.milestone.title, comments,'
-           ' created_at, closed_at, updated_at, url:.html_url}')
-COMMENT_JQ = ('.[] | {id, number:(.issue_url|split("/")|last|tonumber), author:.user.login, assoc:.author_association,'
-              ' bot:(.user.type=="Bot"), body, created_at, updated_at}')
-REVIEW_JQ = ('.[] | {id, number:(.pull_request_url|split("/")|last|tonumber), author:.user.login, assoc:.author_association,'
-             ' bot:(.user.type=="Bot"), body, created_at, updated_at}')
-
 CLOSE = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:[\w.-]+/[\w.-]+)?#(\d+)", re.I)
 REF = re.compile(r"(?<![\w/])#(\d+)\b")
+
+
+class GitHub:
+    """Minimal GitHub API client: auth from gh, rate-limit aware, retries 5xx and network errors."""
+
+    def __init__(self):
+        self.token = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True, check=True).stdout.strip()
+        self.requests = 0
+
+    def call(self, url, body=None, etag=None):
+        """-> (status, json or None, headers). 304 is returned, not raised."""
+        headers = {"Authorization": f"Bearer {self.token}", "Accept": "application/vnd.github+json",
+                   "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "triageflow"}
+        if etag:
+            headers["If-None-Match"] = etag
+        data = json.dumps(body).encode() if body is not None else None
+        for attempt in range(8):
+            req = urllib.request.Request(url, data=data, headers=headers, method="POST" if data else "GET")
+            try:
+                self.requests += 1
+                with urllib.request.urlopen(req, timeout=90) as r:
+                    out = json.load(r)
+                    self._pace(r.headers)
+                    return r.status, out, r.headers
+            except urllib.error.HTTPError as e:
+                if e.code == 304:
+                    return 304, None, e.headers
+                if e.code in (403, 429) and (e.headers.get("retry-after") or e.headers.get("x-ratelimit-remaining") == "0"):
+                    wait = int(e.headers.get("retry-after") or max(0, int(e.headers.get("x-ratelimit-reset", time.time())) - time.time()) + 5)
+                    print(f"  rate limited, sleeping {wait / 60:.1f} min", flush=True)
+                    time.sleep(wait)
+                    continue
+                if e.code < 500:
+                    raise RuntimeError(f"HTTP {e.code} on {url}: {e.read()[:200]!r}")
+                print(f"  HTTP {e.code}, retry {attempt + 1}", flush=True)
+            except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
+                print(f"  {type(e).__name__}: {str(e)[:80]}, retry {attempt + 1}", flush=True)
+            time.sleep(min(300, 15 * 2 ** attempt))
+        raise RuntimeError(f"giving up on {url}")
+
+    @staticmethod
+    def _pace(h):
+        """Sleep until reset when the quota is about to run out, instead of hitting the wall."""
+        rem = h.get("x-ratelimit-remaining")
+        if rem is not None and int(rem) < 20:
+            wait = max(0, int(h.get("x-ratelimit-reset", 0)) - time.time()) + 5
+            print(f"  {rem} requests left, sleeping {wait / 60:.0f} min", flush=True)
+            time.sleep(wait)
+
+    def graphql(self, query, **variables):
+        _, out, _ = self.call(f"{API}/graphql", {"query": query, "variables": variables})
+        if out.get("errors"):
+            raise RuntimeError(f"GraphQL: {out['errors']}")
+        return out["data"]
+
+
+def next_link(headers):
+    m = re.search(r'<([^>]+)>;\s*rel="next"', headers.get("link") or "")
+    return m.group(1) if m else None
 
 
 def parse_repo(s):
@@ -45,68 +98,73 @@ def parse_repo(s):
     return m.group(1), m.group(2)
 
 
-def rate():
-    r = subprocess.run(["gh", "api", "rate_limit", "--jq", ".resources.core | [.remaining, .reset] | @tsv"],
-                       capture_output=True, text=True)
-    rem, reset = (int(x) for x in r.stdout.split())
-    return rem, reset
+def login(u):
+    return (u or {}).get("login")
 
 
-def wait_budget(need=0):
-    rem, reset = rate()
-    if rem < max(need, 50):
-        wait = max(0, reset - time.time()) + 5
-        print(f"  rate limit low ({rem} left), sleeping {wait/60:.0f} min", flush=True)
-        time.sleep(wait)
+def item_row(o):
+    pr = o.get("pull_request")
+    return (o["number"], "pr" if pr else "issue", o["title"], o["body"], login(o.get("user")), o.get("author_association"),
+            o["state"], o.get("state_reason"), int(bool(pr and pr.get("merged_at"))), int(bool(o.get("draft"))),
+            ",".join(l["name"] for l in o.get("labels") or []), (o.get("milestone") or {}).get("title"),
+            o.get("comments"), o["created_at"], o.get("closed_at"), o["updated_at"], o["html_url"])
 
 
-def stream(db, path, jq, meta_key, insert, label, full, per_page=100):
-    """Stream a paginated listing sorted by updated asc, resumable via meta[meta_key]."""
-    total, failures = 0, 0
+def comment_row(kind, url_key):
+    def f(o):
+        return (kind, o["id"], int(o[url_key].rsplit("/", 1)[1]), login(o.get("user")), o.get("author_association"),
+                int((o.get("user") or {}).get("type") == "Bot"), o.get("body"), o["created_at"], o["updated_at"])
+    return f
+
+
+def meta_get(db, k):
+    return (db.execute("select v from meta where k=?", (k,)).fetchone() or [None])[0]
+
+
+def stream(gh, db, path, table, row, meta_key, label, full, per_page=100):
+    """Page through a listing sorted by updated asc, resumable via meta[meta_key] (= last updated_at stored).
+
+    `since` is inclusive, so a rerun always gets at least the last row back; the first page's ETag is stored together
+    with the `since` it was fetched with, and sent again only for that same `since` (unchanged data -> 304, free)."""
+    total = 0
     while True:
-        since = None if full else (db.execute("select v from meta where k=?", (meta_key,)).fetchone() or [None])[0]
-        q = f"{path}{'&' if '?' in path else '?'}per_page={per_page}&sort=updated&direction=asc" + (f"&since={since}" if since else "")
-        p = subprocess.Popen(["gh", "api", "--paginate", q, "--jq", jq], stdout=subprocess.PIPE, text=True)
-        n, last, bad = 0, None, False
-        for line in p.stdout:
-            try:
-                o = json.loads(line)
-                o["updated_at"]
-            except (ValueError, KeyError, TypeError):  # gh prints the error body on a 5xx mid-stream
-                bad = True
-                p.terminate()
-                break
-            insert(o)
-            n += 1
-            total += 1
-            last = o["updated_at"]
-            if n % 2000 == 0:
+        since = None if full else meta_get(db, meta_key)
+        params = {"per_page": per_page, "sort": "updated", "direction": "asc"} | ({"since": since} if since else {})
+        url = f"{API}/{path}{'&' if '?' in path else '?'}{urllib.parse.urlencode(params)}"
+        saved = (meta_get(db, meta_key + "_etag") or "|").split("|", 1)
+        etag = saved[1] if since and saved[0] == since else None
+        n, last, first_etag = 0, None, None
+        while url:
+            status, page, h = gh.call(url, etag=etag if first_etag is None else None)
+            if status == 304:
+                print(f"  {label}: nothing new", flush=True)
+                return total
+            first_etag = first_etag or h.get("etag") or ""
+            for o in page:
+                r = row(o)
+                db.execute(f"insert or replace into {table} values({','.join('?' * len(r))})", r)
+                last = o["updated_at"]
+            n += len(page)
+            total += len(page)
+            if n and n % 2000 < len(page):
                 db.execute("insert or replace into meta values(?,?)", (meta_key, last))
                 db.commit()
                 print(f"  {label}: {total}", flush=True)
-        ok = p.wait() == 0 and not bad
+            url = next_link(h)
         if last:
             db.execute("insert or replace into meta values(?,?)", (meta_key, last))
+        if last == since:  # only the inclusive row came back: this url will be asked again next time
+            db.execute("insert or replace into meta values(?,?)", (meta_key + "_etag", f"{since}|{first_etag}"))
         db.commit()
-        if ok and n >= 300 * per_page - 100:  # GitHub stops a listing at 300 pages: continue from the last updated_at
+        if n >= 300 * per_page - per_page:  # GitHub stops a listing at 300 pages: continue from the last updated_at
             print(f"  {label}: {total} (page cap reached, continuing)", flush=True)
             full = False
             continue
-        if ok:
-            print(f"  {label}: {total} fetched", flush=True)
-            return total
-        failures += 1
-        if rate()[0] < 50:
-            wait_budget()
-        elif failures > 6:
-            raise RuntimeError(f"gh failed on {path} (progress kept, rerun to resume)")
-        else:
-            print(f"  gh error on {label}, retry {failures}/6 in {30 * failures}s", flush=True)
-            time.sleep(30 * failures)
-        full = False
+        print(f"  {label}: {total} fetched", flush=True)
+        return total
 
 
-def official_links(db, owner, name):
+def official_links(gh, db, owner, name):
     """PR -> issues it closes, as GitHub itself records them (sidebar + keywords)."""
     q = ("query($o:String!,$n:String!,$c:String){repository(owner:$o,name:$n){pullRequests(first:100,after:$c,"
          "orderBy:{field:UPDATED_AT,direction:DESC},states:[OPEN,MERGED]){pageInfo{hasNextPage endCursor}"
@@ -114,16 +172,7 @@ def official_links(db, owner, name):
     since = (db.execute("select v from meta where k='links_since'").fetchone() or [""])[0]
     cursor, newest, n, pages = None, None, 0, 0
     while True:
-        cmd = ["gh", "api", "graphql", "-f", f"query={q}", "-f", f"o={owner}", "-f", f"n={name}"] + (["-f", f"c={cursor}"] if cursor else [])
-        for attempt in range(6):
-            r = subprocess.run(cmd, capture_output=True, text=True)
-            if r.returncode == 0:
-                break
-            print(f"  graphql error ({r.stderr.strip()[:80]}), retry {attempt + 1}/6", flush=True)
-            time.sleep(15 * (attempt + 1))
-        else:
-            raise RuntimeError(r.stderr.strip())
-        prs = json.loads(r.stdout)["data"]["repository"]["pullRequests"]
+        prs = gh.graphql(q, o=owner, n=name, c=cursor)["repository"]["pullRequests"]
         pages += 1
         stop = False
         for pr in prs["nodes"]:
@@ -190,35 +239,23 @@ def main():
     db = sqlite3.connect(outdir / "repo.db", timeout=120)
     db.executescript(SCHEMA)
     db.execute("insert or replace into meta values('repo', ?)", (f"{owner}/{name}",))
+    gh = GitHub()
     base = f"repos/{owner}/{name}"
-
-    def put_item(o):
-        db.execute("insert or replace into items values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (
-            o["number"], o["kind"], o["title"], o["body"], o["author"], o["assoc"], o["state"], o["state_reason"],
-            int(o["merged"]), int(o["draft"]), o["labels"], o["milestone"], o["comments"], o["created_at"],
-            o["closed_at"], o["updated_at"], o["url"]))
-
-    def put_comment(kind):
-        def f(o):
-            db.execute("insert or replace into comments values(?,?,?,?,?,?,?,?,?)", (
-                kind, o["id"], o["number"], o["author"], o["assoc"], int(o["bot"]), o["body"], o["created_at"], o["updated_at"]))
-        return f
+    t0 = time.time()
 
     print("items:", flush=True)
-    wait_budget(400)
-    stream(db, f"{base}/issues?state=all", ITEM_JQ, "items_since", put_item, "items", a.full)
+    stream(gh, db, f"{base}/issues?state=all", "items", item_row, "items_since", "items", a.full)
     if not a.no_comments:
         print("comments:", flush=True)
-        wait_budget(300)
-        stream(db, f"{base}/issues/comments", COMMENT_JQ, "comments_since", put_comment("comment"), "comments", a.full)
+        stream(gh, db, f"{base}/issues/comments", "comments", comment_row("comment", "issue_url"), "comments_since", "comments", a.full)
         if a.review_comments:
             try:  # this endpoint often answers 502 on big repos; smaller pages help
-                stream(db, f"{base}/pulls/comments", REVIEW_JQ, "reviews_since", put_comment("review_comment"), "review comments", a.full, per_page=30)
+                stream(gh, db, f"{base}/pulls/comments", "comments", comment_row("review_comment", "pull_request_url"),
+                       "reviews_since", "review comments", a.full, per_page=30)
             except RuntimeError as e:
                 print(f"  WARNING: review comments incomplete ({e}); rerun to continue", flush=True)
     print("links:", flush=True)
-    wait_budget(200)
-    official_links(db, owner, name)
+    official_links(gh, db, owner, name)
     text_links(db)
     rebuild_fts(db)
 
@@ -231,7 +268,8 @@ def main():
                 w.writerows(cur)
     counts = [db.execute(f"select count(*) from {t}").fetchone()[0] for t in ("items", "comments", "links")]
     n_open = db.execute("select count(*) from items where state='open'").fetchone()[0]
-    print(f"done -> {outdir/'repo.db'}  items={counts[0]} (open {n_open}) comments={counts[1]} links={counts[2]}")
+    print(f"done -> {outdir/'repo.db'}  items={counts[0]} (open {n_open}) comments={counts[1]} links={counts[2]}"
+          f"  [{gh.requests} requests, {time.time() - t0:.0f}s]")
 
 
 if __name__ == "__main__":
