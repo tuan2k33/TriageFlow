@@ -8,7 +8,9 @@ Stages and request cost (100 rows per request):
   items     issues?state=all                   ~ N/100
   comments  issues/comments (whole repo)       ~ C/100   (issue + PR conversation comments)
   reviews   pulls/comments  (whole repo)       ~ R/30    (inline review comments; only with --review-comments)
-  links     GraphQL closingIssuesReferences    ~ P/100   (PR -> issue it really closes)
+  links     GraphQL, PR side                   ~ P/100   (PR -> issue it really closes)
+            GraphQL, issue side                ~ I/100   (closing PRs incl. unmerged ones, marked duplicates, sub-issues)
+            text of items and comments         0         (#N, gh-N and same-repo URLs: closes / mentions)
 """
 import argparse, collections, csv, json, re, sqlite3, subprocess, sys, time, urllib.error, urllib.parse, urllib.request
 from pathlib import Path
@@ -28,8 +30,9 @@ create table if not exists links(src integer, dst integer, kind text, primary ke
 create table if not exists meta(k text primary key, v text);
 """
 
-CLOSE = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:[\w.-]+/[\w.-]+)?#(\d+)", re.I)
-REF = re.compile(r"(?<![\w/])#(\d+)\b")
+# a reference to another item of the same repo: #12, gh-12 (numpy's habit, GitHub autolinks it too) or its full URL
+NUM = r"(?:(?<![\w/])(?:#|gh-)|github\.com/{repo}/(?:issues|pull)/)(\d+)\b"
+CLOSE = r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?):?\s+(?:https?://)?" + NUM
 
 
 class GitHub:
@@ -246,13 +249,15 @@ def issue_links(gh, db, owner, name):
     print(f"  issue links: {pages} pages, " + ", ".join(f"{v} {k}" for k, v in n.items()), flush=True)
 
 
-def text_links(db):
+def text_links(db, owner, name):
     """closes/mentions found in the text of items and comments, only between known numbers."""
     links = set()
+    repo = re.escape(f"{owner}/{name}")
+    CLOSE_RX, REF = re.compile(CLOSE.replace("{repo}", repo), re.I), re.compile(NUM.replace("{repo}", repo), re.I)
 
     def add(src, text):
         text = text or ""
-        closes = {int(x) for x in CLOSE.findall(text)}
+        closes = {int(x) for x in CLOSE_RX.findall(text)}
         links.update((src, k, "closes") for k in closes)
         links.update((src, k, "mentions") for k in {int(x) for x in REF.findall(text)} - closes)
 
@@ -286,7 +291,7 @@ def main():
     ap.add_argument("--review-comments", action="store_true", help="also fetch inline PR review comments (many requests, low value, off by default)")
     a = ap.parse_args()
     owner, name = parse_repo(a.repo)
-    outdir = Path("data") / f"{owner}__{name}"
+    outdir = Path(__file__).parent / "data" / f"{owner}__{name}"
     outdir.mkdir(parents=True, exist_ok=True)
     db = sqlite3.connect(outdir / "repo.db", timeout=120)
     db.executescript(SCHEMA)
@@ -309,7 +314,7 @@ def main():
     print("links:", flush=True)
     official_links(gh, db, owner, name)
     issue_links(gh, db, owner, name)
-    text_links(db)
+    text_links(db, owner, name)
     rebuild_fts(db)
 
     if a.csv:

@@ -1,31 +1,28 @@
-"""Embed items, keep them sorted into categories, and keep a stable 2D map of the open ones.
+"""Embed items, sort them into categories, and derive everything the report needs from embeddings and links.
 
 usage: python analyze.py data/<owner>__<name>/repo.db [--init] [--k N]
 
 Categories are made once (first run, or --init): KMeans over the embeddings of every item (open + closed), each
-category stored as a normalized centroid and named after its most distinctive label and title words. Later runs only embed new items, put each into the
-nearest existing category (or -1 "Unsorted" when it is far from all of them) and place new open items on the map at the
-average position of their nearest already-placed neighbors, so categories and the map do not move between runs.
+category stored as a normalized centroid and named after its most distinctive label and title words. Later runs only
+embed new items and put each into the nearest existing category (or -1 "Unsorted" when it is far from all of them),
+so categories do not move between runs. Everything else is recomputed every run.
 
-Tables: emb(number, vec), categories(id, name, size, centroid), topics(number, cluster, sim, x, y),
+Tables: emb(number, vec), categories(id, name, size, centroid), topics(number, cluster, sim),
 neighbors(number, rank, other, sim): the 5 most similar items of every item,
 similar(a, b, sim, rank): semantic links, pairs that are in each other's top 5 (rank 0 = each other's nearest),
 pr_status(number, status, prs): for every open issue, what happened to the PRs that say they close it,
 dup_pairs(a, b, sim, level), dup_master(number, master): duplicate candidates among issues and the issue to keep,
 zombie(number, pr, sim): open issues that a later merged PR seems to fix without linking them,
-pr_compete(a, b, reason, issue, sim): open PRs after the same thing,
-map3(number, tx, ty, tz, px, py, pz): 3D positions of the open items, t-SNE (made once, new items join their neighbors) and PCA.
+pr_compete(a, b, reason, issue, sim): open PRs after the same thing.
 """
 import argparse, collections, json, re, sqlite3
 import numpy as np
 import torch
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE
 from transformers import AutoModel, AutoTokenizer
 
 MODEL = "BAAI/bge-small-en-v1.5"
-NEIGHBORS = 8
 OPEN_PER_CATEGORY = 45
 ZOMBIE_SIM = 0.86  # issue and merged PR nearest to each other: on closed numpy issues the PR is a known closer >= 82% of the time
 DUP_SIM = 0.90  # hand-graded on numpy: ~80% of issue pairs at or above this are the same problem (known duplicates: median 0.85)
@@ -33,11 +30,12 @@ DUP_SIM = 0.90  # hand-graded on numpy: ~80% of issue pairs at or above this are
 
 def embed(texts):
     tok = AutoTokenizer.from_pretrained(MODEL)
-    model = AutoModel.from_pretrained(MODEL, dtype=torch.float16).cuda().eval()
+    dev = "cuda" if torch.cuda.is_available() else "cpu"  # fp16 on the GPU; a machine without one still works, slower
+    model = AutoModel.from_pretrained(MODEL, dtype=torch.float16 if dev == "cuda" else torch.float32).to(dev).eval()
     out = []
     with torch.no_grad():
         for i in range(0, len(texts), 64):
-            b = tok(texts[i:i + 64], padding=True, truncation=True, max_length=256, return_tensors="pt").to("cuda")
+            b = tok(texts[i:i + 64], padding=True, truncation=True, max_length=256, return_tensors="pt").to(dev)
             v = model(**b).last_hidden_state[:, 0].float()
             out.append(torch.nn.functional.normalize(v, dim=-1).cpu())
     return torch.cat(out).numpy()
@@ -94,13 +92,13 @@ def distinctive_names(members, titles, labels):
 def neighbors(db, k=5):
     """Top-k most similar items for every item (open or closed), recomputed each run: new items can be anyone's neighbor."""
     nums, _, E = load_emb(db)
+    k = min(k, len(nums) - 1)  # a repo with a handful of items
     rows = []
     for c in range(0, len(nums), 1000):
         S = E[c:c + 1000] @ E.T
         S[np.arange(S.shape[0]), np.arange(c, c + S.shape[0])] = -9  # not itself
-        top = np.argpartition(-S, k, axis=1)[:, :k]
+        top = np.argsort(-S, axis=1)[:, :k]
         for r, t in enumerate(top):
-            t = t[np.argsort(-S[r, t])]
             rows += [(nums[c + r], rank, nums[j], float(S[r, j])) for rank, j in enumerate(t)]
     db.execute("drop table if exists neighbors")
     db.execute("create table neighbors(number integer, rank integer, other integer, sim real, primary key(number, rank))")
@@ -234,29 +232,6 @@ def competing(db):
     print(f"competing open PRs: {n['close the same issue']} pairs close the same issue, {n['very similar']} pairs are very similar")
 
 
-def map3d(db):
-    """3D views of the open items for the page: t-SNE in 3D (kept stable like the 2D map) and the first three principal
-    components (a plain linear view of the 384 dimensions, recomputed each run)."""
-    nums, _, E = load_emb(db, "i.state = 'open'")
-    if len(nums) < 5:
-        return
-    db.execute("create table if not exists map3(number integer primary key, tx real, ty real, tz real, px real, py real, pz real)")
-    old = {r[0]: r[1:] for r in db.execute("select number, tx, ty, tz from map3")}
-    have = [i for i, n in enumerate(nums) if n in old]
-    if len(have) < len(nums) / 2:  # first run (or almost everything is new): lay all of them out
-        t = TSNE(n_components=3, perplexity=min(30, (len(nums) - 1) / 3), metric="cosine", init="pca", random_state=0).fit_transform(E)
-    else:
-        t = np.zeros((len(nums), 3))
-        t[have] = [old[nums[i]] for i in have]
-        for i in set(range(len(nums))) - set(have):
-            t[i] = t[have][np.argsort(-(E[have] @ E[i]))[:NEIGHBORS]].mean(0)
-    p = PCA(n_components=3, random_state=0).fit_transform(E)
-    db.execute("delete from map3")
-    db.executemany("insert into map3 values(?,?,?,?,?,?,?)", [(n, *map(float, t[i]), *map(float, p[i])) for i, n in enumerate(nums)])
-    db.commit()
-    print(f"map3: {len(nums)} open items in 3D ({len(nums) - len(have)} new)")
-
-
 def name_categories(db, members):
     titles = dict(db.execute("select number, title from items"))
     labels = {n: [l for l in (ls or "").split(",") if l] for n, ls in db.execute("select number, labels from items")}
@@ -272,6 +247,7 @@ def init(db, k):
                 for l in (ls or "").split(",") if re.match(r"^\d+ - ", l)}
     k = k or (len(numbered) if len(numbered) >= 8 else
               int(np.clip(round(sum(s == "open" for s in states) / OPEN_PER_CATEGORY), 8, 80)))
+    k = min(k, n)
     print(f"init: {k} categories over {n} items", flush=True)
     z = PCA(n_components=min(50, n - 1), random_state=0).fit_transform(E)
     lab = KMeans(n_clusters=k, n_init=10, random_state=0).fit_predict(z)
@@ -281,20 +257,13 @@ def init(db, k):
     members = {c: [nums[i] for i in np.where(lab == c)[0][np.argsort(-sim[lab == c])]] for c in range(k)}
     names = name_categories(db, members)
 
-    op = [i for i in range(n) if states[i] == "open"]
-    perplexity = min(30, (len(op) - 1) / 3)  # t-SNE needs perplexity < number of points: small repos have few open items
-    xy = (TSNE(n_components=2, perplexity=perplexity, metric="cosine", init="pca", random_state=0).fit_transform(E[op])
-          if len(op) > 4 else np.random.default_rng(0).normal(size=(len(op), 2)))
-    pos = {nums[i]: p for i, p in zip(op, xy)}
-
     db.execute("drop table if exists categories")
     db.execute("create table categories(id integer primary key, name text, size integer, centroid blob)")
     db.executemany("insert into categories values(?,?,?,?)",
                    [(c, names[c], int((lab == c).sum()), cent[c].astype(np.float32).tobytes()) for c in range(k)])
     db.execute("drop table if exists topics")
-    db.execute("create table topics(number integer primary key, cluster integer, sim real, x real, y real)")
-    db.executemany("insert into topics values(?,?,?,?,?)",
-                   [(nums[i], int(lab[i]), float(sim[i]), *(map(float, pos[nums[i]]) if nums[i] in pos else (None, None))) for i in range(n)])
+    db.execute("create table topics(number integer primary key, cluster integer, sim real)")
+    db.executemany("insert into topics values(?,?,?)", [(nums[i], int(lab[i]), float(sim[i])) for i in range(n)])
     db.execute("insert or replace into meta values('category_threshold', ?)", (str(threshold),))
     db.commit()
     for c in sorted(range(k), key=lambda c: -len(members[c])):
@@ -302,34 +271,27 @@ def init(db, k):
 
 
 def assign(db):
-    """Put items without a category into the nearest existing one, and place open items that are not on the map yet."""
+    """Put items without a category into the nearest existing one (-1 "Unsorted" when far from all of them)."""
     threshold = float(db.execute("select v from meta where k='category_threshold'").fetchone()[0])
     cats = db.execute("select id, centroid from categories order by id").fetchall()
     ids = np.array([c[0] for c in cats])
     cent = np.stack([np.frombuffer(c[1], dtype=np.float32) for c in cats])
-    nums, states, E = load_emb(db, "i.number not in (select number from topics)")
+    nums, _, E = load_emb(db, "i.number not in (select number from topics)")
+    unsorted = 0
     if nums:
         S = E @ cent.T
         best = S.argmax(1)
         for n, b, s in zip(nums, best, S[np.arange(len(nums)), best]):
-            db.execute("insert into topics values(?,?,?,null,null)", (n, int(ids[b]) if s >= threshold else -1, float(s)))
-    # map: open items without a position go to the average spot of their nearest placed neighbors
-    nums_p, _, E_p = load_emb(db, "i.number in (select number from topics where x is not null)")
-    xy_p = np.array(db.execute("select x, y from topics t join emb e using(number) where x is not null order by number").fetchall())
-    new, _, E_n = load_emb(db, "i.state='open' and i.number in (select number from topics where x is null)")
-    for n, v in zip(new, E_n):
-        top = np.argsort(-(E_p @ v))[:NEIGHBORS]
-        x, y = xy_p[top].mean(0)
-        db.execute("update topics set x=?, y=? where number=?", (float(x), float(y), n))
+            unsorted += s < threshold
+            db.execute("insert into topics(number, cluster, sim) values(?,?,?)", (n, int(ids[b]) if s >= threshold else -1, float(s)))
     db.commit()
-    unsorted = sum(1 for n in nums if db.execute("select cluster from topics where number=?", (n,)).fetchone()[0] == -1)
-    print(f"assigned {len(nums)} new items ({unsorted} to Unsorted), placed {len(new)} open items on the map")
+    print(f"assigned {len(nums)} new items ({unsorted} to Unsorted)")
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("db")
-    ap.add_argument("--init", action="store_true", help="rebuild categories and the map from scratch")
+    ap.add_argument("--init", action="store_true", help="rebuild the categories from scratch")
     ap.add_argument("--k", type=int, default=0, help="number of categories at init (default: numbered labels on open items, else open items / 45)")
     a = ap.parse_args()
     db = sqlite3.connect(a.db, timeout=120)
@@ -345,7 +307,6 @@ def main():
     duplicates(db)
     zombies(db)
     competing(db)
-    map3d(db)
 
 
 if __name__ == "__main__":

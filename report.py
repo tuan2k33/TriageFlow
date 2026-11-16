@@ -6,7 +6,7 @@ GitHub records, or by reading a sample by hand (numpy). The source of each numbe
 
 usage: python report.py data/<owner>__<name>/repo.db   ->  report.md, actions.sh next to the db; table `actions`
 """
-import collections, json, sqlite3, sys
+import collections, json, shlex, sqlite3, sys
 from pathlib import Path
 
 RULES = {  # action kind: (confidence or None when it comes per item, how it was measured, title in the report)
@@ -64,7 +64,7 @@ def main(path):
         conf = measured(ax, sc)
         if n in is_open and conf is not None:
             why = f"{sc:g} votes from similar and linked items" if ax == "component" else f"kNN score {sc:.2f}"
-            add("add_label", n, None, f"{lab} ({why})", f'gh issue edit {n} -R {repo} --add-label "{lab}"', conf)
+            add("add_label", n, None, f"{lab} ({why})", f"gh {'pr' if info[n][0] == 'pr' else 'issue'} edit {n} -R {repo} --add-label {shlex.quote(lab)}", conf)
 
     db.execute("drop table if exists actions")
     db.execute("create table actions(kind text, number integer, target integer, confidence real, reason text, command text)")

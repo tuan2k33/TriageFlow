@@ -1,13 +1,11 @@
 # TriageFlow
 
-Crawl all issues and PRs of a GitHub repo (open and closed, with conversation comments, content only, no code) into SQLite, then sort them into categories, suggest labels from the repo's existing ones and browse the open ones on a map. Everything after the crawl is local data analysis and classic machine learning (a small embedding model, KMeans, kNN votes); no LLM anywhere.
+Crawl all issues and PRs of a GitHub repo (open and closed, with conversation comments, content only, no code) into SQLite, then sort them into categories, suggest labels from the repo's existing ones find duplicates, stale and already-fixed issues and competing PRs, and write a report of proposed actions. Everything after the crawl is local data analysis and classic machine learning (a small embedding model, KMeans, kNN votes); no LLM anywhere.
 
 ```bash
-python run.py https://github.com/numpy/numpy   # everything below in one go -> data/numpy__numpy/{repo.db, graph.html, report.md, actions.sh}
-python web.py                                   # local web view at http://127.0.0.1:8000: paste a link, then Map / Report / Actions / Database per repo
+python run.py https://github.com/numpy/numpy   # everything below in one go -> data/numpy__numpy/{repo.db, browse.html, report.md, actions.sh}
+python web.py                                   # local web view at http://127.0.0.1:8000: paste a link, then Browse / Report / Actions / Database per repo
 ```
-
-The map lays out the 384-dimensional embeddings in 2D (t-SNE) or, from the selector, in 3D (t-SNE or PCA; drag to rotate).
 
 The steps `run.py` runs, each rerunnable on its own:
 
@@ -17,11 +15,11 @@ python triageflow.py numpy/numpy       # all issues/PRs + comments + GitHub's ow
 python analyze.py $R                   # embed new items (bge-small, fp16); categories once (--init to redo); semantic links; PR status of open issues; duplicate candidates
 python suggest.py $R                   # type labels by kNN; component labels by counting votes of the 5 nearest labeled items and linked items
 python report.py $R                    # proposals with confidence -> report.md + actions.sh (gh commands, all commented out)
-python build_html.py $R                # -> data/numpy__numpy/graph.html (open in a browser)
+python build_html.py $R                # -> data/numpy__numpy/browse.html: filters, list of open items, details with a timeline
 datasette $R                           # browse / SQL / full-text search
 ```
 
-Tables: `items` (all states), `comments`, `links` (closes_official / closes / mentions / duplicate_of / sub_issue), `emb`, `categories`, `topics` (category + map position per item), `neighbors`, `similar` (semantic links), `pr_status`, `dup_pairs` / `dup_master` (duplicate candidates), `zombie`, `pr_compete`, `actions`, `suggested`, `fts`.
+Tables: `items` (all states), `comments`, `links` (closes_official / closes / mentions / duplicate_of / sub_issue), `emb`, `categories`, `topics` (category per item), `neighbors`, `similar` (semantic links), `pr_status`, `dup_pairs` / `dup_master` (duplicate candidates), `zombie`, `pr_compete`, `actions`, `suggested`, `fts`.
 
 ## AI Disclosure
 

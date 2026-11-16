@@ -146,7 +146,7 @@ def main():
         b = [l in truth["type"][i] for i, (l, p) in best if l is not None and lo <= p < hi]
         calib["type"].append([lo, round(float(np.mean(b)), 2) if b else None])
     for lo, hi in ((2, 3), (3, 4), (4, 99)):
-        tags = [(l in truth["component"][i], i in set(bp)) for i in bal for l, v in cv[i].items() if lo <= v < hi]
+        tags = [(l in truth["component"][i], bool(truth["component"][i])) for i in bal for l, v in cv[i].items() if lo <= v < hi]
         right, wrong_p = sum(r for r, _ in tags) / len(bp), sum(not r and p for r, p in tags) / len(bp)
         on_neg = sum(not p for _, p in tags) / len(bn)
         calib["component"].append([lo, round(right * base_rate / max(1e-9, (right + wrong_p) * base_rate + on_neg * (1 - base_rate)), 2)])

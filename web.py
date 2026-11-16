@@ -1,4 +1,4 @@
-"""Local web view of the results: paste a repo link, then browse its four outputs (map, report, actions, database).
+"""Local web view of the results: paste a repo link, then browse its four outputs (items, report, actions, database).
 
 usage: python web.py [port]      ->  http://127.0.0.1:8000
 
@@ -11,7 +11,7 @@ from pathlib import Path
 HERE = Path(__file__).parent
 DATA = HERE / "data"
 REPO = re.compile(r"^[\w.-]+__[\w.-]+$")
-PAGES = (("graph", "Map"), ("report", "Report"), ("actions", "Actions"), ("db", "Database"))
+PAGES = (("browse", "Browse"), ("report", "Report"), ("actions", "Actions"), ("db", "Database"))
 running = {}  # repo dir name -> Popen of run.py
 CSS = """<style>
 :root{--bg:#fafaf8;--panel:#fff;--ink:#1c1c1a;--mute:#6b6b66;--line:#e2e2dc}
@@ -80,15 +80,15 @@ def db_page(repo, q):
 
 def home():
     body = ('<h2>Analyze a repository</h2><form method=post action=/run><input type=text name=link placeholder="https://github.com/owner/name"> '
-            "<button>Run</button></form><p class=mute>Crawls every issue and PR, then builds the map and the report. A rerun only syncs what changed.</p><h2>Repositories</h2>")
+            "<button>Run</button></form><p class=mute>Crawls every issue and PR, then builds the browse page and the report. A rerun only syncs what changed.</p><h2>Repositories</h2>")
     rows = ""
     for d in sorted(p for p in DATA.iterdir() if REPO.match(p.name) and (p / "repo.db").exists()):
         state = "running, <a href='/r/%s/log'>log</a>" % d.name if d.name in running and running[d.name].poll() is None else ""
         n = ""
-        if (d / "graph.html").exists():
+        if (d / "browse.html").exists():
             db = sqlite3.connect(f"file:{d / 'repo.db'}?mode=ro", uri=True, timeout=30)
             n = "%d items, %d open" % db.execute("select count(*), sum(state='open') from items").fetchone()
-        rows += f"<tr><td><a href='/r/{d.name}/graph'>{html.escape(d.name.replace('__', '/'))}</a></td><td>{n}</td><td>{state}</td></tr>"
+        rows += f"<tr><td><a href='/r/{d.name}/browse'>{html.escape(d.name.replace('__', '/'))}</a></td><td>{n}</td><td>{state}</td></tr>"
     return body + (f"<table><tr><th>Repository</th><th>Size</th><th></th></tr>{rows}</table>" if rows else "<p class=mute>None yet.</p>")
 
 
@@ -116,16 +116,16 @@ class Handler(BaseHTTPRequestHandler):
             log = (d / "run.log").read_text(errors="replace") if (d / "run.log").exists() else ""
             busy = repo in running and running[repo].poll() is None
             body = (f"<h2>{'Running' if busy else 'Finished'}</h2><pre>{html.escape(log[-6000:])}</pre>"
-                    + ("<script>setTimeout(()=>location.reload(),3000)</script>" if busy else f"<p><a href='/r/{repo}/graph'>Open the map</a></p>"))
+                    + ("<script>setTimeout(()=>location.reload(),3000)</script>" if busy else f"<p><a href='/r/{repo}/browse'>Open the results</a></p>"))
             return self.send(page("Run log", body, repo))
-        if what == "graph.html" and (d / "graph.html").exists():
-            return self.send((d / "graph.html").read_bytes())
+        if what == "browse.html" and (d / "browse.html").exists():
+            return self.send((d / "browse.html").read_bytes())
         if what == "actions.sh" and (d / "actions.sh").exists():
             return self.send((d / "actions.sh").read_bytes(), "text/plain; charset=utf-8", headers=[("Content-Disposition", "attachment; filename=actions.sh")])
         if not (d / "repo.db").exists():
             return self.send(page("Not found", "<p>No such repository yet.</p>"), code=404)
-        if what == "graph":
-            return self.send(page(repo, f'<iframe src="/r/{repo}/graph.html"></iframe>', repo, what, raw=True))
+        if what == "browse":
+            return self.send(page(repo, f'<iframe src="/r/{repo}/browse.html"></iframe>', repo, what, raw=True))
         if what == "report":
             md = (d / "report.md").read_text(encoding="utf-8") if (d / "report.md").exists() else "No report yet: run report.py."
             return self.send(page("Report", md_to_html(md), repo, what))
@@ -139,6 +139,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send(page("Not found", "<p>Not found.</p>"), code=404)
 
     def do_POST(self):
+        if self.headers.get("Host", "").split(":")[0] not in ("127.0.0.1", "localhost"):  # no other site may start a crawl
+            return self.send(b"", code=403)
         if self.path != "/run":
             return self.send(b"", code=404)
         link = urllib.parse.parse_qs(self.rfile.read(int(self.headers.get("Content-Length", 0))).decode()).get("link", [""])[0]

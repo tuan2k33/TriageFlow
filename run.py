@@ -1,4 +1,4 @@
-"""Paste a GitHub repo link, get the database, the map and the report.
+"""Paste a GitHub repo link, get the database, the browse page and the report.
 
 usage: python run.py https://github.com/<owner>/<name>     (or just owner/name)
 
@@ -19,9 +19,9 @@ def main(link):
     t0 = time.time()
     for step, args in (("triageflow", [f"{owner}/{name}"]), ("analyze", [db]), ("suggest", [db]), ("report", [db]), ("build_html", [db])):
         print(f"\n== {step}", flush=True)
-        subprocess.run([sys.executable, "-u", str(HERE / f"{step}.py"), *args], check=True)
+        subprocess.run([sys.executable, "-u", str(HERE / f"{step}.py"), *args], check=True, cwd=HERE)
     print(f"\ndone in {time.time() - t0:.0f}s:")
-    for f in ("repo.db", "graph.html", "report.md", "actions.sh"):
+    for f in ("repo.db", "browse.html", "report.md", "actions.sh"):
         print(f"  {out / f}")
 
 

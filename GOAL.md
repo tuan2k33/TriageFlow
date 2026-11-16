@@ -6,7 +6,7 @@ Ký hiệu: ✅ đã có · 🟡 làm một phần · ⬜ chưa làm. Trạng th
 Xây dựng công cụ phân tích, điều phối và dọn dẹp kho GitHub dựa trên **metadata và văn bản của Issues & Pull Requests**, không đọc source code hay code diff.
 
 * **Siêu nhẹ & tiết kiệm:** chỉ dùng ngữ nghĩa văn bản (tiêu đề, mô tả, bình luận) và quan hệ đồ thị. Tiết kiệm cả request GitHub (crawl theo trang 100 mục, comment lấy theo cả repo, sync tăng dần) lẫn chi phí tính toán (embedding chạy local trên một GPU nhỏ).
-* **Giải quyết nỗi đau thực tế:** biến hàng nghìn Issue/PR hỗn loạn thành bản đồ dễ tra cứu, có thể hành động (gom nhóm, đóng, gắn nhãn) chỉ với vài cú click.
+* **Giải quyết nỗi đau thực tế:** biến hàng nghìn Issue/PR hỗn loạn thành danh sách dễ lọc và tra cứu, có thể hành động (gom nhóm, đóng, gắn nhãn) chỉ với vài cú click.
 * **Không LLM:** từ crawl tới kết quả cuối chỉ là phân tích dữ liệu và học máy cổ điển trên dữ liệu GitHub (văn bản, nhãn, trạng thái, liên kết GraphQL) và embedding local. Các bước LLM từng thử (tóm tắt thảo luận, phán xét close, LLM chọn nhãn, LLM đặt tên category) đã bị gỡ.
 * **Mục tiêu cuối (chưa làm bây giờ):** zero-setup, dán URL bất kỳ repo công khai là phân tích ngay, kèm giao diện đầy đủ. Xem Phase 4.
 
@@ -15,9 +15,9 @@ Xây dựng công cụ phân tích, điều phối và dọn dẹp kho GitHub d�
 ## 2. Luồng hoạt động (Pipeline)
 1. **Input:** link repo GitHub (hiện chạy bằng lệnh).
 2. **Crawl & Storage** ✅ Một lần crawl lấy mọi Issue/PR (mở và đóng), mọi comment hội thoại (comment gắn vào dòng code của PR mặc định bỏ qua), nhãn, trạng thái (`state_reason`, `merged`) vào SQLite. Liên kết do chính GitHub ghi nhận lấy qua GraphQL: PR nào đóng issue nào (kể cả PR đã bị bỏ), issue nào được đánh dấu trùng với issue nào, issue con của issue nào. Chạy lại chỉ lấy phần thay đổi.
-3. **Vectorize & Graph** ✅ Embedding cho mọi mục (mở và đóng). Graph liên kết cứng và liên kết ngữ nghĩa (hai mục nằm trong top 5 giống nhất của nhau).
+3. **Vectorize & Links** ✅ Embedding cho mọi mục (mở và đóng). Liên kết cứng và liên kết ngữ nghĩa (hai mục nằm trong top 5 giống nhất của nhau).
 4. **Phân tích:** category chia một lần, mục mới gán vào category sẵn có ✅; gợi ý nhãn ✅; trạng thái PR của từng issue theo liên kết ✅; gom trùng, zombie, PR cạnh tranh, tồn đọng ✅.
-5. **Output & Action:** trang tra cứu một file HTML (bản đồ chủ đề, lọc nhãn, chi tiết từng mục) ✅; trang tổng quan, báo cáo Markdown và script `gh` để duyệt ✅.
+5. **Output & Action:** trang tra cứu một file HTML (bộ lọc, danh sách mục mở, chi tiết từng mục kèm dòng thời gian) ✅; trang tổng quan, báo cáo Markdown và script `gh` để duyệt ✅.
 
 ---
 
@@ -25,14 +25,14 @@ Xây dựng công cụ phân tích, điều phối và dọn dẹp kho GitHub d�
 
 ### 3.1. Tra cứu "Dây mơ rễ má" (Context Graph & Semantic Search)
 Khi chọn một Issue/PR, hiển thị toàn bộ mạng lưới liên quan:
-* ✅ **Liên kết cứng:** PR đóng issue (cả liên kết chính thức của GitHub lẫn từ khóa `Fixes #12`), đánh dấu trùng và issue cha/con do GitHub ghi nhận, và nhắc chéo `#56` trong mô tả, bình luận.
+* ✅ **Liên kết cứng:** PR đóng issue (cả liên kết chính thức của GitHub lẫn từ khóa `Fixes #12`), đánh dấu trùng và issue cha/con do GitHub ghi nhận, và nhắc chéo trong mô tả, bình luận (`#56`, `gh-56`, URL đầy đủ của cùng repo).
 * ✅ **Liên kết ngữ nghĩa:** các Issue/PR cùng một vấn đề dù không nhắc số hiệu của nhau, kể cả với mục đã đóng. Tiêu chí: hai mục nằm trong top 5 giống nhất của nhau (ngưỡng cosine tuyệt đối không tách được: mục nào cũng có láng giềng ở ~0,87, còn issue và PR sửa nó chỉ ~0,81). Trên numpy: 35 nghìn cặp, 15% đã có sẵn liên kết cứng; cặp là láng giềng gần nhất của nhau thì 40% đã có liên kết cứng, phần còn lại đọc tay đa số đúng là cùng vấn đề. So với 77 cặp GitHub ghi nhận là trùng: 35 cặp (45%) là liên kết ngữ nghĩa, 44 cặp (57%) nằm trong top 5 một chiều; đây là thước đo cho bước gom trùng.
 * ✅ **Dòng chảy tiến độ:** trong chi tiết từng mục, mọi mục có liên kết cứng hoặc ngữ nghĩa với nó (cả mở lẫn đóng) xếp theo thời gian: lỗi phát sinh ở đâu → bị báo trùng bao nhiêu lần → đã có PR xử lý chưa → PR đó mở, đã merge hay bị bỏ hoang.
 * ✅ **Tìm kiếm toàn văn** trên tiêu đề, mô tả và bình luận.
 
 ### 3.2. Gợi ý Dọn dẹp, Gom gọn & Đóng (Actionable Cleanup)
 * ✅ **Gom trùng lặp:** ✅ ba mức tin cậy cho cặp issue: GitHub đã đánh dấu trùng (numpy: 74 cặp), rất có thể trùng (độ giống ≥ 0,90; chấm tay ~80% là cùng vấn đề), có thể trùng (là issue gần nhất của nhau; chấm tay ~42%, còn lại là cùng chủ đề). **Master Issue** là issue gốc GitHub ghi nhận, nếu không thì issue cũ nhất trong các cặp trực tiếp (không nối chuỗi, vì chuỗi trôi từ "cùng vấn đề" sang "cùng chủ đề"). Gồm cả issue mở trùng với issue đã đóng (94 trong 135 ca). Giới hạn đo được: embedding chỉ tìm lại được 15% (mức ≥ 0,90) đến 28% (gần nhất của nhau) số cặp trùng đã biết; tên hàm, chữ trong tiêu đề, cùng tác giả không cải thiện xếp hạng. ✅ Đề xuất đóng bản sao kèm lý do và câu bình luận mẫu nằm trong `report.md` và `actions.sh`.
-* ✅ **Zombie Issues (mở mà PR đã merge giải quyết):** ✅ theo luật trên liên kết và trạng thái PR (có PR đã merge đóng nó, có PR đang mở, chỉ có PR bị bỏ, không có PR; numpy: 14 / 137 / 154 / 1611 issue mở; issue có issue con được xếp riêng là tracking), lọc được trong trang. ✅ Trường hợp tác giả quên link: issue mở và một PR đã merge tạo sau nó là gần nhất của nhau, độ giống ≥ 0,86, không có liên kết đóng (numpy: 78 issue; trên issue đã đóng có PR biết trước luật này đúng ≥ 82%, chấm tay trên issue mở khoảng một nửa là đã sửa thật, còn lại là sửa một phần hoặc chỉ liên quan).
+* ✅ **Zombie Issues (mở mà PR đã merge giải quyết):** ✅ theo luật trên liên kết và trạng thái PR (có PR đã merge đóng nó, có PR đang mở, chỉ có PR bị bỏ, không có PR; numpy: 17 / 139 / 155 / 1605 issue mở; issue có issue con được xếp riêng là tracking), lọc được trong trang. ✅ Trường hợp tác giả quên link: issue mở và một PR đã merge tạo sau nó là gần nhất của nhau, độ giống ≥ 0,86, không có liên kết đóng (numpy: 78 issue; trên issue đã đóng có PR biết trước luật này đúng ≥ 82%, chấm tay trên issue mở khoảng một nửa là đã sửa thật, còn lại là sửa một phần hoặc chỉ liên quan).
 * ✅ **PR cạnh tranh:** hai PR đang mở cùng có liên kết đóng một issue, hoặc hai PR mở rất giống nhau (≥ 0,90) của hai tác giả khác nhau (cùng tác giả là chuỗi PR, không tính). numpy: 5 + 6 cặp.
 * ✅ **Tồn đọng:** lọc theo lần hoạt động cuối (trong 1 năm, 1–3 năm, 3–5 năm, trên 5 năm) thay cho một ngưỡng cố định; numpy: 728 mục mở im lặng trên 5 năm. ⬜ Nhận biết "thuộc phiên bản cũ" chưa làm.
 
@@ -66,10 +66,11 @@ Chỉ **dùng lại nhãn đã có của repo** để gợi ý cho Issue/PR chư
 ---
 
 ## 5. Lộ trình
-- [x] **Phase 1 (Core Data & Search):** crawler → SQLite → embedding → tìm kiếm và trang xem (bản đồ chủ đề, lọc nhiều nhãn, graph liên kết cứng).
-  - [x] Cạnh ngữ nghĩa trong graph, dòng thời gian trong chi tiết từng mục.
+- [x] **Phase 1 (Core Data & Search):** crawler → SQLite → embedding → tìm kiếm và trang xem (lọc nhiều nhãn, liên kết cứng).
+  - [x] Liên kết ngữ nghĩa, dòng thời gian trong chi tiết từng mục.
+  - Bản đồ chấm điểm (t-SNE 2D/3D) đã làm rồi bỏ: embedding không có cụm rõ nên hình chiếu chỉ là một đám mờ, không cho thấy tương quan nào; đường biên KMeans cũng sẽ là ranh giới tuỳ ý.
 - [x] **Phase 2 (Smart Cleanup):**
-  - [x] Category chia một lần lúc init, mục mới gán vào category sẵn có, bản đồ ổn định.
+  - [x] Category chia một lần lúc init, mục mới gán vào category sẵn có.
   - [x] Trạng thái PR của từng issue theo liên kết (không cần LLM).
   - [x] Gom trùng lặp + Master Issue (ngưỡng chấm tay, đo lại bằng cặp trùng GitHub ghi nhận), chỉ số phân mảnh.
   - [x] Zombie theo ngữ nghĩa, PR cạnh tranh, tồn đọng.
@@ -78,5 +79,5 @@ Chỉ **dùng lại nhãn đã có của repo** để gợi ý cho Issue/PR chư
   - [x] Gợi ý nhãn: loại bằng kNN, thành phần bằng đếm phiếu (5 láng giềng + liên kết, ≥ 2 phiếu), không LLM.
   - [x] Điểm tin cậy thống nhất: mỗi đề xuất mang tỉ lệ đúng đo được của loại đề xuất đó (so với nhãn bị giấu, với liên kết GitHub ghi nhận, hoặc chấm tay) kèm lý do.
   - [x] Xuất `report.md` và `actions.sh` (`gh issue close ... --comment ...`, `gh issue edit --add-label`; mọi dòng đều bị chú thích, người dùng bỏ chú thích dòng mình duyệt rồi chạy).
-- [x] Một lệnh từ link tới kết quả (`run.py`) và web local để dán link và xem bốn kết quả (`web.py`: Map có 2D/3D, Report, Actions, Database).
+- [x] Một lệnh từ link tới kết quả (`run.py`) và web local để dán link và xem bốn kết quả (`web.py`: Browse, Report, Actions, Database).
 - [ ] **Phase 4 (Mục tiêu cuối, chưa làm bây giờ):** zero-setup (dán URL là chạy), tự nhận diện trục nhãn của repo bất kỳ, giao diện đầy đủ, nút thực thi trực tiếp qua GitHub Token.
