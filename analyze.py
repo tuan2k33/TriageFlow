@@ -1,18 +1,25 @@
-"""Embed all items (open + closed, once), cluster open ones by topic, project to 2D.
-Writes tables `emb` (all items) and `topics` (open items) into the repo db.
+"""Embed items, keep them sorted into categories, and keep a stable 2D map of the open ones.
 
-usage: python analyze.py data/<owner>__<name>/repo.db
+usage: python analyze.py data/<owner>__<name>/repo.db [--init] [--k N] [--no-llm]
+
+Categories are made once (first run, or --init): KMeans over the embeddings of every item (open + closed), each
+category stored as a normalized centroid and named once by the LLM. Later runs only embed new items, put each into the
+nearest existing category (or -1 "Unsorted" when it is far from all of them) and place new open items on the map at the
+average position of their nearest already-placed neighbors, so categories and the map do not move between runs.
+
+Tables: emb(number, vec), categories(id, name, size, centroid), topics(number, cluster, sim, x, y).
 """
-import sqlite3, sys
+import argparse, json, os, re, sqlite3, time
+import importlib.util
 import numpy as np
 import torch
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.manifold import TSNE
 from transformers import AutoModel, AutoTokenizer
 
 MODEL = "BAAI/bge-small-en-v1.5"
+NEIGHBORS = 8
 
 
 def embed(texts):
@@ -27,51 +34,127 @@ def embed(texts):
     return torch.cat(out).numpy()
 
 
-def main(path):
-    db = sqlite3.connect(path, timeout=120)
-    db.execute("create table if not exists emb(number integer primary key, vec blob)")
+def unit(x):
+    return x / np.linalg.norm(x, axis=-1, keepdims=True)
 
-    # embed every item once (open and closed), later runs only embed what is new
+
+def load_emb(db, where="1"):
+    rows = db.execute(f"select i.number, i.state, e.vec from items i join emb e using(number) where {where} order by i.number").fetchall()
+    return [r[0] for r in rows], [r[1] for r in rows], unit(np.stack([np.frombuffer(r[2], dtype=np.float16) for r in rows]).astype(np.float32))
+
+
+def embed_new(db):
     todo = db.execute("select number, title, coalesce(body,'') from items where number not in (select number from emb) order by number").fetchall()
     print(f"embedding {len(todo)} new items", flush=True)
-    if todo:
-        texts = [f"{t}\n{b[:1500]}" for _, t, b in todo]
-        order = sorted(range(len(texts)), key=lambda i: len(texts[i]))  # similar lengths per batch = less padding
-        vecs = embed([texts[i] for i in order])
-        for j, i in enumerate(order):
-            db.execute("insert or replace into emb values(?,?)", (todo[i][0], vecs[j].astype(np.float16).tobytes()))
-        db.commit()
-
-    # topics and 2D map only for open items
-    rows = db.execute("select i.number, i.title, e.vec from items i join emb e using(number) where i.state='open' order by i.number").fetchall()
-    nums = [r[0] for r in rows]
-    x = np.stack([np.frombuffer(r[2], dtype=np.float16) for r in rows]).astype(np.float32)
-    x /= np.linalg.norm(x, axis=1, keepdims=True)
-
-    z = PCA(n_components=min(50, len(x) - 1), random_state=0).fit_transform(x)
-    k = int(round((len(x) / 2) ** 0.5))
-    lab = KMeans(n_clusters=k, n_init=10, random_state=0).fit_predict(z)
-    xy = TSNE(n_components=2, perplexity=30, metric="cosine", init="pca", random_state=0).fit_transform(x)
-
-    # cluster names: top tf-idf terms of titles, per cluster
-    ids = sorted(set(lab))
-    docs = [" ".join(rows[i][1] for i in np.where(lab == c)[0]) for c in ids]
-    names = {}
-    tf = TfidfVectorizer(stop_words="english", token_pattern=r"[A-Za-z_][A-Za-z0-9_.]{2,}", sublinear_tf=True, max_df=0.25)
-    m = tf.fit_transform(docs)
-    vocab = np.array(tf.get_feature_names_out())
-    for j, c in enumerate(ids):
-        names[c] = ", ".join(vocab[m[j].toarray()[0].argsort()[::-1][:3]])
-
-    db.execute("drop table if exists topics")
-    db.execute("create table topics(number integer primary key, cluster integer, label text, x real, y real)")
-    db.executemany("insert into topics values(?,?,?,?,?)",
-                   [(n, int(l), names[int(l)], float(p[0]), float(p[1])) for n, l, p in zip(nums, lab, xy)])
+    if not todo:
+        return
+    texts = [f"{t}\n{b[:1500]}" for _, t, b in todo]
+    order = sorted(range(len(texts)), key=lambda i: len(texts[i]))  # similar lengths per batch = less padding
+    vecs = embed([texts[i] for i in order])
+    for j, i in enumerate(order):
+        db.execute("insert or replace into emb values(?,?)", (todo[i][0], vecs[j].astype(np.float16).tobytes()))
     db.commit()
-    print(f"{len(ids)} clusters over {len(nums)} open items")
-    for c in ids:
-        print(f"  [{c}] {int((lab == c).sum()):4d}  {names[c]}")
+
+
+def name_categories(db, members, use_llm):
+    """One short name per category from the titles closest to its centroid (LLM once; fallback: closest title)."""
+    titles = dict(db.execute("select number, title from items"))
+    samples = {c: [titles[n] for n in ns[:12]] for c, ns in members.items()}
+    names = {c: f"{c}: {s[0][:60]}" for c, s in samples.items()}
+    if not use_llm:
+        return names
+    spec = importlib.util.spec_from_file_location("suggest", os.path.join(os.path.dirname(os.path.abspath(__file__)), "suggest.py"))
+    sg = importlib.util.module_from_spec(spec); spec.loader.exec_module(sg)
+    key = next(l.split("=", 1)[1].strip().strip("'\"") for l in open(".env") if l.startswith("OPENROUTER_API_KEY="))
+    cs = sorted(samples)
+    for b in range(0, len(cs), 25):
+        blocks = "\n\n".join(f"[{c}]\n" + "\n".join(f"  - {t[:100]}" for t in samples[c]) for c in cs[b:b + 25])
+        prompt = ("Each group below lists issue/PR titles from one GitHub repository that were clustered together. "
+                  "Give each group a short topic name (2 to 5 words) that a maintainer would recognize, based only on the titles. "
+                  "Names must be distinct from each other.\n\n" + blocks
+                  + '\n\nAnswer with only a JSON array: [{"id": <number>, "name": "..."}, ...]')
+        try:
+            for o in json.loads(re.search(r"\[.*\]", sg.call_llm(prompt, key), re.S).group(0)):
+                if int(o["id"]) in names and str(o.get("name", "")).strip():
+                    names[int(o["id"])] = str(o["name"]).strip()[:60]
+        except Exception as e:  # names are cosmetic: keep the fallback
+            print(f"  naming failed for groups {cs[b]}..: {e}", flush=True)
+        time.sleep(3.5)
+    return names
+
+
+def init(db, k, use_llm):
+    nums, states, E = load_emb(db)
+    n = len(nums)
+    k = k or int(np.clip(round((n / 10) ** 0.5), 8, 50))
+    print(f"init: {k} categories over {n} items", flush=True)
+    z = PCA(n_components=min(50, n - 1), random_state=0).fit_transform(E)
+    lab = KMeans(n_clusters=k, n_init=10, random_state=0).fit_predict(z)
+    cent = unit(np.stack([E[lab == c].mean(0) for c in range(k)]))
+    sim = (E * cent[lab]).sum(1)
+    threshold = float(np.percentile(sim, 2))  # new items less similar than the worst 2% of members go to Unsorted
+    members = {c: [nums[i] for i in np.where(lab == c)[0][np.argsort(-sim[lab == c])]] for c in range(k)}
+    names = name_categories(db, members, use_llm)
+
+    op = [i for i in range(n) if states[i] == "open"]
+    xy = TSNE(n_components=2, perplexity=30, metric="cosine", init="pca", random_state=0).fit_transform(E[op])
+    pos = {nums[i]: p for i, p in zip(op, xy)}
+
+    db.execute("drop table if exists categories")
+    db.execute("create table categories(id integer primary key, name text, size integer, centroid blob)")
+    db.executemany("insert into categories values(?,?,?,?)",
+                   [(c, names[c], int((lab == c).sum()), cent[c].astype(np.float32).tobytes()) for c in range(k)])
+    db.execute("drop table if exists topics")
+    db.execute("create table topics(number integer primary key, cluster integer, sim real, x real, y real)")
+    db.executemany("insert into topics values(?,?,?,?,?)",
+                   [(nums[i], int(lab[i]), float(sim[i]), *(map(float, pos[nums[i]]) if nums[i] in pos else (None, None))) for i in range(n)])
+    db.execute("insert or replace into meta values('category_threshold', ?)", (str(threshold),))
+    db.commit()
+    for c in sorted(range(k), key=lambda c: -len(members[c])):
+        print(f"  [{c:2d}] {len(members[c]):5d}  {names[c]}")
+
+
+def assign(db):
+    """Put items without a category into the nearest existing one, and place open items that are not on the map yet."""
+    threshold = float(db.execute("select v from meta where k='category_threshold'").fetchone()[0])
+    cats = db.execute("select id, centroid from categories order by id").fetchall()
+    ids = np.array([c[0] for c in cats])
+    cent = np.stack([np.frombuffer(c[1], dtype=np.float32) for c in cats])
+    nums, states, E = load_emb(db, "i.number not in (select number from topics)")
+    if nums:
+        S = E @ cent.T
+        best = S.argmax(1)
+        for n, b, s in zip(nums, best, S[np.arange(len(nums)), best]):
+            db.execute("insert into topics values(?,?,?,null,null)", (n, int(ids[b]) if s >= threshold else -1, float(s)))
+    # map: open items without a position go to the average spot of their nearest placed neighbors
+    nums_p, _, E_p = load_emb(db, "i.number in (select number from topics where x is not null)")
+    xy_p = np.array(db.execute("select x, y from topics t join emb e using(number) where x is not null order by number").fetchall())
+    new, _, E_n = load_emb(db, "i.state='open' and i.number in (select number from topics where x is null)")
+    for n, v in zip(new, E_n):
+        top = np.argsort(-(E_p @ v))[:NEIGHBORS]
+        x, y = xy_p[top].mean(0)
+        db.execute("update topics set x=?, y=? where number=?", (float(x), float(y), n))
+    db.commit()
+    unsorted = sum(1 for n in nums if db.execute("select cluster from topics where number=?", (n,)).fetchone()[0] == -1)
+    print(f"assigned {len(nums)} new items ({unsorted} to Unsorted), placed {len(new)} open items on the map")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("db")
+    ap.add_argument("--init", action="store_true", help="rebuild categories and the map from scratch")
+    ap.add_argument("--k", type=int, default=0, help="number of categories at init (default: sqrt(items/10), 8..50)")
+    ap.add_argument("--no-llm", action="store_true", help="name categories after their most central title instead of asking the LLM")
+    a = ap.parse_args()
+    db = sqlite3.connect(a.db, timeout=120)
+    db.execute("create table if not exists emb(number integer primary key, vec blob)")
+    embed_new(db)
+    has_cats = db.execute("select 1 from sqlite_master where name='categories'").fetchone()
+    if a.init or not has_cats:
+        init(db, a.k, not a.no_llm)
+    else:
+        assign(db)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main()

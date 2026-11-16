@@ -99,8 +99,8 @@ const order=Object.keys(counts).map(Number).sort((a,b)=>counts[b]-counts[a]);
 const HINT={'hint:close':'Mentions merged PR: close?','hint:needs_decision':'Mentions merged PR: needs decision'};
 const GN={hint:'Resolve hints',type:'Type',component:'Component',other:'Other'};
 function renderList(){const tab=(m,t)=>`<span class="tab${mode===m?' on':''}" data-m="${m}">${t}</span>`;
- let h=`<div class="tabs">${tab('t','Topics (auto)')}${tab('l','Labels')}</div>`;
- if(mode==='t'){h+=`<div class="cl${cluster===null?' on':''}" data-c="">All topics <em>${items.length}</em></div>`+order.map(c=>`<div class="cl${cluster===c?' on':''}" data-c="${c}"><i style="background:${col(c)}"></i><span>${esc(D.names[c])}</span><em>${counts[c]}</em></div>`).join('');list.innerHTML=h;return}
+ let h=`<div class="tabs">${tab('t','Categories')}${tab('l','Labels')}</div>`;
+ if(mode==='t'){h+=`<div class="cl${cluster===null?' on':''}" data-c="">All categories <em>${items.length}</em></div>`+order.map(c=>`<div class="cl${cluster===c?' on':''}" data-c="${c}"><i style="background:${col(c)}"></i><span>${esc(D.names[c])}</span><em>${counts[c]}</em></div>`).join('');list.innerHTML=h;return}
  const gl={hint:{},type:{},component:{},other:{}},tot={},cnt={};
  for(const d of items)for(const l of keysOf(d)){tot[l]=(tot[l]||0)+1;gl[grp(l)][l]=1}
  for(const g in gl)for(const l in gl[g])cnt[l]=0;
@@ -124,16 +124,16 @@ addEventListener('resize',fit);fit();
 
 
 def main(path):
-    db = sqlite3.connect(path)
+    db = sqlite3.connect(path, timeout=120)
     repo = db.execute("select v from meta where k='repo'").fetchone()[0]
     items = [dict(n=n, k=k, t=t, b=(b or "")[:2000], s=(b or "")[:600], a=a, l=l or "", cm=cm, up=up, u=u, c=c, x=x, y=y)
              for n, k, t, b, a, l, cm, up, u, c, x, y in db.execute(
                  "select i.number,kind,title,body,author,labels,comments,updated_at,url,cluster,x,y "
-                 "from items i join topics t on t.number=i.number")]
-    names = {c: lab for c, lab in db.execute("select distinct cluster, label from topics")}
+                 "from items i join topics t on t.number=i.number where i.state='open' and t.x is not null")]
+    names = dict(db.execute("select id, name from categories")) | {-1: "Unsorted"}
     links = [list(r) for r in db.execute(
         "select distinct src, dst, replace(kind,'closes_official','closes') from links "
-        "where src in (select number from topics) and dst in (select number from topics)")]
+        "where src in (select number from items where state='open') and dst in (select number from items where state='open')")]
     sg = {}
     if db.execute("select 1 from sqlite_master where name='suggested'").fetchone():
         best = {}
