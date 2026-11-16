@@ -12,7 +12,9 @@ from pathlib import Path
 RULES = {  # action kind: (confidence or None when it comes per item, how it was measured, title in the report)
     "close_duplicate_marked": (1.0, "a maintainer marked it as a duplicate on GitHub", "Open issues already marked as duplicates"),
     "close_fixed_linked": (0.7, "hand check of the 14 numpy cases: about 10 are done, the rest track larger work", "Open issues whose closing PR is merged"),
-    "close_duplicate_likely": (0.8, "hand-graded sample of 25 numpy pairs with similarity >= 0.90", "Likely duplicates of an older or original issue"),
+    "close_duplicate_likely": (0.8, "hand-graded sample of 25 numpy pairs with similarity >= 0.90", "Likely duplicates of an older open issue"),
+    "check_recurrence": (0.8, "same sample: the two are the same problem; whether it came back or was never fixed is for a person to judge",
+                         "Open issues very similar to an older closed one (came back, or a duplicate of something settled?)"),
     "close_fixed_similar": (0.5, "hand-graded sample of 25 numpy cases (82% on closed issues with a known closing PR)", "Open issues that a later merged PR seems to fix"),
     "review_competing": (None, "two open PRs with a closing link to the same issue: certain; similar PRs by different authors: similarity", "Open PRs after the same thing"),
     "add_label": (None, "share of suggestions with this score that matched the hidden real label (a lower bound: real labels are often missing)", "Labels to add"),
@@ -23,6 +25,7 @@ def main(path):
     db = sqlite3.connect(path, timeout=120)
     repo = db.execute("select v from meta where k='repo'").fetchone()[0]
     info = {n: (k, st, t) for n, k, st, t in db.execute("select number, kind, state, title from items")}
+    how_closed = dict(db.execute("select number, coalesce(state_reason, 'closed') from items where state = 'closed'"))
     is_open = {n for n, v in info.items() if v[1] == "open"}
     acts = []  # (kind, number, target, confidence, reason, command)
 
@@ -43,8 +46,12 @@ def main(path):
         sim[(a, b)] = sim[(b, a)] = s
     for n, m in db.execute("select number, master from dup_master where master != number"):
         if n in is_open and n not in marked and n not in tracking and (n, m) in sim:
-            add("close_duplicate_likely", n, m, f"{sim[(n, m)]:.0%} similar to the older #{m} ({info[m][1]})",
-                f'gh issue close {n} -R {repo} --reason "not planned" --comment "Duplicate of #{m}"')
+            if m in is_open:
+                add("close_duplicate_likely", n, m, f"{sim[(n, m)]:.0%} similar to the older open #{m}",
+                    f'gh issue close {n} -R {repo} --reason "not planned" --comment "Duplicate of #{m}"')
+            else:  # closing it as a duplicate would be wrong if the old problem came back
+                add("check_recurrence", n, m, f"{sim[(n, m)]:.0%} similar to #{m}, closed as {how_closed.get(m, info[m][1]).replace('_', ' ')}",
+                    f"gh issue view {m} -R {repo}; gh issue view {n} -R {repo}")
     for n, p, s in db.execute("select number, pr, sim from zombie"):
         if n not in tracking:
             add("close_fixed_similar", n, p, f"merged PR #{p} is its nearest match ({s:.0%}) and has no link to it",
@@ -60,10 +67,10 @@ def main(path):
         return ok[-1] if ok else None
 
     has_sug = db.execute("select 1 from sqlite_master where name='suggested'").fetchone()
-    for n, ax, lab, sc in db.execute("select number, axis, label, score from suggested order by number") if has_sug else []:
+    for n, ax, lab, sc, src in db.execute("select number, axis, label, score, source from suggested order by number") if has_sug else []:
         conf = measured(ax, sc)
         if n in is_open and conf is not None:
-            why = f"{sc:g} votes from similar and linked items" if ax == "component" else f"kNN score {sc:.2f}"
+            why = f"{sc:g} votes from similar and linked items" if src == "vote" else f"kNN score {sc:.2f}"
             add("add_label", n, None, f"{lab} ({why})", f"gh {'pr' if info[n][0] == 'pr' else 'issue'} edit {n} -R {repo} --add-label {shlex.quote(lab)}", conf)
 
     db.execute("drop table if exists actions")

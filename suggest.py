@@ -1,4 +1,10 @@
-"""Suggest existing labels (type + component axes) for unlabeled open items.
+"""Suggest existing labels for open items that lack them. Two modes, picked from the repo's own labels:
+
+numpy scheme (labels match AXES): a type and components, as below.
+any other repo: every label is a candidate, by the same vote count as components, and each label is suggested only from the
+            vote count at which it was right at least half the time when hidden (measured on labeled items), so
+            process labels that do not follow from the text drop out by themselves.
+
 
 type:       kNN vote over embeddings of already-labeled items (open + closed).
 component:  vote count: each of the 5 most similar labeled items gives one vote to each of its components, linked
@@ -6,7 +12,7 @@ component:  vote count: each of the 5 most similar labeled items gives one vote 
             Measured on a balanced held-out sample (items with and without a component).
 Written to table `suggested`; nothing touches the real labels.
 
-usage: python suggest.py data/<owner>__<name>/repo.db [--all] [--eval-only]
+usage: python suggest.py data/<owner>__<name>/repo.db [--unlabeled-only] [--eval-only]
 """
 import argparse, collections, json, random, re, sqlite3
 import numpy as np
@@ -15,6 +21,7 @@ AXES = {"type": r"^(0[0-7]|17|23|33) - ", "component": r"^component:"}  # type r
 K = 5  # measured: same recall as 15 at a lower threshold, and closer to the item when labels are missing
 KC, MIN_VOTES = 5, 2  # component vote; measured on numpy: finds 71%, ~34% of items without a component get one
 VAGUE = re.compile(r"(?i):\s*other$")  # "component: Other" says nothing; never suggested
+MIN_LABEL_PRECISION, MIN_LABEL_TRIES = 0.5, 10  # other repos: a label is suggested only if the hidden-label test got it right this often
 
 
 def load(db):
@@ -86,27 +93,74 @@ def component_votes(E, truth_c, has_label, queries, links):
     return out
 
 
+def generic(db, a, rows, nums, E, labels, is_open):
+    """Any repo: vote over all labels, keep the labels the vote gets right, suggest those to open items lacking them."""
+    n = len(nums)
+    has_label = np.array([bool(ls) for ls in labels])
+    used = {l for i in range(n) if is_open[i] for l in labels[i]} or {l for ls in labels for l in ls}
+    truth = [set(ls) & used for ls in labels]
+    lv = link_votes(db, nums, truth)
+    rnd = random.Random(0)
+    lab_idx = [i for i in range(n) if has_label[i]]
+    ev = rnd.sample(lab_idx, min(3000, len(lab_idx)))
+    targets = [i for i in range(n) if is_open[i] and not (a.unlabeled_only and labels[i])]
+    cv = component_votes(E, truth, has_label, sorted(set(ev) | set(targets)), lv)
+    # per label, the fewest votes at which the hidden-label test is right often enough; labels that never get there are dropped
+    need = {}
+    print(f"{n} items ({sum(is_open)} open, {len(lab_idx)} labeled); {len(used)} labels in use; hidden-label test on {len(ev)} items:")
+    for l in sorted(used):
+        for m in range(MIN_VOTES, 2 * KC + 1):
+            hits = [l in truth[i] for i in ev if cv[i].get(l, 0) >= m]
+            if len(hits) < MIN_LABEL_TRIES:
+                break
+            if np.mean(hits) >= MIN_LABEL_PRECISION:
+                need[l] = m
+                print(f"  keep  from {m} votes: {np.mean(hits):.2f} right of {len(hits):4d} suggestions  {l}")
+                break
+        if l not in need:
+            print(f"  drop  {l}")
+    calib = []
+    for lo, hi in ((2, 3), (3, 4), (4, 99)):
+        b = [l in truth[i] for i in ev for l, v in cv[i].items() if l in need and v >= need[l] and lo <= v < hi]
+        calib.append([lo, round(float(np.mean(b)), 2) if b else None])
+    pooled = [l in truth[i] for i in ev for l, v in cv[i].items() if l in need and v >= need[l]]
+    calib = [[lo, p if p is not None else round(float(np.mean(pooled)), 2)] for lo, p in calib] if pooled else calib  # a vote count the test never saw
+    print("calibration by votes (exact match):", calib)
+    if a.eval_only:
+        return
+    bots = {r[0] for r in db.execute("select number from items where author like '%[bot]' or author like 'dependabot%'")}
+    db.execute("create table if not exists suggested(number integer, axis text, label text, score real, source text)")
+    db.execute("delete from suggested")
+    db.execute("insert or replace into meta values('calibration', ?)", (json.dumps({"label": calib}),))
+    for i in targets:
+        if nums[i] not in bots:
+            for l, v in cv[i].items():
+                if l in need and v >= need[l] and l not in labels[i]:
+                    db.execute("insert into suggested values(?,?,?,?,'vote')", (nums[i], "label", l, float(v)))
+    db.commit()
+    print(db.execute("select label, count(*) from suggested group by 1 order by 2 desc").fetchall())
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("db")
-    ap.add_argument("--all", action="store_true", help="suggest for every open item missing an axis, not only fully unlabeled ones")
+    ap.add_argument("--unlabeled-only", action="store_true", help="suggest only for open items with no label at all (default: every open item missing a type or a component)")
     ap.add_argument("--eval-only", action="store_true", help="only measure, do not touch the suggested table")
     a = ap.parse_args()
     db = sqlite3.connect(a.db, timeout=120)
     rows, nums, E = load(db)
     n = len(nums)
-    labels = [[l for l in (r[3] or "").split(",") if l] for r in rows]
+    labels = [json.loads(r[3] or "[]") for r in rows]
     has_label = [bool(ls) for ls in labels]
     is_open = [r[4] == "open" for r in rows]
     ax_all = {ax: [{l for l in ls if re.search(rx, l)} for ls in labels] for ax, rx in AXES.items()}
     allowed = {ax: {l for i in range(n) if is_open[i] for l in ax_all[ax][i] if not VAGUE.search(l)} for ax in AXES}  # current scheme
     truth = {ax: [ax_all[ax][i] & allowed[ax] for i in range(n)] for ax in AXES}
     if not all(allowed.values()):
-        print("this repo's labels do not match the type/component patterns in AXES; nothing to suggest")
-        return
+        return generic(db, a, rows, nums, E, labels, is_open)
     print(f"{n} items ({sum(is_open)} open, {sum(has_label)} labeled); allowed: " + ", ".join(f"{ax} {len(allowed[ax])}" for ax in AXES))
 
-    targets = [i for i in range(n) if is_open[i] and (not labels[i] if not a.all else any(not ax_all[ax][i] for ax in AXES))]
+    targets = [i for i in range(n) if is_open[i] and (not labels[i] if a.unlabeled_only else any(not ax_all[ax][i] for ax in AXES))]
     rnd = random.Random(0)
     ev = rnd.sample([i for i in range(n) if has_label[i]], min(3000, sum(has_label)))
     # balanced component sample: labeled items with a current component label vs labeled items with none at all
@@ -161,7 +215,7 @@ def main():
         for i in targets:
             l, p = top(i)
             typ = set(ax_all["type"][i])
-            if l is not None and p >= 0.5:
+            if l is not None and p >= 0.5 and not typ:
                 db.execute("insert into suggested values(?,?,?,?,'knn')", (nums[i], "type", l, float(p)))
                 typ.add(l)
             if ax_all["component"][i] or nums[i] in bots:

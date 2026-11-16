@@ -41,7 +41,7 @@ a{color:inherit}.rel{display:block;padding:2px 0;cursor:pointer;text-decoration:
 <script>
 const D=__DATA__;
 const items=D.items,byNum=new Map(items.map((d,i)=>[d.n,i]));
-items.forEach(d=>{d.ls=d.l.split(',').filter(Boolean);d.sg=d.sg||[]});
+items.forEach(d=>{d.ls=d.l;d.sg=d.sg||[]});
 let sel=-1,term='',shown=200;
 const chosen=new Set(),NONE='\0none',TYPE=new RegExp(D.type);
 const PS={'pr:merged':'Closing PR merged: still open?','pr:similar':'Later merged PR looks like the fix (no link)','pr:open':'Closing PR open','pr:abandoned':'Closing PR abandoned','pr:tracking':'Tracking issue (has sub-issues)','pr:none':'No closing PR'};
@@ -79,7 +79,7 @@ function show(i){sel=i;renderRows();const d=items[i];
  +(d.si?'<h3>Most similar items</h3>'+d.si.map(([o,s,t,st])=>`<div>${Math.round(s*100)}% ${ref(o)} [${st}] ${esc(t)}</div>`).join(''):'')
  +(d.tl?`<h3>Timeline (links and similar items)</h3><div class="tl">${d.tl.filter(e=>e[1]<d.cr).map(row).join('')}${me}${d.tl.filter(e=>e[1]>=d.cr).map(row).join('')}</div>`:'')
  +`<pre>${esc(d.b)}</pre>`;wire()}
-const OV={close_duplicate_marked:'Marked duplicate on GitHub, still open',close_fixed_linked:'Closing PR merged, still open',close_duplicate_likely:'Likely duplicate of an older issue',close_fixed_similar:'Later merged PR looks like the fix',review_competing:'Open PRs after the same thing'};
+const OV={close_duplicate_marked:'Marked duplicate on GitHub, still open',close_fixed_linked:'Closing PR merged, still open',close_duplicate_likely:'Likely duplicate of an older open issue',check_recurrence:'Very similar to an older closed issue',close_fixed_similar:'Later merged PR looks like the fix',review_competing:'Open PRs after the same thing'};
 function overview(){sel=-1;renderRows();const iss=items.filter(d=>d.k==='issue'),n=k=>items.filter(d=>keysOf(d).includes(k)).length;
  const cat={};items.forEach(d=>{const c=cat[d.c]=cat[d.c]||[0,0];c[0]++;c[1]+=d.cm});
  const hot=Object.entries(cat).sort((a,b)=>b[1][1]-a[1][1]).slice(0,8),talk=items.slice().sort(SORT.cm).slice(0,8);
@@ -116,7 +116,7 @@ def main(path):
     db = sqlite3.connect(path, timeout=120)
     repo = db.execute("select v from meta where k='repo'").fetchone()[0]
     has = lambda t: db.execute("select 1 from sqlite_master where name=?", (t,)).fetchone()
-    items = [dict(n=n, k=k, t=t, b=(b or "")[:2000], s=(b or "")[:600], a=a, l=l or "", cm=cm, up=up, cr=cr[:10], u=u, c=c)
+    items = [dict(n=n, k=k, t=t, b=(b or "")[:2000], s=(b or "")[:600], a=a, l=json.loads(l or "[]"), cm=cm, up=up, cr=cr[:10], u=u, c=c)
              for n, k, t, b, a, l, cm, up, cr, u, c in db.execute(
                  "select i.number,kind,title,body,author,labels,comments,updated_at,created_at,url,cluster "
                  "from items i join topics t on t.number=i.number where i.state='open'")]

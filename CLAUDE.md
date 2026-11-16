@@ -22,7 +22,7 @@ python build_html.py $R            # -> browse.html cạnh repo.db
 datasette $R                       # duyệt và chạy SQL
 ```
 
-Không có test suite. Cách kiểm tra:
+`python -m pytest tests -q` chạy kiểm tra offline (vài giây, không cần mạng hay model): một repo giả có cài sẵn các ca trùng, zombie, PR cạnh tranh đi qua analyze, suggest, report, build_html; và mẫu regex liên kết. Kiểm tra trên dữ liệu thật:
 - `suggest.py` luôn in độ chính xác: trục loại theo leave-one-out, trục thành phần theo số phiếu tối thiểu 2/3/4 trên mẫu cân bằng (600 mục có thành phần, 600 mục không), độ chính xác quy về tỉ lệ thật của repo. `--eval-only` chỉ đo, không ghi.
 - Sau crawl, so `select sum(comments) from items` với số dòng `comments` có `kind='comment'`; lệch dưới 1% là bình thường (comment bị xoá hoặc thêm trong lúc crawl), lệch lớn nghĩa là crawl bị cắt.
 - Gán category: xoá vài dòng `topics` của mục mở rồi chạy lại `analyze.py`; chúng phải về đúng category cũ.
@@ -34,12 +34,12 @@ Mỗi repo một file SQLite `data/<owner>__<name>/repo.db` (`data` là symlink 
 
 | Bảng | Ghi bởi | Ghi chú |
 |---|---|---|
-| `items` | triageflow | mọi issue/PR, mọi trạng thái (`state`, `state_reason`, `merged`) |
+| `items` | triageflow | mọi issue/PR, mọi trạng thái (`state`, `state_reason`, `merged`); `labels` là mảng JSON (tên nhãn có thể chứa dấu phẩy); `state='deleted'` cho mục đã bị xoá hoặc chuyển repo (`reconcile` đối chiếu danh sách mục mở với GitHub mỗi lần crawl) |
 | `comments` | triageflow | khoá `(kind, id)`; `kind='comment'` (hội thoại) hoặc `review_comment` |
 | `links` | triageflow | từ GraphQL: `closes_official` (PR đóng issue, lấy từ cả phía PR lẫn phía issue nên gồm cả PR đã bị bỏ), `duplicate_of` (issue trùng → issue gốc), `sub_issue` (con → cha); từ văn bản: `closes` / `mentions`, bắt `#N`, `gh-N` và URL đầy đủ của cùng repo (chỉ giữ số có trong `items`) |
 | `fts` | triageflow | FTS5 trên tiêu đề, mô tả, comment; dựng lại mỗi lần |
 | `meta` | triageflow, analyze | `repo`, các mốc sync `*_since` và ETag `*_since_etag`, `category_threshold` |
-| `emb` | analyze | vector 384 chiều FP16 cho **mọi** mục; chỉ embed mục chưa có |
+| `emb` | analyze | vector 384 chiều FP16 cho **mọi** mục, kèm `hash` của tiêu đề + mô tả; chỉ embed mục mới hoặc mục có văn bản đã đổi |
 | `categories` | analyze | tạo **một lần** lúc init: tên, kích thước, tâm cụm (vector đã chuẩn hoá) |
 | `topics` | analyze | category của **mọi** mục (`-1` = Unsorted, khi xa mọi tâm hơn ngưỡng) |
 | `neighbors`, `similar` | analyze | 5 mục giống nhất của mỗi mục; `similar` là liên kết ngữ nghĩa: cặp nằm trong top 5 của nhau (`rank` 0 = gần nhất của nhau), tính lại mỗi lần |
@@ -47,7 +47,7 @@ Mỗi repo một file SQLite `data/<owner>__<name>/repo.db` (`data` là symlink 
 | `dup_pairs`, `dup_master` | analyze | cặp issue có thể trùng theo mức `github` / `likely` (cosine ≥ `DUP_SIM` 0,90) / `possible` (gần nhất của nhau); `dup_master`: issue nên giữ lại cho mỗi issue |
 | `zombie`, `pr_compete` | analyze | issue mở có vẻ đã được một PR merge sau đó sửa mà không link (`ZOMBIE_SIM` 0,86, gần nhất của nhau); cặp PR mở cùng đóng một issue hoặc rất giống nhau của hai tác giả khác nhau |
 | `actions` | report | mọi đề xuất: `kind`, `number`, `target`, `confidence`, `reason`, `command`; tính lại mỗi lần |
-| `suggested` | suggest | `source`: `knn` (loại), `vote` (thành phần), tính lại mỗi lần |
+| `suggested` | suggest | numpy: `axis` `type` (`source` `knn`) và `component` (`vote`); repo khác: `axis` `label` (`vote`); tính lại mỗi lần |
 
 Các ý cần đọc nhiều file mới thấy:
 - **Mở và đóng:** dữ liệu gốc, `emb` và category gồm mọi trạng thái (kNN và phiếu thành phần lấy từ cả mục đã đóng); gợi ý và trang HTML chỉ làm cho mục mở.
@@ -55,10 +55,12 @@ Các ý cần đọc nhiều file mới thấy:
 - **Đếm phiếu thành phần** (`suggest.py`, `KC=5`, `MIN_VOTES=2`): mỗi láng giềng trong 5 mục có nhãn giống nhất cho một phiếu mỗi thành phần của nó, mục có liên kết cộng thêm (`closes_official` 3, `closes` 2, `mentions` 1); thành phần nào đủ 2 phiếu thì gợi ý, nên một mục có thể nhận nhiều thành phần (trang HTML hiện số phiếu). Đã thử và bỏ: trộn có trọng số với naive Bayes trên từ khoá (chỉ 1 nhãn, tìm được 56%), quả cầu tâm + bán kính cho mỗi nhãn (các nhãn chồng nhau trong embedding, chính xác ~0,2–0,3), K=5 ≥1 phiếu (74% mục không có thành phần cũng bị gợi ý), K=7 ≥3 phiếu (chắc hơn nhưng chỉ tìm được 63%). Số đo khớp đúng là cận dưới (0,50): chấm tay 50 nhãn bị tính "sai" thì 77% vẫn liên quan tới mục, tức khoảng 88% nhãn gợi ý là có liên quan; chỉ dùng số tự động để so luật này với luật kia.
 - **Category ổn định:** chỉ init mới chạy KMeans; các lần sau mục mới vào tâm gần nhất (cosine) nên category không xáo trộn. Muốn chia lại thì `--init`.
 - **Không có bản đồ:** hình chiếu t-SNE 2D/3D đã làm rồi bỏ theo quyết định của người dùng (embedding không có cụm rõ nên hình không nói lên điều gì); đừng thêm lại. `browse.html` là một file tự chứa (JS thuần, dữ liệu nhúng dạng JSON): bộ lọc, danh sách mục mở, chi tiết kèm dòng thời gian (gồm cả mục đã đóng, tối đa 60), trang tổng quan đọc bảng `actions`.
-- **Liên kết văn bản:** numpy viết `gh-1234` và dán URL nhiều hơn `#1234`; chỉ bắt `#N` thì sót 25% số cặp. Liên kết `closes` từ văn bản gồm cả câu "fix #N" trong bình luận nên kém chắc hơn `closes_official`; 5 trong 14 ca "PR đóng đã merge" của numpy chỉ dựa vào văn bản.
+- **Liên kết văn bản:** numpy viết `gh-1234` và dán URL nhiều hơn `#1234`; chỉ bắt `#N` thì sót 25% số cặp. Câu "fixes #N" chỉ tính là `closes` khi nằm trong tiêu đề hoặc mô tả của chính mục đó; trong bình luận thì là `mentions` (numpy: GitHub xác nhận 69% câu trong mô tả PR nhưng chỉ 1% câu trong bình luận).
+- **Comment đáng tiền crawl** dù chiếm 3/4 số request: 31% số tham chiếu chỉ có trong comment, và 71/77 cặp trùng GitHub ghi nhận chỉ được nhắc tới trong comment. Embedding thì không đọc comment.
 - **Liên kết ngữ nghĩa** dùng tiêu chí tương đối (top 5 hai chiều) vì ngưỡng cosine tuyệt đối không tách được; chúng phục vụ dòng thời gian và gom trùng. Đã thử cho láng giềng hai chiều phiếu nặng hơn khi bỏ phiếu thành phần: không cải thiện, chỉ trượt trên cùng đường đánh đổi, nên phiếu giữ nguyên.
 - **Gom trùng** chỉ xét issue với issue và không nối chuỗi các cặp (thử nối thì một nhóm lên 151 issue). Embedding là tín hiệu duy nhất: đã thử thêm độ trùng chữ tiêu đề, tên hàm, cùng tác giả và hồi quy logistic trên 5 tín hiệu, xếp hạng issue gốc không tốt hơn cosine (gốc đứng đầu 39%, trong top 5 59%, trong top 30 78%).
 - **Độ tin cậy** của mọi đề xuất là tỉ lệ đúng đo được của loại đề xuất đó, nguồn đo ghi trong `RULES` của `report.py`: nhãn thì `suggest.py` lưu bảng hiệu chỉnh vào `meta.calibration` (khớp đúng với nhãn bị giấu, là cận dưới), trùng và zombie thì chấm tay trên numpy. Các hằng chấm tay này là của numpy; repo khác dùng tạm cho tới khi đo lại.
+- **Trùng với issue đã đóng không phải đề xuất đóng:** `report.py` tách thành `check_recurrence` (lệnh chỉ là `gh issue view`), vì nếu issue cũ đã sửa xong thì issue mở có thể là lỗi tái phát. Chỉ khi issue gốc còn mở mới đề xuất đóng bản mới hơn.
 - **Gợi ý không bao giờ đụng vào nhãn thật** hay GitHub: chúng nằm ở bảng riêng và trang HTML hiển thị nét đứt. Giữ nguyên tắc này.
 - **GitHub API:** lớp `GitHub` trong `triageflow.py` gọi thẳng REST/GraphQL bằng `urllib`: tự ngủ khi gần hết hạn mức, thử lại khi 5xx hay lỗi mạng, phân trang theo header `Link`. `stream()` sắp theo `updated` tăng dần và lưu mốc `updated_at` cuối, nên đứt ở đâu thì chạy lại tiếp từ đó; ETag của trang đầu được lưu kèm `since` đã dùng, nên lần sync không có gì mới nhận 304 (không tốn hạn mức).
 
@@ -68,7 +70,7 @@ Các ý cần đọc nhiều file mới thấy:
 - Endpoint `pulls/comments` hay trả 502 trên repo lớn; vì thế review comment mặc định tắt. Nội dung các lần review (approve kèm nhận xét) không được crawl.
 - SQLite chỉ cho một tiến trình ghi: không chạy song song hai bước ghi vào cùng DB (`database is locked`).
 - Hạn mức: GitHub 5000 request/giờ (GraphQL tính riêng).
-- `AXES` trong `suggest.py` (trục loại và thành phần) viết theo nhãn của numpy; repo khác sẽ in "nothing to suggest". Chỉ gợi ý hai trục này, không tạo nhãn mới, không gợi ý nhãn quy trình (Close?, Needs decision).
+- **Hai chế độ gợi ý nhãn** (`suggest.py`): repo có nhãn khớp `AXES` (numpy) thì gợi ý loại bằng kNN và thành phần bằng đếm phiếu. Repo khác đi vào `generic()`: mọi nhãn đang dùng đều là ứng viên, mỗi nhãn có số phiếu tối thiểu riêng là mức nhỏ nhất (2..10) mà phép thử giấu nhãn đúng ≥ 50% trên ≥ 10 lần gợi ý, nhãn không đạt thì không bao giờ được gợi ý (trên tqdm các nhãn quy trình như `need-feedback`, `to-review`, `duplicate` tự rơi ra). Ngưỡng chọn trên chính mẫu thử nên con số hơi lạc quan. Mặc định gợi ý cho mọi mục mở còn thiếu loại hoặc thiếu thành phần (`--unlabeled-only` để chỉ làm mục chưa có nhãn nào). Không tạo nhãn mới.
 - GraphQL phía issue (`issue_links`): 100 issue mỗi truy vấn, khoảng 3 điểm hạn mức; toàn bộ numpy 142 truy vấn, ~9 phút, các lần sau chỉ lấy issue có thay đổi. Sự kiện "marked as duplicate" nằm trên dòng thời gian của issue **gốc** và phải đọc cả `duplicate` lẫn `canonical`. Tham chiếu chéo (`CROSS_REFERENCED_EVENT`) đã thử và bỏ: GitHub trả 502 hoặc RESOURCE_LIMITS_EXCEEDED ngay cả với 25 issue mỗi truy vấn; regex `#N` phủ phần đó.
 - Repo nhỏ là ca biên thật: `pypa/wheel` chỉ có 26 mục mở, từng làm bước vẽ bản đồ (nay đã bỏ) hỏng. Khi đổi `analyze.py`, thử lại bằng `python run.py pypa/wheel` (crawl đầy đủ khoảng 50 request, 1 phút).
 - Mức tồn đọng (hoạt động cuối trong 1 / 1–3 / 3–5 / trên 5 năm) và trang tổng quan được tính ngay trong JS của trang, không có bảng riêng; tổng quan đọc bảng `actions` nên phải chạy `report.py` trước `build_html.py`.

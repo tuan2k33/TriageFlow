@@ -109,7 +109,7 @@ def item_row(o):
     pr = o.get("pull_request")
     return (o["number"], "pr" if pr else "issue", o["title"], o["body"], login(o.get("user")), o.get("author_association"),
             o["state"], o.get("state_reason"), int(bool(pr and pr.get("merged_at"))), int(bool(o.get("draft"))),
-            ",".join(l["name"] for l in o.get("labels") or []), (o.get("milestone") or {}).get("title"),
+            json.dumps([l["name"] for l in o.get("labels") or []], ensure_ascii=False), (o.get("milestone") or {}).get("title"),
             o.get("comments"), o["created_at"], o.get("closed_at"), o["updated_at"], o["html_url"])
 
 
@@ -249,24 +249,70 @@ def issue_links(gh, db, owner, name):
     print(f"  issue links: {pages} pages, " + ", ".join(f"{v} {k}" for k, v in n.items()), flush=True)
 
 
+def reconcile(gh, db, owner, name):
+    """Items open here but no longer open on GitHub and never seen changing: deleted, or transferred to another repo
+    (the listing just stops returning them). Mark them so they leave every open-item view."""
+    q = ("query($o:String!,$n:String!,$c:String){repository(owner:$o,name:$n){%s(first:100,after:$c,states:OPEN)"
+         "{pageInfo{hasNextPage endCursor}nodes{number}}}}")
+    live = set()
+    for field in ("issues", "pullRequests"):
+        cursor = None
+        while True:
+            page = gh.graphql(q % field, o=owner, n=name, c=cursor)["repository"][field]
+            live.update(x["number"] for x in page["nodes"])
+            if not page["pageInfo"]["hasNextPage"]:
+                break
+            cursor = page["pageInfo"]["endCursor"]
+    gone = 0
+    for (n,) in db.execute("select number from items where state='open'").fetchall():
+        if n in live:
+            continue
+        try:  # closed since the listing was read, or really gone?
+            _, o, _ = gh.call(f"{API}/repos/{owner}/{name}/issues/{n}")
+            moved = f"/{owner}/{name}/".lower() not in o["html_url"].lower()
+        except RuntimeError:
+            o, moved = None, False
+        if o and not moved:
+            db.execute(f"insert or replace into items values({','.join('?' * 17)})", item_row(o))
+        else:
+            db.execute("update items set state='deleted', state_reason=? where number=?", ("transferred" if moved else "gone", n))
+            gone += 1
+    db.commit()
+    print(f"  reconcile: {len(live)} open on GitHub, {gone} marked deleted or transferred", flush=True)
+
+
+def labels_to_json(db):
+    """One-time migration: labels used to be joined with commas, which breaks on a label that contains one."""
+    if meta_get(db, "labels_json"):
+        return
+    for n, ls in db.execute("select number, labels from items").fetchall():
+        if not (ls or "").startswith("["):
+            db.execute("update items set labels=? where number=?", (json.dumps([l for l in (ls or "").split(",") if l], ensure_ascii=False), n))
+    db.execute("insert or replace into meta values('labels_json', '1')")
+    db.commit()
+
+
 def text_links(db, owner, name):
     """closes/mentions found in the text of items and comments, only between known numbers."""
     links = set()
     repo = re.escape(f"{owner}/{name}")
     CLOSE_RX, REF = re.compile(CLOSE.replace("{repo}", repo), re.I), re.compile(NUM.replace("{repo}", repo), re.I)
 
-    def add(src, text):
+    # "fixes #N" counts as closes only in the item's own title or description: in a comment it is talk about a fix
+    # (numpy: GitHub confirms 69% of the PR-description ones and 1% of the comment ones)
+    def add(src, text, own):
         text = text or ""
-        closes = {int(x) for x in CLOSE_RX.findall(text)}
+        closes = {int(x) for x in CLOSE_RX.findall(text)} if own else set()
         links.update((src, k, "closes") for k in closes)
         links.update((src, k, "mentions") for k in {int(x) for x in REF.findall(text)} - closes)
 
     for n, t, b in db.execute("select number, title, body from items"):
-        add(n, f"{t}\n{b}")
+        add(n, f"{t}\n{b}", True)
     for n, b in db.execute("select number, body from comments"):
-        add(n, b)
+        add(n, b, False)
     known = {r[0] for r in db.execute("select number from items")}
-    rows = [(s, d, k) for s, d, k in links if s != d and d in known]
+    closing = {(s, d) for s, d, k in links if k == "closes"}
+    rows = [(s, d, k) for s, d, k in links if s != d and d in known and (k == "closes" or (s, d) not in closing)]
     db.execute("delete from links where kind in ('closes','mentions')")
     db.executemany("insert or ignore into links values(?,?,?)", rows)
     db.commit()
@@ -296,6 +342,7 @@ def main():
     db = sqlite3.connect(outdir / "repo.db", timeout=120)
     db.executescript(SCHEMA)
     db.execute("insert or replace into meta values('repo', ?)", (f"{owner}/{name}",))
+    labels_to_json(db)
     gh = GitHub()
     base = f"repos/{owner}/{name}"
     t0 = time.time()
@@ -311,6 +358,7 @@ def main():
                        "reviews_since", "review comments", a.full, per_page=30)
             except RuntimeError as e:
                 print(f"  WARNING: review comments incomplete ({e}); rerun to continue", flush=True)
+    reconcile(gh, db, owner, name)
     print("links:", flush=True)
     official_links(gh, db, owner, name)
     issue_links(gh, db, owner, name)

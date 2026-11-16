@@ -15,7 +15,7 @@ dup_pairs(a, b, sim, level), dup_master(number, master): duplicate candidates am
 zombie(number, pr, sim): open issues that a later merged PR seems to fix without linking them,
 pr_compete(a, b, reason, issue, sim): open PRs after the same thing.
 """
-import argparse, collections, json, re, sqlite3
+import argparse, collections, hashlib, json, re, sqlite3
 import numpy as np
 import torch
 from sklearn.cluster import KMeans
@@ -53,15 +53,24 @@ def load_emb(db, where="1"):
 
 
 def embed_new(db):
-    todo = db.execute("select number, title, coalesce(body,'') from items where number not in (select number from emb) order by number").fetchall()
-    print(f"embedding {len(todo)} new items", flush=True)
+    """Embed items that are new or whose title/description changed since they were embedded (hash of the text)."""
+    if "hash" not in [c[1] for c in db.execute("pragma table_info(emb)")]:
+        db.execute("alter table emb add column hash text")
+    done = dict(db.execute("select number, hash from emb"))
+    todo, texts = [], []
+    for n, t, b in db.execute("select number, title, coalesce(body,'') from items order by number"):
+        text = f"{t}\n{b[:1500]}"
+        h = hashlib.md5(text.encode()).hexdigest()
+        if done.get(n) != h:
+            todo.append((n, h))
+            texts.append(text)
+    print(f"embedding {len(todo)} new or edited items", flush=True)
     if not todo:
         return
-    texts = [f"{t}\n{b[:1500]}" for _, t, b in todo]
     order = sorted(range(len(texts)), key=lambda i: len(texts[i]))  # similar lengths per batch = less padding
     vecs = embed([texts[i] for i in order])
     for j, i in enumerate(order):
-        db.execute("insert or replace into emb values(?,?)", (todo[i][0], vecs[j].astype(np.float16).tobytes()))
+        db.execute("insert or replace into emb(number, vec, hash) values(?,?,?)", (todo[i][0], vecs[j].astype(np.float16).tobytes(), todo[i][1]))
     db.commit()
 
 
@@ -234,7 +243,7 @@ def competing(db):
 
 def name_categories(db, members):
     titles = dict(db.execute("select number, title from items"))
-    labels = {n: [l for l in (ls or "").split(",") if l] for n, ls in db.execute("select number, labels from items")}
+    labels = {n: json.loads(ls or "[]") for n, ls in db.execute("select number, labels from items")}
     return distinctive_names(members, titles, labels)
 
 
@@ -244,7 +253,7 @@ def init(db, k):
     # as many categories as the repo's numbered triage labels in use on open items ("00 - Bug" ... numpy: 36),
     # the granularity its maintainers chose; repos without such labels: about 45 open items per category (tqdm: 685 -> 15).
     numbered = {l for (ls,) in db.execute("select labels from items where state = 'open'")
-                for l in (ls or "").split(",") if re.match(r"^\d+ - ", l)}
+                for l in json.loads(ls or "[]") if re.match(r"^\d+ - ", l)}
     k = k or (len(numbered) if len(numbered) >= 8 else
               int(np.clip(round(sum(s == "open" for s in states) / OPEN_PER_CATEGORY), 8, 80)))
     k = min(k, n)
@@ -295,7 +304,7 @@ def main():
     ap.add_argument("--k", type=int, default=0, help="number of categories at init (default: numbered labels on open items, else open items / 45)")
     a = ap.parse_args()
     db = sqlite3.connect(a.db, timeout=120)
-    db.execute("create table if not exists emb(number integer primary key, vec blob)")
+    db.execute("create table if not exists emb(number integer primary key, vec blob, hash text)")
     embed_new(db)
     has_cats = db.execute("select 1 from sqlite_master where name='categories'").fetchone()
     if a.init or not has_cats:
