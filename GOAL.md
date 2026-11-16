@@ -16,8 +16,8 @@ Xây dựng công cụ phân tích, điều phối và dọn dẹp kho GitHub d�
 1. **Input:** link repo GitHub (hiện chạy bằng lệnh).
 2. **Crawl & Storage** ✅ Một lần crawl lấy mọi Issue/PR (mở và đóng), mọi comment hội thoại (comment gắn vào dòng code của PR mặc định bỏ qua), nhãn, trạng thái (`state_reason`, `merged`) vào SQLite. Liên kết do chính GitHub ghi nhận lấy qua GraphQL: PR nào đóng issue nào (kể cả PR đã bị bỏ), issue nào được đánh dấu trùng với issue nào, issue con của issue nào. Chạy lại chỉ lấy phần thay đổi.
 3. **Vectorize & Graph** ✅ Embedding cho mọi mục (mở và đóng). Graph liên kết cứng và liên kết ngữ nghĩa (hai mục nằm trong top 5 giống nhất của nhau).
-4. **Phân tích:** category chia một lần, mục mới gán vào category sẵn có ✅; gợi ý nhãn ✅; trạng thái PR của từng issue theo liên kết ✅; gom trùng ✅; PR cạnh tranh / tồn đọng ⬜.
-5. **Output & Action:** trang tra cứu một file HTML (bản đồ chủ đề, lọc nhãn, chi tiết từng mục) ✅; dashboard, danh sách đề xuất dọn dẹp, xuất script ⬜.
+4. **Phân tích:** category chia một lần, mục mới gán vào category sẵn có ✅; gợi ý nhãn ✅; trạng thái PR của từng issue theo liên kết ✅; gom trùng, zombie, PR cạnh tranh, tồn đọng ✅.
+5. **Output & Action:** trang tra cứu một file HTML (bản đồ chủ đề, lọc nhãn, chi tiết từng mục) ✅; trang tổng quan, báo cáo Markdown và script `gh` để duyệt ✅.
 
 ---
 
@@ -32,9 +32,9 @@ Khi chọn một Issue/PR, hiển thị toàn bộ mạng lưới liên quan:
 
 ### 3.2. Gợi ý Dọn dẹp, Gom gọn & Đóng (Actionable Cleanup)
 * 🟡 **Gom trùng lặp:** ✅ ba mức tin cậy cho cặp issue: GitHub đã đánh dấu trùng (numpy: 74 cặp), rất có thể trùng (độ giống ≥ 0,90; chấm tay ~80% là cùng vấn đề), có thể trùng (là issue gần nhất của nhau; chấm tay ~42%, còn lại là cùng chủ đề). **Master Issue** là issue gốc GitHub ghi nhận, nếu không thì issue cũ nhất trong các cặp trực tiếp (không nối chuỗi, vì chuỗi trôi từ "cùng vấn đề" sang "cùng chủ đề"). Gồm cả issue mở trùng với issue đã đóng (94 trong 135 ca). Giới hạn đo được: embedding chỉ tìm lại được 15% (mức ≥ 0,90) đến 28% (gần nhất của nhau) số cặp trùng đã biết; tên hàm, chữ trong tiêu đề, cùng tác giả không cải thiện xếp hạng. ⬜ Đề xuất đóng bản sao kèm lý do và câu bình luận mẫu (thuộc phần xuất script).
-* 🟡 **Zombie Issues (mở mà PR đã merge giải quyết):** ✅ theo luật trên liên kết và trạng thái PR (có PR đã merge đóng nó, có PR đang mở, chỉ có PR bị bỏ, không có PR; numpy: 14 / 137 / 154 / 1611 issue mở; issue có issue con được xếp riêng là tracking), lọc được trong trang. ⬜ Trường hợp tác giả quên link thì cần so khớp ngữ nghĩa Issue mở với PR đã merge.
-* ⬜ **PR cạnh tranh:** nhiều PR đang mở cùng sửa một lỗi hoặc làm một tính năng, để Maintainer chọn lọc và tránh lãng phí công review.
-* ⬜ **Tồn đọng & lỗi thời:** Issue/PR không tương tác quá lâu hoặc thuộc phiên bản cũ.
+* ✅ **Zombie Issues (mở mà PR đã merge giải quyết):** ✅ theo luật trên liên kết và trạng thái PR (có PR đã merge đóng nó, có PR đang mở, chỉ có PR bị bỏ, không có PR; numpy: 14 / 137 / 154 / 1611 issue mở; issue có issue con được xếp riêng là tracking), lọc được trong trang. ✅ Trường hợp tác giả quên link: issue mở và một PR đã merge tạo sau nó là gần nhất của nhau, độ giống ≥ 0,86, không có liên kết đóng (numpy: 78 issue; trên issue đã đóng có PR biết trước luật này đúng ≥ 82%, chấm tay trên issue mở khoảng một nửa là đã sửa thật, còn lại là sửa một phần hoặc chỉ liên quan).
+* ✅ **PR cạnh tranh:** hai PR đang mở cùng có liên kết đóng một issue, hoặc hai PR mở rất giống nhau (≥ 0,90) của hai tác giả khác nhau (cùng tác giả là chuỗi PR, không tính). numpy: 5 + 6 cặp.
+* ✅ **Tồn đọng:** lọc theo lần hoạt động cuối (trong 1 năm, 1–3 năm, 3–5 năm, trên 5 năm) thay cho một ngưỡng cố định; numpy: 728 mục mở im lặng trên 5 năm. ⬜ Nhận biết "thuộc phiên bản cũ" chưa làm.
 
 ### 3.3. Gợi ý Label từ nhãn sẵn có (Smart Labeling)
 Chỉ **dùng lại nhãn đã có của repo** để gợi ý cho Issue/PR chưa có nhãn. Không tạo nhãn mới.
@@ -42,16 +42,16 @@ Chỉ **dùng lại nhãn đã có của repo** để gợi ý cho Issue/PR chư
 * ✅ **Thành phần bằng đếm phiếu:** 5 mục có nhãn giống nhất, mỗi mục một phiếu cho mỗi thành phần của nó, cộng phiếu từ mục có liên kết (liên kết chính thức nặng nhất); thành phần nào ≥ 2 phiếu thì gợi ý, có thể nhiều hơn một. Trên mẫu cân bằng có và không có thành phần: tìm được đúng nhãn thật cho 71% số mục có thành phần; chấm tay khoảng 88% nhãn gợi ý có liên quan tới mục (số khớp đúng tự động chỉ 0,50, là cận dưới vì nhãn thật thiếu nhiều). Không gợi ý `component: Other`, không gợi ý cho PR của bot, mục đã là Documentation thì không gợi ý `component: documentation`.
 * ✅ **Hai trục gợi ý:** loại (Bug, Enhancement, Documentation...) và thành phần (`component: ...`). **Không** gợi ý nhãn quy trình (Close?, Needs decision, triaged...) vì đó là phán đoán của maintainer.
 * ✅ **Gợi ý luôn tách khỏi nhãn thật** (bảng riêng, hiển thị nét đứt), không ghi đè.
-* ⬜ **Gắn hàng loạt (Bulk Apply):** xuất danh sách để áp dụng sau khi người dùng duyệt (xem Phase 3).
+* ✅ **Gắn hàng loạt (Bulk Apply):** `report.py` xuất lệnh `gh issue edit --add-label` cho từng gợi ý, để người dùng duyệt rồi chạy.
 * ⬜ **Tự nhận diện trục nhãn của repo bất kỳ** (hiện mẫu trục đang viết theo nhãn của numpy). Thuộc Phase 4.
 
 ### 3.4. Tóm tắt thảo luận (Discussion Summary): không làm
 * Cần LLM nên đã bỏ khỏi phạm vi. Đã thử trước khi bỏ: tóm tắt chỉ từ tiêu đề + mô tả + trạng thái không thêm được gì (LLM chỉ viết lại mô tả). Kết cục của một thảo luận nay đọc từ liên kết và trạng thái PR, và từ dòng thời gian của mục.
 
-### 3.5. Bức tranh toàn cảnh (Triage Health Dashboard) ⬜
+### 3.5. Bức tranh toàn cảnh (Triage Health Dashboard) ✅
 * ✅ **Chỉ số phân mảnh:** số Issue độc lập so với tổng số đang mở, hiện ở góc trang (numpy: *1917 issue mở ≈ 1782 vấn đề*, tính theo mức GitHub đánh dấu và rất có thể trùng).
-* **Điểm nóng:** cụm vấn đề được quan tâm nhiều hoặc có nhiều PR cùng nhắm tới.
-* **Quick Wins:** danh sách có độ tin cậy cao có thể đóng hoặc gom ngay.
+* ✅ **Điểm nóng:** category có nhiều bình luận nhất trên mục mở và các mục được bàn nhiều nhất, trong trang tổng quan (bấm tên repo).
+* ✅ **Quick Wins:** các danh sách đề xuất xếp theo độ tin cậy trong trang tổng quan và trong `report.md` (numpy: 10 issue mở đã bị đánh dấu trùng, 14 issue có PR đóng đã merge).
 
 ---
 
@@ -68,14 +68,14 @@ Chỉ **dùng lại nhãn đã có của repo** để gợi ý cho Issue/PR chư
 ## 5. Lộ trình
 - [x] **Phase 1 (Core Data & Search):** crawler → SQLite → embedding → tìm kiếm và trang xem (bản đồ chủ đề, lọc nhiều nhãn, graph liên kết cứng).
   - [x] Cạnh ngữ nghĩa trong graph, dòng thời gian trong chi tiết từng mục.
-- [ ] **Phase 2 (Smart Cleanup):**
+- [x] **Phase 2 (Smart Cleanup):**
   - [x] Category chia một lần lúc init, mục mới gán vào category sẵn có, bản đồ ổn định.
   - [x] Trạng thái PR của từng issue theo liên kết (không cần LLM).
   - [x] Gom trùng lặp + Master Issue (ngưỡng chấm tay, đo lại bằng cặp trùng GitHub ghi nhận), chỉ số phân mảnh.
-  - [ ] Zombie theo ngữ nghĩa, PR cạnh tranh, tồn đọng.
-  - [ ] Dashboard sức khỏe triage.
-- [ ] **Phase 3 (Labeling & Action):**
+  - [x] Zombie theo ngữ nghĩa, PR cạnh tranh, tồn đọng.
+  - [x] Trang tổng quan sức khỏe triage.
+- [x] **Phase 3 (Labeling & Action):**
   - [x] Gợi ý nhãn: loại bằng kNN, thành phần bằng đếm phiếu (5 láng giềng + liên kết, ≥ 2 phiếu), không LLM.
-  - [ ] Điểm tin cậy thống nhất cho mọi loại gợi ý.
-  - [ ] Xuất báo cáo Markdown và script (`gh issue close ... --comment ...`, `gh issue edit --add-label`) để người dùng duyệt rồi chạy.
+  - [x] Điểm tin cậy thống nhất: mỗi đề xuất mang tỉ lệ đúng đo được của loại đề xuất đó (so với nhãn bị giấu, với liên kết GitHub ghi nhận, hoặc chấm tay) kèm lý do.
+  - [x] Xuất `report.md` và `actions.sh` (`gh issue close ... --comment ...`, `gh issue edit --add-label`; mọi dòng đều bị chú thích, người dùng bỏ chú thích dòng mình duyệt rồi chạy).
 - [ ] **Phase 4 (Mục tiêu cuối, chưa làm bây giờ):** zero-setup (dán URL là chạy), tự nhận diện trục nhãn của repo bất kỳ, giao diện đầy đủ, nút thực thi trực tiếp qua GitHub Token.

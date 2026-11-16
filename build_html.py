@@ -35,7 +35,7 @@ pre{white-space:pre-wrap;word-break:break-word;font:12px/1.5 inherit;background:
 a{color:inherit}.rel{display:block;padding:2px 0;cursor:pointer;text-decoration:underline dotted}
 @media (max-width:900px){body{grid-template-columns:1fr;grid-template-rows:auto 40vh 1fr auto}#list{display:none}}
 </style></head><body>
-<header><b>__REPO__</b><input id="q" type="search" placeholder="Search title / body…">
+<header><b id="home" style="cursor:pointer" title="Overview">__REPO__</b><input id="q" type="search" placeholder="Search title / body…">
 <label><input id="showE" type="checkbox" checked> links</label>
 <label title="pairs that are among each other's 5 most similar items"><input id="showM" type="checkbox" checked> similar</label>
 <label title="count suggested labels when filtering by label"><input id="showS" type="checkbox" checked> suggested</label>
@@ -43,7 +43,7 @@ a{color:inherit}.rel{display:block;padding:2px 0;cursor:pointer;text-decoration:
 <label><input id="showP" type="checkbox" checked> PRs</label><span id="count" style="color:var(--mute)"></span><span id="frag" style="color:var(--mute);margin-left:auto"></span></header>
 <div id="list"></div>
 <div id="map"><canvas id="c"></canvas><div id="tip"></div></div>
-<div id="detail"><div class="meta">Click a point. Circle = issue, square = PR. Scroll to zoom, drag to pan.</div></div>
+<div id="detail"></div>
 <script>
 const D=__DATA__;
 const items=D.items,byNum=new Map(items.map((d,i)=>[d.n,i]));
@@ -62,8 +62,9 @@ const grey=matchMedia('(prefers-color-scheme:dark)').matches?'#666':'#aaa';
 const colI=d=>{if(mode==='t')return col(d.c);const c=compOf(d);return c?col(comps.indexOf(c)):grey};
 let W,H,s=1,tx=0,ty=0,sel=-1,hov=-1,cluster=null,term='',mode='t';
 const chosen=new Set(),NONE='\0none',TYPE=/^(0[0-7]|17|23|33) - /;
-const grp=l=>l===NONE?'none':l.startsWith('pr:')?'pr':l.startsWith('dup:')?'dup':l.startsWith('component:')?'component':TYPE.test(l)?'type':'other';
-const keysOf=d=>{const k=lsOf(d).slice();if(d.ps)k.push('pr:'+d.ps[0]);if(d.du)k.push('dup:'+d.du[1][0][1]);return k};
+const grp=l=>l===NONE?'none':l.startsWith('pr:')?'pr':l.startsWith('dup:')?'dup':l.startsWith('cmp:')?'cmp':l.startsWith('age:')?'age':l.startsWith('component:')?'component':TYPE.test(l)?'type':'other';
+const YEAR=365.25*864e5,ageOf=d=>{const y=(new Date(D.now)-new Date(d.up))/YEAR;return y<1?'age:0':y<3?'age:1':y<5?'age:3':'age:5'};
+const keysOf=d=>{const k=lsOf(d).slice();if(d.ps)k.push('pr:'+d.ps[0]);if(d.zb)k.push('pr:similar');if(d.du)k.push('dup:'+d.du[1][0][1]);if(d.cp)k.push('cmp:yes');k.push(ageOf(d));return k};
 function passAll(d,skip){const k=keysOf(d),by={};for(const c of chosen){const g=grp(c);if(g!==skip)(by[g]=by[g]||[]).push(c)}
  for(const g in by){if(!by[g].some(c=>c===NONE?!lsOf(d).length:k.includes(c)))return false}return true}
 function fit(){const r=cv.getBoundingClientRect(),dpr=devicePixelRatio;W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr;g.setTransform(dpr,0,0,dpr,0,0);
@@ -89,7 +90,7 @@ function show(i){sel=i;draw();const d=items[i];
  const rel=d.tl?`<div class="tl">${d.tl.filter(e=>e[1]<d.cr).map(row).join('')}${me}${d.tl.filter(e=>e[1]>=d.cr).map(row).join('')}</div>`:'';
  detail.innerHTML=`<h2>${esc(d.t)}</h2><div class="meta">${d.k==='pr'?'PR':'Issue'} <a href="${d.u}" target="_blank">#${d.n}</a> · ${esc(d.a||'')} · ${d.cm} comments · updated ${d.up.slice(0,10)}</div>
  <div>${d.ls.map(l=>`<span class="tag">${esc(l)}</span>`).join('')}${d.sg.map(([l,p,src])=>`<span class="tag sug" title="suggested by ${src}${src==='vote'?' ('+p+' votes)':p?' ('+p.toFixed(2)+' kNN)':''}">${esc(l)} ?</span>`).join('')}<span class="tag" style="border-color:${col(d.c)}">${esc(D.names[d.c])}</span></div>
- ${d.ps&&d.ps[0]!=='none'?`<div class="hint"><b>${PS['pr:'+d.ps[0]]}</b> ${d.ps[1].map(([n,f])=>`<a href="${D.repo}/pull/${n}" target="_blank">#${n}</a> ${f}`).join(', ')}</div>`:''}${d.du?`<div class="hint"><b>${DUP['dup:'+d.du[1][0][1]]}</b>${d.du[0]?` · keep ${ref(d.du[0])} (original or oldest)`:''}<br>${d.du[1].map(([o,lv,s,st,t])=>`${ref(o)} [${st}] ${esc(t)} <small style="color:var(--mute)">${lv} ${Math.round(s*100)}%</small>`).join('<br>')}</div>`:''}${d.si?`<h3 style="font-size:12px;color:var(--mute);margin:10px 0 2px">Similar</h3>`+d.si.map(([o,s,t,st])=>{const j=byNum.get(o),lab=`${Math.round(s*100)}% #${o} [${st}] ${esc(t)}`;return j!==undefined?`<span class="rel" data-i="${j}">${lab}</span>`:`<a class="rel" href="${D.repo}/issues/${o}" target="_blank">${lab}</a>`}).join(''):''}${rel?`<h3 style="font-size:12px;color:var(--mute);margin:10px 0 2px">Timeline (links and similar items)</h3>${rel}`:''}<pre>${esc(d.b)}</pre>`;
+ ${d.ps&&d.ps[0]!=='none'?`<div class="hint"><b>${PS['pr:'+d.ps[0]]}</b> ${d.ps[1].map(([n,f])=>`<a href="${D.repo}/pull/${n}" target="_blank">#${n}</a> ${f}`).join(', ')}</div>`:''}${d.zb?`<div class="hint"><b>Later merged PR looks like the fix</b> ${ref(d.zb[0])} ${esc(d.zb[2])} <small style="color:var(--mute)">${Math.round(d.zb[1]*100)}% similar, no link</small></div>`:''}${d.cp?`<div class="hint"><b>Open PRs after the same thing</b><br>${d.cp.map(([o,r,t])=>`${ref(o)} ${esc(t)} <small style="color:var(--mute)">${r}</small>`).join('<br>')}</div>`:''}${d.du?`<div class="hint"><b>${DUP['dup:'+d.du[1][0][1]]}</b>${d.du[0]?` · keep ${ref(d.du[0])} (original or oldest)`:''}<br>${d.du[1].map(([o,lv,s,st,t])=>`${ref(o)} [${st}] ${esc(t)} <small style="color:var(--mute)">${lv} ${Math.round(s*100)}%</small>`).join('<br>')}</div>`:''}${d.si?`<h3 style="font-size:12px;color:var(--mute);margin:10px 0 2px">Similar</h3>`+d.si.map(([o,s,t,st])=>{const j=byNum.get(o),lab=`${Math.round(s*100)}% #${o} [${st}] ${esc(t)}`;return j!==undefined?`<span class="rel" data-i="${j}">${lab}</span>`:`<a class="rel" href="${D.repo}/issues/${o}" target="_blank">${lab}</a>`}).join(''):''}${rel?`<h3 style="font-size:12px;color:var(--mute);margin:10px 0 2px">Timeline (links and similar items)</h3>${rel}`:''}<pre>${esc(d.b)}</pre>`;
  detail.querySelectorAll('.rel[data-i]').forEach(e=>e.onclick=()=>{const j=+e.dataset.i;focus(j);show(j)})}
 function focus(j){const [x,y]=[items[j].x,items[j].y];tx=W/2-x*s;ty=H/2-y*s;draw()}
 cv.onmousemove=e=>{const r=cv.getBoundingClientRect();if(drag){tx+=e.movementX;ty+=e.movementY;draw();return}
@@ -97,25 +98,41 @@ cv.onmousemove=e=>{const r=cv.getBoundingClientRect();if(drag){tx+=e.movementX;t
  tip.style.display=i>=0?'block':'none';if(i>=0){tip.textContent='#'+items[i].n+' '+items[i].t;tip.style.left=Math.min(e.clientX-r.left+12,W-330)+'px';tip.style.top=(e.clientY-r.top+12)+'px'}};
 let drag=false,moved=0;cv.onmousedown=()=>{drag=true;moved=0;cv.style.cursor='grabbing'};
 addEventListener('mouseup',e=>{if(!drag)return;drag=false;cv.style.cursor='grab'});
-cv.onclick=e=>{const r=cv.getBoundingClientRect();const i=pick(e.clientX-r.left,e.clientY-r.top);if(i>=0)show(i);else{sel=-1;draw()}};
+cv.onclick=e=>{const r=cv.getBoundingClientRect();const i=pick(e.clientX-r.left,e.clientY-r.top);if(i>=0)show(i);else{sel=-1;draw();overview()}};
+const OV={close_duplicate_marked:'Marked duplicate on GitHub, still open',close_fixed_linked:'Closing PR merged, still open',close_duplicate_likely:'Likely duplicate of an older issue',close_fixed_similar:'Later merged PR looks like the fix',review_competing:'Open PRs after the same thing'};
+function overview(){const iss=items.filter(d=>d.k==='issue'),n=k=>items.filter(d=>keysOf(d).includes(k)).length;
+ const cat={};items.forEach(d=>{const c=cat[d.c]=cat[d.c]||[0,0];c[0]++;c[1]+=d.cm});
+ const hot=Object.entries(cat).sort((a,b)=>b[1][1]-a[1][1]).slice(0,8);
+ const talk=items.slice().sort((a,b)=>b.cm-a.cm).slice(0,8);
+ const sec=(t,h)=>`<h3 style="font-size:12px;color:var(--mute);margin:12px 0 2px">${t}</h3>${h}`;
+ detail.innerHTML=`<h2>Overview</h2><div class="meta">${iss.length} open issues, ${items.length-iss.length} open PRs. Click a point for details; circle = issue, square = PR.</div>`+
+ sec('Last activity',Object.keys(AGE).map(k=>`${AGE[k]}: <b>${n(k)}</b>`).join('<br>'))+
+ Object.keys(OV).filter(k=>D.over[k]).map(k=>sec(`${OV[k]} (${D.over[k].length})`,D.over[k].slice(0,8).map(([o,c,r])=>`${ref(o)} ${esc(items[byNum.get(o)]?.t||'')} <small style="color:var(--mute)">${Math.round(c*100)}% · ${esc(r)}</small>`).join('<br>')+(D.over[k].length>8?`<br><small style="color:var(--mute)">… ${D.over[k].length-8} more in report.md</small>`:''))).join('')+
+ sec('Hot categories (comments on open items)',hot.map(([c,[m,cm]])=>`<span class="rel" data-c="${c}">${esc(D.names[c])}</span> <small style="color:var(--mute)">${m} open, ${cm} comments</small>`).join(''))+
+ sec('Most discussed open items',talk.map(d=>`${ref(d.n)} ${esc(d.t)} <small style="color:var(--mute)">${d.cm} comments</small>`).join('<br>'));
+ detail.querySelectorAll('.rel[data-i]').forEach(e=>e.onclick=()=>{const j=+e.dataset.i;focus(j);show(j)});
+ detail.querySelectorAll('.rel[data-c]').forEach(e=>e.onclick=()=>{mode='t';cluster=+e.dataset.c;renderList();draw()})}
+home.onclick=()=>{sel=-1;draw();overview()};
 cv.onwheel=e=>{e.preventDefault();const r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top,f=Math.exp(-e.deltaY*.0015);tx=mx-(mx-tx)*f;ty=my-(my-ty)*f;s*=f;draw()};
 const counts={};items.forEach(d=>counts[d.c]=(counts[d.c]||0)+1);
 const order=Object.keys(counts).map(Number).sort((a,b)=>counts[b]-counts[a]);
 const PS={'pr:merged':'Closing PR merged: still open?','pr:open':'Closing PR open','pr:abandoned':'Closing PR abandoned','pr:tracking':'Tracking issue (has sub-issues)','pr:none':'No closing PR'};
 const DUP={'dup:github':'Marked duplicate on GitHub','dup:likely':'Likely duplicate (very similar)','dup:possible':'Possible duplicate (nearest of each other)'};
-const HINT={...PS,...DUP};frag.textContent=D.frag||'';
-const GN={dup:'Duplicates',pr:'Issues by closing PR',type:'Type',component:'Component',other:'Other'};
+const AGE={'age:0':'Active in the last year','age:1':'Quiet for 1-3 years','age:3':'Quiet for 3-5 years','age:5':'Quiet for over 5 years'};
+PS['pr:similar']='Later merged PR looks like the fix (no link)';
+const HINT={...PS,...DUP,...AGE,'cmp:yes':'Open PRs after the same thing'};frag.textContent=D.frag||'';
+const GN={cmp:'Competing PRs',age:'Last activity',dup:'Duplicates',pr:'Issues by closing PR',type:'Type',component:'Component',other:'Other'};
 function renderList(){const tab=(m,t)=>`<span class="tab${mode===m?' on':''}" data-m="${m}">${t}</span>`;
  let h=`<div class="tabs">${tab('t','Categories')}${tab('l','Labels')}</div>`;
  if(mode==='t'){h+=`<div class="cl${cluster===null?' on':''}" data-c="">All categories <em>${items.length}</em></div>`+order.map(c=>`<div class="cl${cluster===c?' on':''}" data-c="${c}"><i style="background:${col(c)}"></i><span>${esc(D.names[c])}</span><em>${counts[c]}</em></div>`).join('');list.innerHTML=h;return}
- const gl={dup:{},pr:{},type:{},component:{},other:{}},tot={},cnt={};
+ const gl={dup:{},pr:{},cmp:{},age:{},type:{},component:{},other:{}},tot={},cnt={};
  for(const d of items)for(const l of keysOf(d)){tot[l]=(tot[l]||0)+1;gl[grp(l)][l]=1}
  for(const g in gl)for(const l in gl[g])cnt[l]=0;
  for(const d of items){if(d.k==='pr'?!showP.checked:!showI.checked)continue;const k=new Set(keysOf(d));for(const g of Object.keys(gl)){if(!passAll(d,g))continue;for(const l of k)if(grp(l)===g)cnt[l]++}}
  const nl=items.filter(d=>(d.k==='pr'?showP.checked:showI.checked)&&!lsOf(d).length&&passAll(d,'none')).length;
  h+=`<div class="chips">${[...chosen].map(c=>`<span class="chip" data-l="${esc(c)}">${esc(c===NONE?'(no label)':HINT[c]||c)} ×</span>`).join('')}${chosen.size?'<span class="clear">clear all</span>':'<span class="mute">Pick labels: OR within a group, AND across groups</span>'}</div>`;
  h+=`<div class="cl${chosen.has(NONE)?' on':''}" data-l="${NONE}"><i style="background:${grey}"></i><span>(no label)</span><em>${nl}</em></div>`;
- for(const g of ['dup','pr','type','component','other']){const ls=Object.keys(gl[g]).sort((a,b)=>tot[b]-tot[a]);if(!ls.length)continue;
+ for(const g of ['dup','pr','cmp','age','type','component','other']){const ls=Object.keys(gl[g]).sort((a,b)=>g==='age'?a.localeCompare(b):tot[b]-tot[a]);if(!ls.length)continue;
   h+=`<div class="gh">${GN[g]}</div>`+ls.map(l=>{const ci=comps.indexOf(l);return `<div class="cl${chosen.has(l)?' on':''}${cnt[l]?'':' zero'}" data-l="${esc(l)}"><i style="background:${ci>=0?col(ci):'transparent'};border:1px solid var(--line)"></i><span>${esc(HINT[l]||l)}</span><em>${cnt[l]}</em></div>`}).join('')}
  const top=list.scrollTop;list.innerHTML=h;list.scrollTop=top}
 list.onclick=e=>{const t=e.target.closest('.tab');if(t){mode=t.dataset.m;renderList();draw();return}
@@ -126,7 +143,7 @@ list.onclick=e=>{const t=e.target.closest('.tab');if(t){mode=t.dataset.m;renderL
  renderList();draw()};
 renderList();
 q.oninput=()=>{term=q.value.trim().toLowerCase();draw()};[showE,showM,showI,showP].forEach(x=>x.onchange=draw);showS.onchange=()=>{renderList();draw()};
-addEventListener('resize',fit);fit();
+addEventListener('resize',fit);fit();overview();
 </script></body></html>"""
 
 
@@ -180,6 +197,16 @@ def main(path):
         issues = sum(1 for it in items if it["k"] == "issue")
         extra = sum(1 for it in items if it["n"] in master)
         frag = f"{issues} open issues ≈ {issues - extra} distinct problems"
+    zb = {n: [p, round(s, 2), info[p][2]] for n, p, s in db.execute("select number, pr, sim from zombie")} if has("zombie") else {}
+    cp = {}
+    if has("pr_compete"):
+        for a, b, reason, issue, s in db.execute("select a, b, reason, issue, sim from pr_compete"):
+            for me, other in ((a, b), (b, a)):
+                cp.setdefault(me, []).append([other, f"both close #{issue}" if issue else f"{s:.0%} similar, different authors", info[other][2]])
+    over = {}
+    if has("actions"):
+        for kind, n, target, conf, reason in db.execute("select kind, number, target, confidence, reason from actions where kind != 'add_label' order by confidence desc, number"):
+            over.setdefault(kind, []).append([n, round(conf, 2), reason])
     sg = {}
     if has("suggested"):
         best = {}
@@ -201,11 +228,15 @@ def main(path):
             it["ps"] = ps[it["n"]]
         if it["n"] in du:
             it["du"] = du[it["n"]]
+        if it["n"] in zb:
+            it["zb"] = zb[it["n"]]
+        if it["n"] in cp:
+            it["cp"] = cp[it["n"]]
         if it["n"] in si:
             it["si"] = si[it["n"]]
         if it["n"] in sg:
             it["sg"] = sg[it["n"]]
-    html = PAGE.replace("__REPO__", repo).replace("__DATA__", json.dumps(dict(items=items, names=names, links=links, frag=frag, repo=f"https://github.com/{repo}"), ensure_ascii=False).replace("</", "<\\/"))
+    html = PAGE.replace("__REPO__", repo).replace("__DATA__", json.dumps(dict(items=items, names=names, links=links, frag=frag, over=over, now=max(it["up"] for it in items), repo=f"https://github.com/{repo}"), ensure_ascii=False).replace("</", "<\\/"))
     out = Path(path).with_name("graph.html")
     out.write_text(html, encoding="utf-8")
     print(f"{out}  {out.stat().st_size/1e6:.1f} MB")

@@ -11,7 +11,9 @@ Tables: emb(number, vec), categories(id, name, size, centroid), topics(number, c
 neighbors(number, rank, other, sim): the 5 most similar items of every item,
 similar(a, b, sim, rank): semantic links, pairs that are in each other's top 5 (rank 0 = each other's nearest),
 pr_status(number, status, prs): for every open issue, what happened to the PRs that say they close it,
-dup_pairs(a, b, sim, level), dup_master(number, master): duplicate candidates among issues and the issue to keep.
+dup_pairs(a, b, sim, level), dup_master(number, master): duplicate candidates among issues and the issue to keep,
+zombie(number, pr, sim): open issues that a later merged PR seems to fix without linking them,
+pr_compete(a, b, reason, issue, sim): open PRs after the same thing.
 """
 import argparse, collections, json, re, sqlite3
 import numpy as np
@@ -24,6 +26,7 @@ from transformers import AutoModel, AutoTokenizer
 MODEL = "BAAI/bge-small-en-v1.5"
 NEIGHBORS = 8
 OPEN_PER_CATEGORY = 45
+ZOMBIE_SIM = 0.86  # issue and merged PR nearest to each other: on closed numpy issues the PR is a known closer >= 82% of the time
 DUP_SIM = 0.90  # hand-graded on numpy: ~80% of issue pairs at or above this are the same problem (known duplicates: median 0.85)
 
 
@@ -179,6 +182,57 @@ def duplicates(db):
           f"{len(is_open)} open issues are about {len(is_open) - extra} distinct problems ({extra} have an older or original issue)")
 
 
+def zombies(db):
+    """Open issues whose fix may already be merged: the issue and a later merged PR are each other's nearest
+    (nearest merged PR of the issue, nearest issue of the PR), similar enough, and the PR has no closing link to it."""
+    ni, _, Ei = load_emb(db, "i.kind = 'issue'")
+    np_, _, Ep = load_emb(db, "i.kind = 'pr' and i.merged = 1")
+    db.execute("drop table if exists zombie")
+    db.execute("create table zombie(number integer primary key, pr integer, sim real)")
+    if ni and np_:
+        created = dict(db.execute("select number, created_at from items"))
+        is_open = {r[0] for r in db.execute("select number from items where state = 'open'")}
+        linked = set(db.execute("select dst, src from links where kind in ('closes_official', 'closes')"))
+        back = np.concatenate([(Ep[c:c + 2000] @ Ei.T).argmax(1) for c in range(0, len(np_), 2000)])
+        for c in range(0, len(ni), 2000):
+            S = Ei[c:c + 2000] @ Ep.T
+            for r, j in enumerate(S.argmax(1)):
+                n, p, s = ni[c + r], np_[j], float(S[r, j])
+                if n in is_open and s >= ZOMBIE_SIM and back[j] == c + r and created[p] > created[n] and (n, p) not in linked:
+                    db.execute("insert into zombie values(?,?,?)", (n, p, s))
+    db.commit()
+    print(f"zombies: {db.execute('select count(*) from zombie').fetchone()[0]} open issues look fixed by an unlinked merged PR")
+
+
+def competing(db):
+    """Open PRs after the same thing: two that close the same issue, or two very similar ones by different authors
+    (the same author's similar PRs are a series, not a competition)."""
+    nums, _, E = load_emb(db, "i.kind = 'pr' and i.state = 'open'")
+    author = dict(db.execute("select number, author from items where kind = 'pr' and state = 'open'"))
+    rows = {}
+    for c in range(0, len(nums), 2000):
+        S = E[c:c + 2000] @ E.T
+        for r, j in zip(*np.where(S >= DUP_SIM)):
+            if c + r < j and author[nums[c + r]] != author[nums[j]]:
+                rows[(nums[c + r], nums[j])] = ("very similar", None, float(S[r, j]))
+    by_issue = collections.defaultdict(set)
+    for issue, pr in db.execute("select l.dst, l.src from links l join items p on p.number = l.src where l.kind in ('closes_official', 'closes') "
+                                "and p.kind = 'pr' and p.state = 'open'"):
+        by_issue[issue].add(pr)
+    idx = {n: i for i, n in enumerate(nums)}
+    for issue, prs in by_issue.items():
+        prs = sorted(p for p in prs if p in idx)
+        for x, a in enumerate(prs):
+            for b in prs[x + 1:]:
+                rows[(a, b)] = ("close the same issue", issue, float(E[idx[a]] @ E[idx[b]]))
+    db.execute("drop table if exists pr_compete")
+    db.execute("create table pr_compete(a integer, b integer, reason text, issue integer, sim real, primary key(a, b))")
+    db.executemany("insert into pr_compete values(?,?,?,?,?)", [(a, b, *v) for (a, b), v in rows.items()])
+    db.commit()
+    n = collections.Counter(v[0] for v in rows.values())
+    print(f"competing open PRs: {n['close the same issue']} pairs close the same issue, {n['very similar']} pairs are very similar")
+
+
 def name_categories(db, members):
     titles = dict(db.execute("select number, title from items"))
     labels = {n: [l for l in (ls or "").split(",") if l] for n, ls in db.execute("select number, labels from items")}
@@ -263,6 +317,8 @@ def main():
     neighbors(db)
     pr_status(db)
     duplicates(db)
+    zombies(db)
+    competing(db)
 
 
 if __name__ == "__main__":

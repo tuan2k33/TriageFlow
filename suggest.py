@@ -8,7 +8,7 @@ Written to table `suggested`; nothing touches the real labels.
 
 usage: python suggest.py data/<owner>__<name>/repo.db [--all] [--eval-only]
 """
-import argparse, collections, random, re, sqlite3
+import argparse, collections, json, random, re, sqlite3
 import numpy as np
 
 AXES = {"type": r"^(0[0-7]|17|23|33) - ", "component": r"^component:"}  # type regex fits numpy's numbered scheme
@@ -139,12 +139,25 @@ def main():
         print(f"  {'->' if m == MIN_VOTES else '  '} >={m} votes: finds {np.mean([bool(sug[i] & truth['component'][i]) for i in bp]):.2f}"
               f"  none {np.mean([not sug[i] for i in bp]):.2f}  items without one get one {np.mean([bool(sug[i]) for i in bn]):.2f}"
               f"  tag precision {prec:.2f}")
+    # how often a suggestion with this score was right when the label was hidden: the confidence shown to the user
+    best = [(i, top(i)) for i in e]
+    calib = {"type": [], "component": []}
+    for lo, hi in ((0.5, 0.6), (0.6, 0.7), (0.7, 0.8), (0.8, 1.01)):
+        b = [l in truth["type"][i] for i, (l, p) in best if l is not None and lo <= p < hi]
+        calib["type"].append([lo, round(float(np.mean(b)), 2) if b else None])
+    for lo, hi in ((2, 3), (3, 4), (4, 99)):
+        tags = [(l in truth["component"][i], i in set(bp)) for i in bal for l, v in cv[i].items() if lo <= v < hi]
+        right, wrong_p = sum(r for r, _ in tags) / len(bp), sum(not r and p for r, p in tags) / len(bp)
+        on_neg = sum(not p for _, p in tags) / len(bn)
+        calib["component"].append([lo, round(right * base_rate / max(1e-9, (right + wrong_p) * base_rate + on_neg * (1 - base_rate)), 2)])
+    print("calibration (exact match):", calib)
     bots = {r[0] for r in db.execute("select number from items where author like '%[bot]' or author like 'dependabot%'")}
     print(f"targets: {len(targets)} open items")
 
     if not a.eval_only:
         db.execute("create table if not exists suggested(number integer, axis text, label text, score real, source text)")
         db.execute("delete from suggested")
+        db.execute("insert or replace into meta values('calibration', ?)", (json.dumps(calib),))
         for i in targets:
             l, p = top(i)
             typ = set(ax_all["type"][i])

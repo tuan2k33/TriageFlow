@@ -17,6 +17,7 @@ R=data/numpy__numpy/repo.db
 python triageflow.py numpy/numpy   # crawl; --full lấy lại từ đầu, --review-comments thêm comment gắn vào code (mặc định tắt)
 python analyze.py $R               # embed mục mới; lần đầu (hoặc --init) chia category, các lần sau gán mục mới vào category sẵn có
 python suggest.py $R               # gợi ý nhãn loại (kNN) và thành phần (bỏ phiếu); in số đo trên mẫu giữ lại
+python report.py $R                # bảng actions + report.md và actions.sh cạnh repo.db (mọi lệnh gh đều bị chú thích)
 python build_html.py $R            # -> graph.html cạnh repo.db
 datasette $R                       # duyệt và chạy SQL
 ```
@@ -44,6 +45,8 @@ Mỗi repo một file SQLite `data/<owner>__<name>/repo.db` (`data` là symlink 
 | `neighbors`, `similar` | analyze | 5 mục giống nhất của mỗi mục; `similar` là liên kết ngữ nghĩa: cặp nằm trong top 5 của nhau (`rank` 0 = gần nhất của nhau), tính lại mỗi lần |
 | `pr_status` | analyze | mỗi issue mở: `merged` / `open` / `abandoned` / `none` theo các PR đóng nó (`closes_official`, `closes`), hoặc `tracking` nếu nó có issue con; tính lại mỗi lần |
 | `dup_pairs`, `dup_master` | analyze | cặp issue có thể trùng theo mức `github` / `likely` (cosine ≥ `DUP_SIM` 0,90) / `possible` (gần nhất của nhau); `dup_master`: issue nên giữ lại cho mỗi issue |
+| `zombie`, `pr_compete` | analyze | issue mở có vẻ đã được một PR merge sau đó sửa mà không link (`ZOMBIE_SIM` 0,86, gần nhất của nhau); cặp PR mở cùng đóng một issue hoặc rất giống nhau của hai tác giả khác nhau |
+| `actions` | report | mọi đề xuất: `kind`, `number`, `target`, `confidence`, `reason`, `command`; tính lại mỗi lần |
 | `suggested` | suggest | `source`: `knn` (loại), `vote` (thành phần), tính lại mỗi lần |
 
 Các ý cần đọc nhiều file mới thấy:
@@ -53,6 +56,7 @@ Các ý cần đọc nhiều file mới thấy:
 - **Đếm phiếu thành phần** (`suggest.py`, `KC=5`, `MIN_VOTES=2`): mỗi láng giềng trong 5 mục có nhãn giống nhất cho một phiếu mỗi thành phần của nó, mục có liên kết cộng thêm (`closes_official` 3, `closes` 2, `mentions` 1); thành phần nào đủ 2 phiếu thì gợi ý, nên một mục có thể nhận nhiều thành phần (trang HTML hiện số phiếu). Đã thử và bỏ: trộn có trọng số với naive Bayes trên từ khoá (chỉ 1 nhãn, tìm được 56%), quả cầu tâm + bán kính cho mỗi nhãn (các nhãn chồng nhau trong embedding, chính xác ~0,2–0,3), K=5 ≥1 phiếu (74% mục không có thành phần cũng bị gợi ý), K=7 ≥3 phiếu (chắc hơn nhưng chỉ tìm được 63%). Số đo khớp đúng là cận dưới (0,50): chấm tay 50 nhãn bị tính "sai" thì 77% vẫn liên quan tới mục, tức khoảng 88% nhãn gợi ý là có liên quan; chỉ dùng số tự động để so luật này với luật kia.
 - **Liên kết ngữ nghĩa** dùng tiêu chí tương đối (top 5 hai chiều) vì ngưỡng cosine tuyệt đối không tách được; chúng phục vụ graph, dòng thời gian và gom trùng. Đã thử cho láng giềng hai chiều phiếu nặng hơn khi bỏ phiếu thành phần: không cải thiện, chỉ trượt trên cùng đường đánh đổi, nên phiếu giữ nguyên.
 - **Gom trùng** chỉ xét issue với issue và không nối chuỗi các cặp (thử nối thì một nhóm lên 151 issue). Embedding là tín hiệu duy nhất: đã thử thêm độ trùng chữ tiêu đề, tên hàm, cùng tác giả và hồi quy logistic trên 5 tín hiệu, xếp hạng issue gốc không tốt hơn cosine (gốc đứng đầu 39%, trong top 5 59%, trong top 30 78%).
+- **Độ tin cậy** của mọi đề xuất là tỉ lệ đúng đo được của loại đề xuất đó, nguồn đo ghi trong `RULES` của `report.py`: nhãn thì `suggest.py` lưu bảng hiệu chỉnh vào `meta.calibration` (khớp đúng với nhãn bị giấu, là cận dưới), trùng và zombie thì chấm tay trên numpy. Các hằng chấm tay này là của numpy; repo khác dùng tạm cho tới khi đo lại.
 - **Gợi ý không bao giờ đụng vào nhãn thật** hay GitHub: chúng nằm ở bảng riêng và trang HTML hiển thị nét đứt. Giữ nguyên tắc này.
 - **GitHub API:** lớp `GitHub` trong `triageflow.py` gọi thẳng REST/GraphQL bằng `urllib`: tự ngủ khi gần hết hạn mức, thử lại khi 5xx hay lỗi mạng, phân trang theo header `Link`. `stream()` sắp theo `updated` tăng dần và lưu mốc `updated_at` cuối, nên đứt ở đâu thì chạy lại tiếp từ đó; ETag của trang đầu được lưu kèm `since` đã dùng, nên lần sync không có gì mới nhận 304 (không tốn hạn mức).
 - **Trang HTML** là một file tự chứa (JS thuần, không thư viện, dữ liệu nhúng dạng JSON); chỉ mục mở có toạ độ, cạnh trên bản đồ chỉ giữ cặp mà hai đầu đều đang mở, và `closes_official` hiển thị như `closes`. Dòng thời gian trong chi tiết thì gồm cả mục đã đóng (liên kết cứng hai chiều và `similar`, tối đa 60 mục).
@@ -66,4 +70,5 @@ Các ý cần đọc nhiều file mới thấy:
 - `AXES` trong `suggest.py` (trục loại và thành phần) viết theo nhãn của numpy; repo khác sẽ in "nothing to suggest". Chỉ gợi ý hai trục này, không tạo nhãn mới, không gợi ý nhãn quy trình (Close?, Needs decision).
 - GraphQL phía issue (`issue_links`): 100 issue mỗi truy vấn, khoảng 3 điểm hạn mức; toàn bộ numpy 142 truy vấn, ~9 phút, các lần sau chỉ lấy issue có thay đổi. Sự kiện "marked as duplicate" nằm trên dòng thời gian của issue **gốc** và phải đọc cả `duplicate` lẫn `canonical`. Tham chiếu chéo (`CROSS_REFERENCED_EVENT`) đã thử và bỏ: GitHub trả 502 hoặc RESOURCE_LIMITS_EXCEEDED ngay cả với 25 issue mỗi truy vấn; regex `#N` phủ phần đó.
 - `data/numpy__numpy/repo.v1.db` và các file `*.csv` trong đó là của schema cũ (chỉ mục mở), đã lỗi thời.
+- Mức tồn đọng (hoạt động cuối trong 1 / 1–3 / 3–5 / trên 5 năm) và trang tổng quan được tính ngay trong JS của trang, không có bảng riêng; tổng quan đọc bảng `actions` nên phải chạy `report.py` trước `build_html.py`.
 - Khi dừng tiến trình chạy nền, dùng mẫu có `^` (`pgrep -f "^python -u triageflow.py"`); `pkill -f` không neo sẽ khớp cả chính shell đang gõ lệnh.
