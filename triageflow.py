@@ -10,7 +10,7 @@ Stages and request cost (100 rows per request):
   reviews   pulls/comments  (whole repo)       ~ R/30    (inline review comments; only with --review-comments)
   links     GraphQL closingIssuesReferences    ~ P/100   (PR -> issue it really closes)
 """
-import argparse, csv, json, re, sqlite3, subprocess, sys, time, urllib.error, urllib.parse, urllib.request
+import argparse, collections, csv, json, re, sqlite3, subprocess, sys, time, urllib.error, urllib.parse, urllib.request
 from pathlib import Path
 
 API = "https://api.github.com"
@@ -194,6 +194,58 @@ def official_links(gh, db, owner, name):
     print(f"  links: {pages} pages, {n} official closes", flush=True)
 
 
+def issue_links(gh, db, owner, name):
+    """What GitHub records on the issue side: marked as duplicate of, sub-issue of, and every PR set to close it
+    (also PRs closed without merging, which the PR-side listing above skips)."""
+    ref = "... on Issue{number} ... on PullRequest{number}"
+    q = ("query($o:String!,$n:String!,$c:String){repository(owner:$o,name:$n){issues(first:100,after:$c,"
+         "orderBy:{field:UPDATED_AT,direction:DESC}){pageInfo{hasNextPage endCursor}nodes{number updatedAt parent{number repository{nameWithOwner}}"
+         "closedByPullRequestsReferences(first:10,includeClosedPrs:true){nodes{number repository{nameWithOwner}}}"
+         "timelineItems(first:10,itemTypes:[MARKED_AS_DUPLICATE_EVENT,UNMARKED_AS_DUPLICATE_EVENT]){nodes{__typename "
+         "... on MarkedAsDuplicateEvent{isCrossRepository canonical{%s} duplicate{%s}}"
+         "... on UnmarkedAsDuplicateEvent{isCrossRepository canonical{%s} duplicate{%s}}}}}}}}" % (ref, ref, ref, ref))
+    here = f"{owner}/{name}".lower()
+    local = lambda x: x and x["repository"]["nameWithOwner"].lower() == here
+    since = (db.execute("select v from meta where k='issue_links_since'").fetchone() or [""])[0]
+    cursor, newest, n, pages = None, None, collections.Counter(), 0
+    while True:
+        page = gh.graphql(q, o=owner, n=name, c=cursor)["repository"]["issues"]
+        pages += 1
+        stop = False
+        for i in page["nodes"]:
+            newest = newest or i["updatedAt"]
+            if i["updatedAt"] < since:
+                stop = True
+                break
+            num = i["number"]
+            db.execute("delete from links where src=? and kind='sub_issue'", (num,))
+            db.execute("delete from links where dst=? and kind='closes_official'", (num,))
+            rows = {(p["number"], num, "closes_official") for p in i["closedByPullRequestsReferences"]["nodes"] if local(p)}
+            if local(i["parent"]):
+                rows.add((num, i["parent"]["number"], "sub_issue"))
+            dup, undone = set(), set()  # the event sits on either issue's timeline and names both ends
+            for e in i["timelineItems"]["nodes"]:  # in time order: a later "unmarked" takes the mark back
+                d, c = (e.get("duplicate") or {}).get("number"), (e.get("canonical") or {}).get("number")
+                if d and c and d != c and not e["isCrossRepository"]:
+                    marked = e["__typename"] == "MarkedAsDuplicateEvent"
+                    (dup.add if marked else dup.discard)((d, c, "duplicate_of"))
+                    (undone.discard if marked else undone.add)((d, c))
+            db.executemany("delete from links where src=? and dst=? and kind='duplicate_of'", undone)
+            rows |= dup
+            db.executemany("insert or ignore into links values(?,?,?)", rows)
+            n.update(k for _, _, k in rows)
+        db.commit()
+        if stop or not page["pageInfo"]["hasNextPage"]:
+            break
+        cursor = page["pageInfo"]["endCursor"]
+        if pages % 20 == 0:
+            print(f"  issue links: {pages} pages", flush=True)
+    if newest:
+        db.execute("insert or replace into meta values('issue_links_since', ?)", (newest,))
+    db.commit()
+    print(f"  issue links: {pages} pages, " + ", ".join(f"{v} {k}" for k, v in n.items()), flush=True)
+
+
 def text_links(db):
     """closes/mentions found in the text of items and comments, only between known numbers."""
     links = set()
@@ -256,6 +308,7 @@ def main():
                 print(f"  WARNING: review comments incomplete ({e}); rerun to continue", flush=True)
     print("links:", flush=True)
     official_links(gh, db, owner, name)
+    issue_links(gh, db, owner, name)
     text_links(db)
     rebuild_fts(db)
 

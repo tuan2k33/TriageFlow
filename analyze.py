@@ -1,9 +1,9 @@
 """Embed items, keep them sorted into categories, and keep a stable 2D map of the open ones.
 
-usage: python analyze.py data/<owner>__<name>/repo.db [--init] [--k N] [--llm-names]
+usage: python analyze.py data/<owner>__<name>/repo.db [--init] [--k N]
 
 Categories are made once (first run, or --init): KMeans over the embeddings of every item (open + closed), each
-category stored as a normalized centroid and named after its most common labels (or once by the LLM with --llm-names). Later runs only embed new items, put each into the
+category stored as a normalized centroid and named after its most distinctive label and title words. Later runs only embed new items, put each into the
 nearest existing category (or -1 "Unsorted" when it is far from all of them) and place new open items on the map at the
 average position of their nearest already-placed neighbors, so categories and the map do not move between runs.
 
@@ -12,8 +12,7 @@ neighbors(number, rank, other, sim): the 5 most similar items of every item,
 similar(a, b, sim, rank): semantic links, pairs that are in each other's top 5 (rank 0 = each other's nearest),
 pr_status(number, status, prs): for every open issue, what happened to the PRs that say they close it.
 """
-import argparse, collections, json, os, re, sqlite3, time
-import importlib.util
+import argparse, collections, json, re, sqlite3
 import numpy as np
 import torch
 from sklearn.cluster import KMeans
@@ -112,54 +111,34 @@ def neighbors(db, k=5):
 
 
 def pr_status(db):
-    """Open issues by the fate of the PRs that close them (GitHub's closing links and 'Fixes #N' in a PR)."""
+    """Open issues by the fate of the PRs that close them (GitHub's closing links and 'Fixes #N' in a PR);
+    an issue with sub-issues is 'tracking' whatever its PRs did."""
     prs = collections.defaultdict(list)
     for issue, pr, state, merged in db.execute(
             "select distinct l.dst, l.src, p.state, p.merged from links l join items p on p.number = l.src "
             "join items i on i.number = l.dst where l.kind in ('closes_official', 'closes') "
             "and p.kind = 'pr' and i.kind = 'issue' and i.state = 'open'"):
         prs[issue].append((pr, "merged" if merged else "open" if state == "open" else "abandoned"))
+    parents = {r[0] for r in db.execute("select dst from links where kind = 'sub_issue'")}  # tracking issues stay open by design
     db.execute("drop table if exists pr_status")
     db.execute("create table pr_status(number integer primary key, status text, prs text)")
     count = collections.Counter()
     for (n,) in db.execute("select number from items where kind = 'issue' and state = 'open'").fetchall():
         fates = {f for _, f in prs[n]}
-        status = next((f for f in ("merged", "open", "abandoned") if f in fates), "none")
+        status = "tracking" if n in parents else next((f for f in ("merged", "open", "abandoned") if f in fates), "none")
         count[status] += 1
         db.execute("insert into pr_status values(?,?,?)", (n, status, json.dumps(sorted(prs[n]))))
     db.commit()
     print("open issues by closing PR: " + ", ".join(f"{k} {v}" for k, v in count.most_common()))
 
 
-def name_categories(db, members, use_llm):
-    """One short name per category from the titles closest to its centroid (LLM once; fallback: closest title)."""
+def name_categories(db, members):
     titles = dict(db.execute("select number, title from items"))
     labels = {n: [l for l in (ls or "").split(",") if l] for n, ls in db.execute("select number, labels from items")}
-    samples = {c: [titles[n] for n in ns[:12]] for c, ns in members.items()}
-    names = distinctive_names(members, titles, labels)
-    if not use_llm:
-        return names
-    spec = importlib.util.spec_from_file_location("suggest", os.path.join(os.path.dirname(os.path.abspath(__file__)), "suggest.py"))
-    sg = importlib.util.module_from_spec(spec); spec.loader.exec_module(sg)
-    key = next(l.split("=", 1)[1].strip().strip("'\"") for l in open(".env") if l.startswith("OPENROUTER_API_KEY="))
-    cs = sorted(samples)
-    for b in range(0, len(cs), 25):
-        blocks = "\n\n".join(f"[{c}]\n" + "\n".join(f"  - {t[:100]}" for t in samples[c]) for c in cs[b:b + 25])
-        prompt = ("Each group below lists issue/PR titles from one GitHub repository that were clustered together. "
-                  "Give each group a short topic name (2 to 5 words) that a maintainer would recognize, based only on the titles. "
-                  "Names must be distinct from each other.\n\n" + blocks
-                  + '\n\nAnswer with only a JSON array: [{"id": <number>, "name": "..."}, ...]')
-        try:
-            for o in json.loads(re.search(r"\[.*\]", sg.call_llm(prompt, key), re.S).group(0)):
-                if int(o["id"]) in names and str(o.get("name", "")).strip():
-                    names[int(o["id"])] = str(o["name"]).strip()[:60]
-        except Exception as e:  # names are cosmetic: keep the fallback
-            print(f"  naming failed for groups {cs[b]}..: {e}", flush=True)
-        time.sleep(3.5)
-    return names
+    return distinctive_names(members, titles, labels)
 
 
-def init(db, k, use_llm):
+def init(db, k):
     nums, states, E = load_emb(db)
     n = len(nums)
     # as many categories as the repo's numbered triage labels in use on open items ("00 - Bug" ... numpy: 36),
@@ -175,7 +154,7 @@ def init(db, k, use_llm):
     sim = (E * cent[lab]).sum(1)
     threshold = float(np.percentile(sim, 2))  # new items less similar than the worst 2% of members go to Unsorted
     members = {c: [nums[i] for i in np.where(lab == c)[0][np.argsort(-sim[lab == c])]] for c in range(k)}
-    names = name_categories(db, members, use_llm)
+    names = name_categories(db, members)
 
     op = [i for i in range(n) if states[i] == "open"]
     xy = TSNE(n_components=2, perplexity=30, metric="cosine", init="pca", random_state=0).fit_transform(E[op])
@@ -225,14 +204,13 @@ def main():
     ap.add_argument("db")
     ap.add_argument("--init", action="store_true", help="rebuild categories and the map from scratch")
     ap.add_argument("--k", type=int, default=0, help="number of categories at init (default: numbered labels on open items, else open items / 45)")
-    ap.add_argument("--llm-names", action="store_true", help="at init, let the free LLM name the categories (default: their most common labels)")
     a = ap.parse_args()
     db = sqlite3.connect(a.db, timeout=120)
     db.execute("create table if not exists emb(number integer primary key, vec blob)")
     embed_new(db)
     has_cats = db.execute("select 1 from sqlite_master where name='categories'").fetchone()
     if a.init or not has_cats:
-        init(db, a.k, a.llm_names)
+        init(db, a.k)
     else:
         assign(db)
     neighbors(db)

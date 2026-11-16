@@ -1,23 +1,20 @@
-"""Suggest existing labels (type + component axes) for unlabeled open items. No LLM by default.
+"""Suggest existing labels (type + component axes) for unlabeled open items.
 
 type:       kNN vote over embeddings of already-labeled items (open + closed).
-component:  vote count: each of the 7 most similar labeled items gives one vote to each of its components, linked
-            items add theirs (GitHub's closing links weigh most); every component with >= 3 votes is suggested.
+component:  vote count: each of the 5 most similar labeled items gives one vote to each of its components, linked
+            items add theirs (GitHub's closing links weigh most); every component with >= 2 votes is suggested.
             Measured on a balanced held-out sample (items with and without a component).
---llm:      optionally let an OpenRouter free model pick from the allowed labels with kNN hints (kept for later).
 Written to table `suggested`; nothing touches the real labels.
 
-usage: python suggest.py data/<owner>__<name>/repo.db [--all] [--llm [--eval-only] [--eval-n 60]]
+usage: python suggest.py data/<owner>__<name>/repo.db [--all] [--eval-only]
 """
-import argparse, collections, json, os, random, re, sqlite3, time, urllib.request, urllib.error
+import argparse, collections, random, re, sqlite3
 import numpy as np
 
 AXES = {"type": r"^(0[0-7]|17|23|33) - ", "component": r"^component:"}  # type regex fits numpy's numbered scheme
-MODEL = os.environ.get("LLM_MODEL", "nvidia/nemotron-3-ultra-550b-a55b:free")
 K = 5  # measured: same recall as 15 at a lower threshold, and closer to the item when labels are missing
 KC, MIN_VOTES = 5, 2  # component vote; measured on numpy: finds 71%, ~34% of items without a component get one
 VAGUE = re.compile(r"(?i):\s*other$")  # "component: Other" says nothing; never suggested
-BATCH = 20
 
 
 def load(db):
@@ -64,7 +61,7 @@ def link_votes(db, nums, truth_c):
     idx = {n: i for i, n in enumerate(nums)}
     acc = collections.defaultdict(lambda: collections.defaultdict(float))
     for s, d, k in db.execute("select src, dst, kind from links"):
-        if s in idx and d in idx:
+        if k in LINK_W and s in idx and d in idx:
             for a, b in ((idx[s], idx[d]), (idx[d], idx[s])):
                 for l in truth_c[b]:
                     acc[a][l] += LINK_W[k] / len(truth_c[b])
@@ -89,53 +86,11 @@ def component_votes(E, truth_c, has_label, queries, links):
     return out
 
 
-def call_llm(prompt, key):
-    body = json.dumps({"model": MODEL, "messages": [{"role": "user", "content": prompt}], "temperature": 0, "max_tokens": 12000}).encode()
-    for attempt in range(6):
-        req = urllib.request.Request("https://openrouter.ai/api/v1/chat/completions", body,
-                                     {"Authorization": f"Bearer {key}", "Content-Type": "application/json"})
-        try:
-            with urllib.request.urlopen(req, timeout=180) as r:
-                ch = json.load(r)["choices"][0]
-                if ch["message"].get("content"):
-                    return ch["message"]["content"]
-                print(f"  empty content, finish={ch.get('finish_reason')}", flush=True)
-        except urllib.error.HTTPError as e:
-            print(f"  HTTP {e.code}", flush=True)
-            if e.code not in (429, 502, 503):
-                raise
-        except (urllib.error.URLError, TimeoutError) as e:
-            print(f"  {type(e).__name__}: {e}", flush=True)
-        time.sleep(10 * 2 ** attempt)
-    raise RuntimeError("LLM call failed")
-
-
-def llm_batch(items, allowed, hints, key):
-    lines = []
-    for n, title, body in items:
-        h = "; ".join(f"{ax}: " + ", ".join(f"{l or 'none'} {p:.2f}" for l, p in hints[n][ax]) for ax in AXES)
-        lines.append(f"[{n}] {title}\n    {re.sub(r'\s+', ' ', body)[:200]}\n    hints: {h}")
-    prompt = (
-        "You triage GitHub issues/PRs. For each item pick ONE label per axis from the allowed lists, or null if none fits.\n"
-        "Use only labels from the lists, never invent new ones. 'hints' are label votes from similar already-labeled items.\n\n"
-        + "\n".join(f"Allowed {ax} labels: {json.dumps(allowed[ax])}" for ax in AXES)
-        + "\n\nItems:\n" + "\n".join(lines)
-        + '\n\nAnswer with only a JSON array: [{"id": <number>, "type": <label or null>, "component": <label or null>}, ...]')
-    txt = call_llm(prompt, key)
-    m = re.search(r"\[.*\]", txt, re.S)
-    res = {}
-    for o in json.loads(m.group(0)):
-        res[int(o["id"])] = {ax: (o.get(ax) if o.get(ax) in allowed[ax] else None) for ax in AXES}
-    return res
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("db")
     ap.add_argument("--all", action="store_true", help="suggest for every open item missing an axis, not only fully unlabeled ones")
-    ap.add_argument("--llm", action="store_true", help="also ask the free LLM (off by default)")
-    ap.add_argument("--eval-only", action="store_true", help="with --llm: only measure LLM vs kNN, do not touch the suggested table")
-    ap.add_argument("--eval-n", type=int, default=60)
+    ap.add_argument("--eval-only", action="store_true", help="only measure, do not touch the suggested table")
     a = ap.parse_args()
     db = sqlite3.connect(a.db, timeout=120)
     rows, nums, E = load(db)
@@ -159,18 +114,13 @@ def main():
     neg = [i for i in range(n) if has_label[i] and not ax_all["component"][i]]
     base_rate = len(pos) / (len(pos) + len(neg))
     bal = rnd.sample(pos, min(600, len(pos))) + rnd.sample(neg, min(600, len(neg)))
-    both = [i for i in ev if all(truth[ax][i] for ax in AXES)] or ev
-    llm_ev = rnd.sample(both, min(a.eval_n, len(both)))
-    Q = sorted(set(ev) | set(targets) | set(llm_ev) | set(bal))
-    kn = {ax: knn_probs(E, ax_all[ax], allowed[ax], has_label, Q) for ax in AXES}
-
-    def top(ax, i, k=1):
-        return sorted(kn[ax][i].items(), key=lambda t: -t[1])[:k]
+    kn = knn_probs(E, ax_all["type"], allowed["type"], has_label, sorted(set(ev) | set(targets)))
+    top = lambda i: max(kn[i].items(), key=lambda t: t[1])
 
     print(f"type, kNN leave-one-out on {len(ev)} random labeled items (top-1 in true labels):")
     e = [i for i in ev if truth["type"][i]]
     for t in (0.0, 0.5, 0.6, 0.7, 0.8):
-        pred = [(i, top("type", i)[0]) for i in e]
+        pred = [(i, top(i)) for i in e]
         pred = [(i, p) for i, p in pred if p[0] is not None and p[1] >= t]
         hit = sum(p[0] in truth["type"][i] for i, p in pred)
         print(f"    conf>={t:.1f}: coverage {len(pred)/len(e):.2f}  precision {hit/max(1,len(pred)):.2f}")
@@ -194,9 +144,9 @@ def main():
 
     if not a.eval_only:
         db.execute("create table if not exists suggested(number integer, axis text, label text, score real, source text)")
-        db.execute("delete from suggested where source in ('knn','vote')")
+        db.execute("delete from suggested")
         for i in targets:
-            l, p = top("type", i)[0]
+            l, p = top(i)
             typ = set(ax_all["type"][i])
             if l is not None and p >= 0.5:
                 db.execute("insert into suggested values(?,?,?,?,'knn')", (nums[i], "type", l, float(p)))
@@ -209,35 +159,6 @@ def main():
                 db.execute("insert into suggested values(?,?,?,?,'vote')", (nums[i], "component", l, float(v)))
         db.commit()
 
-    if a.llm:
-        allowed_l = {ax: sorted(allowed[ax]) for ax in AXES}
-        hints = {nums[i]: {ax: top(ax, i, 2) for ax in AXES} for i in Q}
-        key = next(l.split("=", 1)[1].strip().strip("'\"") for l in open(".env") if l.startswith("OPENROUTER_API_KEY="))
-        if a.eval_only:
-            print(f"LLM eval on {len(llm_ev)} labeled items (truth hidden from the model; hints are leave-one-out):")
-            got = {}
-            for b in range(0, len(llm_ev), BATCH):
-                got.update(llm_batch([(nums[i], rows[i][1], rows[i][2]) for i in llm_ev[b:b + BATCH]], allowed_l, hints, key))
-                time.sleep(3.5)
-            for ax in AXES:
-                m = [(i, got.get(nums[i], {}).get(ax)) for i in llm_ev if truth[ax][i]]
-                kh = sum((top(ax, i)[0][0] in truth[ax][i]) for i, _ in m)
-                lh = sum(p in truth[ax][i] for i, p in m)
-                print(f"  {ax}: n={len(m)}  kNN top-1 {kh/len(m):.2f}  LLM {lh/len(m):.2f}")
-            return
-        done = {r[0] for r in db.execute("select distinct number from suggested where source='llm'")}
-        todo = [i for i in targets if nums[i] not in done]
-        print(f"LLM on {len(todo)} targets ({len(targets) - len(todo)} already have LLM suggestions):")
-        for b in range(0, len(todo), BATCH):
-            ch = todo[b:b + BATCH]
-            res = llm_batch([(nums[i], rows[i][1], rows[i][2]) for i in ch], allowed_l, hints, key)
-            for i in ch:
-                for ax, l in res.get(nums[i], {}).items():
-                    if l:
-                        db.execute("insert into suggested values(?,?,?,?,'llm')", (nums[i], ax, l, float(kn[ax][i].get(l, 0.0))))
-            db.commit()
-            print(f"  {min(b + BATCH, len(todo))}/{len(todo)}", flush=True)
-            time.sleep(3.5)
     db.commit()
     print(db.execute("select source, axis, count(*) from suggested group by 1,2").fetchall())
 

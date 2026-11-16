@@ -1,19 +1,17 @@
 # TriageFlow
 
-Crawl all issues and PRs of a GitHub repo (open and closed, with conversation comments, content only, no code) into SQLite, then sort them into categories, suggest labels from the repo's existing ones and browse the open ones on a map. No LLM in the default flow.
+Crawl all issues and PRs of a GitHub repo (open and closed, with conversation comments, content only, no code) into SQLite, then sort them into categories, suggest labels from the repo's existing ones and browse the open ones on a map. Everything after the crawl is local data analysis and classic machine learning (a small embedding model, KMeans, kNN votes); no LLM anywhere.
 
 ```bash
 R=data/numpy__numpy/repo.db
-python triageflow.py numpy/numpy       # all issues/PRs + comments + official PR->issue links (GitHub API; token from `gh auth token`); reruns sync only what changed
-python analyze.py $R                   # embed new items (bge-small, fp16); categories are made once (--init to redo), new items join the nearest one
-python suggest.py $R                   # type labels by kNN; component labels by a vote of kNN, linked items and title keywords
+python triageflow.py numpy/numpy       # all issues/PRs + comments + GitHub's own links: PR closes issue, duplicate of, sub-issue (GitHub API; token from `gh auth token`); reruns sync only what changed
+python analyze.py $R                   # embed new items (bge-small, fp16); categories once (--init to redo); semantic links; PR status of open issues
+python suggest.py $R                   # type labels by kNN; component labels by counting votes of the 5 nearest labeled items and linked items
 python build_html.py $R                # -> data/numpy__numpy/graph.html (open in a browser)
 datasette $R                           # browse / SQL / full-text search
 ```
 
-Optional, with an OpenRouter free model (kept for later): `analyze.py --init --llm-names`, `suggest.py --llm`, `resolve.py`, `summarize.py`, then `build_html.py --with-llm` to show their output.
-
-Tables: `items` (all states), `comments`, `links` (closes_official / closes / mentions), `emb`, `categories`, `topics` (category + map position per item), `suggested`, `fts`; LLM only: `resolve_hints`, `summaries`.
+Tables: `items` (all states), `comments`, `links` (closes_official / closes / mentions / duplicate_of / sub_issue), `emb`, `categories`, `topics` (category + map position per item), `neighbors`, `similar` (semantic links), `pr_status`, `suggested`, `fts`.
 
 ## AI Disclosure
 
