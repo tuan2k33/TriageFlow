@@ -76,7 +76,7 @@ def test_flow():
         assert one("select reason from pr_compete where a=105 and b=106")[0] == "close the same issue"
         kinds = {k: c for k, c in db.execute("select kind, count(*) from actions group by 1")}
         assert kinds["close_duplicate_marked"] == 1 and kinds["close_fixed_linked"] == 1 and kinds["review_competing"] == 1
-        assert kinds["add_label"] == db.execute("select count(*) from suggested").fetchone()[0]  # every suggestion has a confidence
+        assert kinds["add_label"] == db.execute("select count(*) from suggested").fetchone()[0]  # every suggestion has a measured hit rate
         # unlabeled open issues get the label of their topic, and nothing was written into the real labels
         got = db.execute("select number, label from suggested where number <= 12 and number != 2").fetchall()  # 2 is a copy of 1
         right = sum(lab == f"area: t{n % 6}" for n, lab in got)

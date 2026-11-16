@@ -193,7 +193,7 @@ def main():
         print(f"  {'->' if m == MIN_VOTES else '  '} >={m} votes: finds {np.mean([bool(sug[i] & truth['component'][i]) for i in bp]):.2f}"
               f"  none {np.mean([not sug[i] for i in bp]):.2f}  items without one get one {np.mean([bool(sug[i]) for i in bn]):.2f}"
               f"  tag precision {prec:.2f}")
-    # how often a suggestion with this score was right when the label was hidden: the confidence shown to the user
+    # how often a suggestion with this score was right when the label was hidden: shown next to each label suggestion
     best = [(i, top(i)) for i in e]
     calib = {"type": [], "component": []}
     for lo, hi in ((0.5, 0.6), (0.6, 0.7), (0.7, 0.8), (0.8, 1.01)):

@@ -86,7 +86,7 @@ function overview(){sel=-1;renderRows();const iss=items.filter(d=>d.k==='issue')
  const sec=(t,h)=>`<h3>${t}</h3>${h}`,sm=t=>`<small class="mute">${t}</small>`;
  detail.innerHTML=`<h2>Overview</h2><div class="meta">${iss.length} open issues, ${items.length-iss.length} open PRs. Pick filters on the left, an item in the list for its details.</div>`+
  sec('Last activity',Object.keys(AGE).map(k=>`${AGE[k]}: <b>${n(k)}</b>`).join('<br>'))+
- Object.keys(OV).filter(k=>D.over[k]).map(k=>sec(`${OV[k]} (${D.over[k].length})`,D.over[k].slice(0,8).map(([o,c,r])=>`${ref(o)} ${esc(items[byNum.get(o)]?.t||'')} ${sm(Math.round(c*100)+'% · '+esc(r))}`).join('<br>')+(D.over[k].length>8?'<br>'+sm(`… ${D.over[k].length-8} more in report.md`):''))).join('')+
+ Object.keys(OV).filter(k=>D.over[k]).map(k=>sec(`${OV[k]} (${D.over[k].length})`,D.over[k].slice(0,8).map(([o,c,r])=>`${ref(o)} ${esc(items[byNum.get(o)]?.t||'')} ${sm(esc(c)+' · '+esc(r))}`).join('<br>')+(D.over[k].length>8?'<br>'+sm(`… ${D.over[k].length-8} more in report.md`):''))).join('')+
  sec('Hot categories (comments on open items)',hot.map(([c,[m,cm]])=>`<span class="rel" data-c="${c}">${esc(D.names[c])} ${sm(m+' open, '+cm+' comments')}</span>`).join(''))+
  sec('Most discussed open items',talk.map(d=>`${ref(d.n)} ${esc(d.t)} ${sm(d.cm+' comments')}`).join('<br>'));wire();
  detail.querySelectorAll('.rel[data-c]').forEach(e=>e.onclick=()=>{chosen.clear();chosen.add('cat:'+e.dataset.c);refresh()})}
@@ -158,8 +158,8 @@ def main(path):
                 cp.setdefault(me, []).append([other, f"both close #{issue}" if issue else f"{s:.0%} similar, different authors", info[other][2]])
     over = {}
     if has("actions"):
-        for kind, n, conf, reason in db.execute("select kind, number, confidence, reason from actions where kind != 'add_label' order by confidence desc, number"):
-            over.setdefault(kind, []).append([n, round(conf, 2), reason])
+        for kind, n, level, signal, reason in db.execute("select kind, number, level, signal, reason from actions where kind != 'add_label' order by score desc, number"):
+            over.setdefault(kind, []).append([n, f"{level} · {signal}", reason])
     sg = {}
     if has("suggested"):
         for n, lab, sc, src in db.execute("select number, label, score, source from suggested order by axis desc, score desc"):
