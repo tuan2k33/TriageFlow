@@ -1,15 +1,15 @@
 """Embed items, keep them sorted into categories, and keep a stable 2D map of the open ones.
 
-usage: python analyze.py data/<owner>__<name>/repo.db [--init] [--k N] [--no-llm]
+usage: python analyze.py data/<owner>__<name>/repo.db [--init] [--k N] [--llm-names]
 
 Categories are made once (first run, or --init): KMeans over the embeddings of every item (open + closed), each
-category stored as a normalized centroid and named once by the LLM. Later runs only embed new items, put each into the
+category stored as a normalized centroid and named after its most common labels (or once by the LLM with --llm-names). Later runs only embed new items, put each into the
 nearest existing category (or -1 "Unsorted" when it is far from all of them) and place new open items on the map at the
 average position of their nearest already-placed neighbors, so categories and the map do not move between runs.
 
 Tables: emb(number, vec), categories(id, name, size, centroid), topics(number, cluster, sim, x, y).
 """
-import argparse, json, os, re, sqlite3, time
+import argparse, collections, json, os, re, sqlite3, time
 import importlib.util
 import numpy as np
 import torch
@@ -56,11 +56,36 @@ def embed_new(db):
     db.commit()
 
 
+STOP = set("""a an the and or of to in on for with without is are be not no when from by as at it its this that into via
+use using add added adding fix fixed fixes support allow make should can does do don't doesn't wrong error fails failing incorrect
+bug enh doc docs maint bld typ tst api dep rel dev ci sim numpy np array arrays""".split())
+
+
+def distinctive_names(members, titles, labels):
+    """Name = the label most over-represented in the category (if any) + its most over-represented title words."""
+    N = sum(len(ns) for ns in members.values())
+    words = {n: set(w for w in re.findall(r"[a-z_][a-z0-9_.]+", t.lower()) if w not in STOP and len(w) > 2) for n, t in titles.items()}
+    lab_all = collections.Counter(l for ns in members.values() for n in ns for l in labels[n])
+    w_all = collections.Counter(w for ns in members.values() for n in ns for w in words[n])
+    names = {}
+    for c, ns in members.items():
+        m = len(ns)
+        lift = lambda k, tot: (k / m) / (tot / N)
+        lc = collections.Counter(l for n in ns for l in labels[n])
+        lab = [l for l, k in lc.items() if k >= 0.2 * m and lift(k, lab_all[l]) >= 2]
+        wc = collections.Counter(w for n in ns for w in words[n])
+        top = sorted((w for w, k in wc.items() if k >= max(5, 0.04 * m)), key=lambda w: -lift(wc[w], w_all[w]) * wc[w] ** 0.5)[:3]
+        lab = max(lab, key=lambda l: lift(lc[l], lab_all[l]), default=None)
+        names[c] = ": ".join(x for x in (lab, ", ".join(top)) if x) or titles[ns[0]][:60]
+    return names
+
+
 def name_categories(db, members, use_llm):
     """One short name per category from the titles closest to its centroid (LLM once; fallback: closest title)."""
     titles = dict(db.execute("select number, title from items"))
+    labels = {n: [l for l in (ls or "").split(",") if l] for n, ls in db.execute("select number, labels from items")}
     samples = {c: [titles[n] for n in ns[:12]] for c, ns in members.items()}
-    names = {c: f"{c}: {s[0][:60]}" for c, s in samples.items()}
+    names = distinctive_names(members, titles, labels)
     if not use_llm:
         return names
     spec = importlib.util.spec_from_file_location("suggest", os.path.join(os.path.dirname(os.path.abspath(__file__)), "suggest.py"))
@@ -144,14 +169,14 @@ def main():
     ap.add_argument("db")
     ap.add_argument("--init", action="store_true", help="rebuild categories and the map from scratch")
     ap.add_argument("--k", type=int, default=0, help="number of categories at init (default: sqrt(items/10), 8..50)")
-    ap.add_argument("--no-llm", action="store_true", help="name categories after their most central title instead of asking the LLM")
+    ap.add_argument("--llm-names", action="store_true", help="at init, let the free LLM name the categories (default: their most common labels)")
     a = ap.parse_args()
     db = sqlite3.connect(a.db, timeout=120)
     db.execute("create table if not exists emb(number integer primary key, vec blob)")
     embed_new(db)
     has_cats = db.execute("select 1 from sqlite_master where name='categories'").fetchone()
     if a.init or not has_cats:
-        init(db, a.k, not a.no_llm)
+        init(db, a.k, a.llm_names)
     else:
         assign(db)
 

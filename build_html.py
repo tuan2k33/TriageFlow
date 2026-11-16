@@ -123,7 +123,7 @@ addEventListener('resize',fit);fit();
 </script></body></html>"""
 
 
-def main(path):
+def main(path, with_llm=False):
     db = sqlite3.connect(path, timeout=120)
     repo = db.execute("select v from meta where k='repo'").fetchone()[0]
     items = [dict(n=n, k=k, t=t, b=(b or "")[:2000], s=(b or "")[:600], a=a, l=l or "", cm=cm, up=up, u=u, c=c, x=x, y=y)
@@ -137,15 +137,15 @@ def main(path):
     sg = {}
     if db.execute("select 1 from sqlite_master where name='suggested'").fetchone():
         best = {}
-        for n, ax, lab, sc, src in db.execute("select number,axis,label,score,source from suggested order by source='llm'"):
+        for n, ax, lab, sc, src in db.execute("select number,axis,label,score,source from suggested where source != 'llm' or ? order by source='llm'", (with_llm,)):
             best[(n, ax)] = [lab, round(sc or 0, 2), src]
         for (n, ax), v in best.items():
             sg.setdefault(n, []).append(v)
     sm = {}
-    if db.execute("select 1 from sqlite_master where name='summaries'").fetchone():
+    if with_llm and db.execute("select 1 from sqlite_master where name='summaries'").fetchone():
         sm = {n: [t, st] for n, t, st in db.execute("select number,summary,status from summaries")}
     rh = {}
-    if db.execute("select 1 from sqlite_master where name='resolve_hints'").fetchone():
+    if with_llm and db.execute("select 1 from sqlite_master where name='resolve_hints'").fetchone():
         for n, v, r, prs in db.execute("select number,verdict,reason,prs from resolve_hints where verdict!='none'"):
             rh[n] = [v, r, json.loads(prs)]
     for it in items:
@@ -162,4 +162,9 @@ def main(path):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("db")
+    ap.add_argument("--with-llm", action="store_true", help="also show LLM output: discussion summaries, close hints, LLM label suggestions")
+    a = ap.parse_args()
+    main(a.db, a.with_llm)
