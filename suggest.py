@@ -163,7 +163,9 @@ def main():
     ap.add_argument("--llm", action="store_true", help="also ask the free LLM (off by default)")
     ap.add_argument("--eval-only", action="store_true", help="with --llm: only measure LLM vs kNN, do not touch the suggested table")
     ap.add_argument("--eval-n", type=int, default=60)
-    ap.add_argument("--min-precision", type=float, default=0.9, help="component votes are kept only above the threshold reaching this precision")
+    ap.add_argument("--min-precision", type=float, default=0.7,
+                    help="component votes are kept only above the threshold reaching this measured precision; the measure is a "
+                         "lower bound, since items counted as wrong are often items whose component label is just missing")
     a = ap.parse_args()
     db = sqlite3.connect(a.db, timeout=120)
     rows, nums, E = load(db)
@@ -229,7 +231,8 @@ def main():
                 best = (tp, name, w, t, prec)
         print(f"  {name:12} " + " | ".join(line))
     if best:
-        print(f"  -> using {best[1]} at conf>={best[3]} (finds {best[0]:.0%} of components, precision {best[4]:.2f})")
+        print(f"  -> using {best[1]} at conf>={best[3]} (finds {best[0]:.0%} of components, precision {best[4]:.2f};"
+              f" a lower bound, many 'false alarms' are missing labels)")
     else:
         print(f"  -> no combination reaches precision {a.min_precision}; no component suggestions")
     print(f"targets: {len(targets)} open items")
@@ -239,11 +242,15 @@ def main():
         db.execute("delete from suggested where source in ('knn','vote')")
         for i in targets:
             l, p = top("type", i)[0]
+            typ = set(ax_all["type"][i])
             if l is not None and p >= 0.5:
                 db.execute("insert into suggested values(?,?,?,?,'knn')", (nums[i], "type", l, float(p)))
+                typ.add(l)
             if best and not ax_all["component"][i]:
                 pr = combine(best[2], kn["component"][i], lv.get(i), nb.proba(docs[i]))
                 l, p = max(pr.items(), key=lambda t: t[1])
+                if l and "documentation" in l.lower() and any("documentation" in t.lower() for t in typ):
+                    continue  # says the same thing as the type label
                 if l is not None and p >= best[3]:
                     db.execute("insert into suggested values(?,?,?,?,'vote')", (nums[i], "component", l, float(p)))
         db.commit()

@@ -39,7 +39,7 @@ Khi chọn một Issue/PR, hiển thị toàn bộ mạng lưới liên quan:
 ### 3.3. Gợi ý Label từ nhãn sẵn có (Smart Labeling)
 Chỉ **dùng lại nhãn đã có của repo** để gợi ý cho Issue/PR chưa có nhãn. Không tạo nhãn mới.
 * ✅ **Dựa trên lịch sử:** láng giềng gần nhất (kNN trên embedding) của các mục đã có nhãn, tính cả mục đã đóng nên tập học lớn (hàng chục nghìn mục).
-* ✅ **Thành phần bằng bỏ phiếu:** kNN + nhãn của mục có liên kết (liên kết chính thức nặng nhất) + từ khoá tiêu đề và mô tả, đo trên mẫu cân bằng có và không có thành phần. Ngưỡng hiện tại chọn theo độ chính xác ≥ 0,9.
+* ✅ **Thành phần bằng bỏ phiếu:** kNN + nhãn của mục có liên kết (liên kết chính thức nặng nhất) + từ khoá tiêu đề và mô tả, đo trên mẫu cân bằng có và không có thành phần. Ngưỡng chọn theo độ chính xác đo được ≥ 0,7 (số đo là cận dưới, vì nhiều ca "sai" là nhãn bị thiếu); mục đã là Documentation thì không gợi ý `component: documentation`.
 * ✅ **Hai trục gợi ý:** loại (Bug, Enhancement, Documentation...) và thành phần (`component: ...`). **Không** gợi ý nhãn quy trình (Close?, Needs decision, triaged...) vì đó là phán đoán của maintainer.
 * (để sau) **LLM chọn trong danh sách cho phép:** đã có code (`suggest.py --llm`), không dùng trong flow chính.
 * ✅ **Gợi ý luôn tách khỏi nhãn thật** (bảng riêng, hiển thị nét đứt), không ghi đè.
