@@ -21,6 +21,7 @@ from transformers import AutoModel, AutoTokenizer
 
 MODEL = "BAAI/bge-small-en-v1.5"
 NEIGHBORS = 8
+OPEN_PER_CATEGORY = 45
 
 
 def embed(texts):
@@ -132,7 +133,9 @@ def name_categories(db, members, use_llm):
 def init(db, k, use_llm):
     nums, states, E = load_emb(db)
     n = len(nums)
-    k = k or int(np.clip(round((n / 10) ** 0.5), 8, 50))
+    # about 45 open items per category: a page a maintainer can skim in one go (numpy: 2248 open -> 50, tqdm: 685 -> 15).
+    # Measured on numpy: agreement with the repo's own component labels stops improving past ~50 (AMI 0.263 at 50, 0.268 at 80).
+    k = k or int(np.clip(round(sum(s == "open" for s in states) / OPEN_PER_CATEGORY), 8, 80))
     print(f"init: {k} categories over {n} items", flush=True)
     z = PCA(n_components=min(50, n - 1), random_state=0).fit_transform(E)
     lab = KMeans(n_clusters=k, n_init=10, random_state=0).fit_predict(z)
@@ -189,7 +192,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("db")
     ap.add_argument("--init", action="store_true", help="rebuild categories and the map from scratch")
-    ap.add_argument("--k", type=int, default=0, help="number of categories at init (default: sqrt(items/10), 8..50)")
+    ap.add_argument("--k", type=int, default=0, help="number of categories at init (default: open items / 45, 8..80)")
     ap.add_argument("--llm-names", action="store_true", help="at init, let the free LLM name the categories (default: their most common labels)")
     a = ap.parse_args()
     db = sqlite3.connect(a.db, timeout=120)

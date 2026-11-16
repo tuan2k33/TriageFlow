@@ -48,6 +48,7 @@ Mỗi repo một file SQLite `data/<owner>__<name>/repo.db` (`data` là symlink 
 
 Các ý cần đọc nhiều file mới thấy:
 - **Mở và đóng:** dữ liệu gốc, `emb` và category gồm mọi trạng thái (kNN và từ khoá học từ cả mục đã đóng); gợi ý và trang HTML chỉ làm cho mục mở.
+- **Số category:** mặc định `số mục mở / 45` (mỗi category khoảng 45 mục mở, đủ đọc lướt một lượt), kẹp trong 8–80; numpy ra 50. Category gom theo nội dung, **không** ánh xạ với nhãn (AMI với nhãn thành phần chỉ khoảng 0,27 và chững lại từ k ≈ 50); KMeans hội tụ nhưng hai hạt giống chỉ giống nhau ARI ≈ 0,6, nên chia lại sẽ xáo trộn đáng kể.
 - **Category ổn định:** chỉ init mới chạy KMeans và t-SNE. Các lần sau mục mới vào tâm gần nhất (cosine), mục mở mới được đặt ở trung bình toạ độ của 8 láng giềng gần nhất đã có toạ độ, nên category và bản đồ không xáo trộn. Muốn chia lại thì `--init`.
 - **Bỏ phiếu thành phần** (`suggest.py`): ba nguồn là kNN, nhãn thành phần của mục có liên kết (trọng số `closes_official` 3, `closes` 2, `mentions` 1) và naive Bayes trên từ khoá tiêu đề + mô tả. Script thử vài cách trộn và ngưỡng, rồi chọn cách tìm được nhiều nhất mà vẫn đạt `--min-precision` (mặc định 0,9).
 - **Gợi ý không bao giờ đụng vào nhãn thật** hay GitHub: chúng nằm ở bảng riêng và trang HTML hiển thị nét đứt. Giữ nguyên tắc này.
