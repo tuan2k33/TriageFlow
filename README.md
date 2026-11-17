@@ -34,10 +34,10 @@ python -m pytest tests -q    # offline: a synthetic repo with planted cases thro
 
 `reports/numpy__numpy/` holds the output for numpy/numpy (crawled 2026-11-16): `report.md` (the proposals; open it on GitHub or in any Markdown viewer), `browse.html` (download and open locally: filters, a type x component matrix, details per item), `actions.sh` (the matching `gh` commands, all commented out), `judge.jsonl` (the LLM recheck) and `manual.jsonl` (rows rechecked by hand). The SQLite database is not included (370 MB); `python run.py numpy/numpy` rebuilds it.
 
-Of the 2251 open items, the report proposes a quick action for 195 (187 issues, 8 PRs), not counting label suggestions. Nothing here changes GitHub: every command in `actions.sh` is commented out.
+Of the 2251 open items, the report proposes a quick action for 187 (178 issues, 9 PRs), not counting label suggestions. Nothing here changes GitHub: every command in `actions.sh` is commented out.
 
 ## AI Disclosure
 
 - **Idea and flow:** mine. I designed what to crawl, how to compare items and what to propose, and Claude (Claude Code, Anthropic) implemented it.
 - **Results:** every proposal in the report comes from the algorithm described above (GitHub's own links, a local embedding model, kNN and vote counts, rules learned from titles). No LLM makes or edits a proposal.
-- **Recheck:** an LLM (`nvidia/nemotron-3-ultra-550b-a55b:free` on OpenRouter, `tools/llm_judge.py`) read both items of each of the 195 non-label proposals for numpy and judged over 90% of them at least related (180 of 195). The 15 it called unrelated were reread by hand (`manual.jsonl`); all 15 turned out related (same function or area). Its verdicts are the Check column of the report.
+- **Recheck:** an LLM (`nvidia/nemotron-3-ultra-550b-a55b:free` on OpenRouter, `tools/llm_judge.py`) read both items of each of the 195 non-label proposals of an earlier numpy run and judged over 90% of them at least related (180 of 195); rows added since then have an empty Check cell until the recheck is run again. The 15 it called unrelated were reread by hand (`manual.jsonl`); all 15 turned out related (same function or area). Its verdicts are the Check column of the report.

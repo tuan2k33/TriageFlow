@@ -1,6 +1,6 @@
 """Suggest existing labels for open items that lack them. Two modes, picked from the repo's own labels:
 
-numpy scheme (labels match AXES): a type and components, as below.
+a repo with type and component axes (axes.py finds them from its labels: numpy, opencv): a type and components, as below.
 any other repo: every label is a candidate, by the same vote count as components, and each label is suggested only from the
             vote count at which it was right at least half the time when hidden (measured on labeled items), so
             process labels that do not follow from the text drop out by themselves.
@@ -19,7 +19,9 @@ usage: python suggest.py data/<owner>__<name>/repo.db [--unlabeled-only] [--eval
 import argparse, collections, json, random, re, sqlite3
 import numpy as np
 
-AXES = {"type": r"^(0[0-7]|17|23|33) - ", "component": r"^component:"}  # type regex fits numpy's numbered scheme
+import axes
+
+AXES = ("type", "component")
 K = 10  # numpy, at confidence >= 0.5: K=3 0.85 coverage / 0.84 precision, 5 0.82/0.86, 10 0.79/0.88, 15+ no better
 KC_GRID, M_GRID = (3, 5, 7, 10, 15), (1, 2, 3, 4, 5)  # component vote: neighbors x minimum votes, swept per repo
 TARGET_PRECISION = 0.5  # the sweep keeps the (neighbors, votes) pair that finds the most with exact-match precision >= this
@@ -199,7 +201,10 @@ def main():
     labels = [json.loads(r[3] or "[]") for r in rows]
     has_label = [bool(ls) for ls in labels]
     is_open = [r[4] == "open" for r in rows]
-    ax_all = {ax: [{l for l in ls if re.search(rx, l)} for ls in labels] for ax, rx in AXES.items()}
+    found = axes.of_repo(db)
+    tset = set(found["type"])
+    ax_all = {"type": [{l for l in ls if l in tset} for ls in labels],
+              "component": [{l for l in ls if axes.is_component(l, found["component"])} for ls in labels]}
     allowed = {ax: {l for i in range(n) if is_open[i] for l in ax_all[ax][i] if not VAGUE.search(l)} for ax in AXES}  # current scheme
     truth = {ax: [ax_all[ax][i] & allowed[ax] for i in range(n)] for ax in AXES}
     if not all(allowed.values()):

@@ -5,6 +5,8 @@ usage: python build_html.py data/<owner>__<name>/repo.db
 import json, sqlite3, sys
 from pathlib import Path
 
+import axes
+
 PAGE = r"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>__REPO__ triage</title>
@@ -47,20 +49,20 @@ const D=__DATA__;
 const items=D.items,byNum=new Map(items.map((d,i)=>[d.n,i]));
 items.forEach(d=>{d.ls=d.l;d.sg=d.sg||[]});
 let sel=-1,term='',shown=200,view='list',cellF=null;
-const chosen=new Set(),NONE='\0none',TYPE=new RegExp(D.type);
+const chosen=new Set(),NONE='\0none',TYPES=new Set(D.types),COMP=D.comp?D.comp.toLowerCase()+':':null;
 const PS={'pr:merged':'Closing PR merged: still open?','pr:similar':'Later merged PR looks like the fix (no link)','pr:open':'Closing PR open','pr:abandoned':'Closing PR abandoned','pr:tracking':'Tracking issue (has sub-issues)','pr:none':'No closing PR'};
 const DUP={'dup:github':'Marked duplicate on GitHub','dup:likely':'Likely duplicate (very similar)','dup:possible':'Possible duplicate (nearest of each other)'};
 const AGE={'age:0':'Active in the last year','age:1':'Quiet for 1-3 years','age:3':'Quiet for 3-5 years','age:5':'Quiet for over 5 years'};
 const NAME={...PS,...DUP,...AGE,'cmp:yes':'Open PRs after the same thing'};for(const c in D.names)NAME['cat:'+c]=D.names[c];
 const GN={dup:'Duplicates',pr:'Issues by closing PR',cmp:'Competing PRs',age:'Last activity',type:'Type',component:'Component',other:'Other labels',cat:'Category (by content)'};
-const grp=l=>l===NONE?'none':/^(pr|dup|cmp|age|cat):/.test(l)?l.split(':')[0]:l.startsWith('component:')?'component':TYPE.test(l)?'type':'other';
+const grp=l=>l===NONE?'none':/^(pr|dup|cmp|age|cat):/.test(l)?l.split(':')[0]:COMP&&l.toLowerCase().startsWith(COMP)?'component':TYPES.has(l)?'type':'other';
 const lsOf=d=>showS.checked?d.ls.concat(d.sg.map(x=>x[0])):d.ls;
 const YEAR=365.25*864e5,ageOf=d=>{const y=(new Date(D.now)-new Date(d.up))/YEAR;return y<1?'age:0':y<3?'age:1':y<5?'age:3':'age:5'};
 const keysOf=d=>{const k=lsOf(d).slice();if(d.ps)k.push('pr:'+d.ps[0]);if(d.zb)k.push('pr:similar');if(d.du)k.push('dup:'+d.du[1][0][1]);if(d.cp)k.push('cmp:yes');k.push(ageOf(d),'cat:'+d.c);return k};
 function passAll(d,skip){const k=keysOf(d),by={};for(const c of chosen){const g=grp(c);if(g!==skip)(by[g]=by[g]||[]).push(c)}
  for(const g in by){if(!by[g].some(c=>c===NONE?!lsOf(d).length:k.includes(c)))return false}return true}
 const kindOk=d=>d.k==='pr'?showP.checked:showI.checked;
-const short=l=>l==='(none)'?l:l.replace(/^component:\s*/,'').replace(/^numpy\./,'').replace(/^\d+ - /,'');
+const short=l=>l==='(none)'||!COMP?l.replace(/^\d+ - /,''):(l.toLowerCase().startsWith(COMP)?l.slice(COMP.length).trim():l).replace(/^numpy\./,'').replace(/^\d+ - /,'');
 // a repo without type or component labels gets pseudo labels: last activity for rows, the content category for columns
 const real=g=>g==='type'?D.ax.type:D.ax.component;
 const axOf=(d,g)=>{if(!real(g))return[g==='type'?AGE[ageOf(d)]:D.names[d.c]];const r=lsOf(d).filter(l=>grp(l)===g);return r.length?r:['(none)']};
@@ -133,7 +135,6 @@ home.onclick=overview;frag.textContent=D.frag||'';renderList();overview();
 
 REL = {"closes": ("closes", "closed by"), "mentions": ("mentions", "mentioned by"),
        "duplicate_of": ("duplicate of", "has duplicate"), "sub_issue": ("sub-issue of", "has sub-issue")}
-TYPE = r"^(0[0-7]|17|23|33) - "  # numpy's type labels, same as AXES["type"] in suggest.py; only groups the filter list
 
 
 def main(path):
@@ -200,9 +201,9 @@ def main(path):
         for key, src in (("ps", ps), ("du", du), ("zb", zb), ("cp", cp), ("si", si), ("sg", sg)):
             if n in src:
                 it[key] = src[n]
-    import re
-    ax = dict(type=any(re.match(TYPE, l) for it in items for l in it["l"]), component=any(l.startswith("component:") for it in items for l in it["l"]))
-    data = dict(items=items, names=names, frag=frag, over=over, type=TYPE, ax=ax, now=max((it["up"] for it in items), default=""), repo=f"https://github.com/{repo}")
+    found = axes.of_repo(db)  # the repo's own type and component labels; none -> pseudo labels in the matrix
+    ax = dict(type=bool(found["type"]), component=bool(found["component"]))
+    data = dict(items=items, names=names, frag=frag, over=over, types=found["type"], comp=found["component"], ax=ax, now=max((it["up"] for it in items), default=""), repo=f"https://github.com/{repo}")
     html = PAGE.replace("__REPO__", repo).replace("__DATA__", json.dumps(data, ensure_ascii=False).replace("</", "<\\/"))
     out = Path(path).with_name("browse.html")
     out.write_text(html, encoding="utf-8")

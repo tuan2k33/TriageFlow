@@ -25,6 +25,7 @@ from transformers import AutoModel, AutoTokenizer
 import digest
 
 MODEL = "BAAI/bge-small-en-v1.5"
+EMB_VERSION = "v3: template lines removed"  # part of every item's hash: changing it re-embeds everything once
 CATEGORY_RANGE = (8, 60)  # k = sqrt(open items), clipped
 ZOMBIE_SIM = 0.88  # issue and merged PR nearest to each other: on closed numpy issues with a known closer, the PR is one of them 87% of the time
 DUP_SIM = 0.92  # hand-graded on numpy (24 pairs, description + maintainer comments read): >= 0.92 ~79% same problem, 0.91-0.92 only ~29%
@@ -73,14 +74,17 @@ def embed_new(db):
         comments[n].append((assoc in digest.TEAM, b))
     todo = []
     for n, t, b in db.execute("select number, title, coalesce(body,'') from items order by number"):
-        h = hashlib.md5("\n".join([t, b] + [c for _, c in comments[n]]).encode()).hexdigest()
+        h = hashlib.md5("\n".join([EMB_VERSION, t, b] + [c for _, c in comments[n]]).encode()).hexdigest()
         if done.get(n) != h:
             todo.append((n, t, b, h))
     print(f"embedding {len(todo)} new, edited or commented items", flush=True)
     if not todo:
         return
+    boiler = digest.boilerplate([b for (b,) in db.execute("select body from items")])
+    print(f"  {len(boiler)} template lines left out (repeated verbatim in >= {digest.BOILER_SHARE:.0%} of descriptions)", flush=True)
+    todo = [(n, t, digest.strip_boiler(b, boiler), h) for n, t, b, h in todo]
     tok, embed = encoder()
-    passages = digest.build({n: digest.units(t, b, comments[n]) for n, t, b, _ in todo}, tok, embed)
+    passages = digest.build({n: digest.units(t, b, [(m, digest.strip_boiler(c, boiler)) for m, c in comments[n]]) for n, t, b, _ in todo}, tok, embed)
     V = unit(embed([f"{t}\n{b[:1500]}" for _, t, b, _ in todo]) + embed([passages[n] for n, *_ in todo]))
     for (n, *_, h), v in zip(todo, V):
         db.execute("insert or replace into emb(number, vec, hash) values(?,?,?)", (n, v.astype(np.float16).tobytes(), h))

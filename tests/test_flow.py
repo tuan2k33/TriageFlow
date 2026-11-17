@@ -31,7 +31,7 @@ def make_db(path):
                    (n, kind, title, body, author, "NONE", state, None, merged, 0, json.dumps(list(labels)), None, 2,
                     f"2024-01-{day:02d}T00:00:00Z", None, f"2024-02-{day:02d}T00:00:00Z", f"https://github.com/acme/demo/issues/{n}"))
         db.execute("insert into emb values(?,?,?)", (n, (v / np.linalg.norm(v)).astype(np.float16).tobytes(),
-                                                     hashlib.md5(f"{title}\n{body}".encode()).hexdigest()))
+                                                     hashlib.md5("\n".join([analyze.EMB_VERSION, title, body]).encode()).hexdigest()))
 
     for n in range(1, 61):
         topic = n % 6

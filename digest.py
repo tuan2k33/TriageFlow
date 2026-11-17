@@ -5,7 +5,7 @@ fills the rest by MMR: sentences close to the thread's mean embedding and unlike
 bonus for maintainers and for words that say what happened (fixed, duplicate, closed...). No language model writes
 anything: every word comes from the thread, in its original order.
 """
-import re
+import collections, re
 import numpy as np
 
 BUDGET = 500  # tokens; the model reads 512 with [CLS]/[SEP]
@@ -24,6 +24,30 @@ def is_code(line):
     return (s.startswith((">>>", "...", "$ ", "In [", "Out[", "import ", "from ", "Traceback", "File \"", "    ", "\t"))
             or sym / len(s) > 0.35 or re.match(r"^[\w.]+\s*=", s) is not None
             or re.match(r"^\d+(\.\d+)+(\s|$)", s) is not None)  # version lines of the issue template
+
+
+def norm_line(l):
+    """A description line as compared across items: lower case, no list marker or checkbox, collapsed spaces."""
+    l = re.sub(r"^\s*([-*]|\d+\.)?\s*(\[[ xX]\])?\s*", "", l.strip().lower())
+    return re.sub(r"\s+", " ", l).strip(" .:")
+
+
+BOILER_SHARE, BOILER_MIN = 0.01, 30  # a line repeated verbatim in >= 1% of items (at least 30) is template text
+
+
+def boilerplate(bodies):
+    """Lines repeated verbatim across many descriptions: issue and PR templates, checklists, stock headings.
+    Measured: template lines sit in 3-20% of items (numpy, opencv), while repeated real content (an error message, a build
+    flag) stays under ~60 items; a ~100% cut would miss templates, which change over time and differ per issue type."""
+    c = collections.Counter()
+    for b in bodies:
+        c.update({k for k in map(norm_line, re.sub(r"<!--.*?-->", "", b or "", flags=re.S).split("\n")) if len(k) >= 15})
+    cut = max(BOILER_MIN, BOILER_SHARE * len(bodies))
+    return {k for k, v in c.items() if v >= cut}
+
+
+def strip_boiler(text, boiler):
+    return "\n".join(l for l in re.sub(r"<!--.*?-->", "", text or "", flags=re.S).split("\n") if norm_line(l) not in boiler)
 
 
 def clean(t):
