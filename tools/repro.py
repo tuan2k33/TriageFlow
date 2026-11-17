@@ -245,16 +245,18 @@ def write_review(out_dir, rows, con):
     section = {}
     for kind, n in con.execute("select kind, number from actions where kind in (%s)" % ",".join("?" * len(KINDS)), KINDS):
         section.setdefault(n, kind)
-    order = {k: i for i, k in enumerate(KINDS + ("original of a duplicate",))}
+    for (n,) in con.execute("select target from actions where kind in (%s)" % ",".join("?" * len(PAIRED)), PAIRED):
+        section.setdefault(n, "original of a duplicate")
+    order = {k: i for i, k in enumerate(KINDS + ("original of a duplicate", "not in the report"))}
     first = lambda a: 0 if a == "reported error gone" else 1 if a.startswith("different") else 2 if a.startswith("same") else 3
     todo = sorted((r for r in rows if r["hint"] in ("ok", "error")),
-                  key=lambda r: (order[section.get(r["number"], "original of a duplicate")], first(r["auto"]), r["number"]))
+                  key=lambda r: (order[section.get(r["number"], "not in the report")], first(r["auto"]), r["number"]))
     out = [f"# Reproduce on numpy {EXPECTED}: {len(todo)} cases that ran\n",
            "Compare *got* with *expected* (lines starting `reported:` are the error the reporter got); put the verdict in sheet.jsonl "
            "(still_there / gone / snippet_broken / cannot_tell). *auto* only compares exception types.\n"]
     last = None
     for r in todo:
-        n, sec = r["number"], section.get(r["number"], "original of a duplicate")
+        n, sec = r["number"], section.get(r["number"], "not in the report")
         if sec != last:
             out.append(f"\n## {sec}\n")
             last = sec
@@ -271,11 +273,40 @@ def write_review(out_dir, rows, con):
     (out_dir / "review.md").write_text("\n".join(out), encoding="utf-8")
 
 
+def write_prs(out_dir, rows, con):
+    """prs.jsonl and prs.md: every open PR with the issues it says it fixes (GitHub's closing link, or "fixes #N" in its
+    own description) and what the reproduce check has for each of them. Only the link: whether the PR fixes them is not
+    judged, and nothing of the PR is built or run."""
+    by = {r["number"]: r for r in rows}
+    prs = []
+    for n, title in con.execute("select number, title from items where kind = 'pr' and state = 'open' order by number"):
+        linked = [d for (d,) in con.execute(
+            "select distinct l.dst from links l join items i on i.number = l.dst where l.src = ? and i.kind = 'issue' "
+            "and l.kind in ('closes_official', 'closes') order by l.dst", (n,))]
+        if linked:
+            prs.append({"number": n, "title": title, "url": f"https://github.com/numpy/numpy/pull/{n}", "issues": [
+                {k: by[d][k] for k in ("number", "template", "hint", "auto")} | {"file": f"{d}.py" if (out_dir / f"{d}.py").exists() else ""}
+                if d in by else {"number": d, "template": "", "hint": "not checked", "auto": "", "file": ""} for d in linked]})
+    (out_dir / "prs.jsonl").write_text("".join(json.dumps(p, ensure_ascii=False) + "\n" for p in prs), encoding="utf-8")
+    md = [f"# Open PRs and the issues they fix: {len(prs)} PRs\n",
+          "Each linked issue with its reproduce result on numpy %s; open the issue's .py for code / expected / got.\n" % EXPECTED]
+    for p in prs:
+        md.append(f"## [#{p['number']}]({p['url']}) {p['title']}\n")
+        for i in p["issues"]:
+            f = f"[{i['file']}]({i['file']})" if i["file"] else "no snippet file"
+            md.append(f"- #{i['number']}: {i['hint']}, template {i['template'] or '?'}"
+                      f"{', ' + i['auto'] if i['auto'] else ''} · {f}")
+        md.append("")
+    (out_dir / "prs.md").write_text("\n".join(md), encoding="utf-8")
+    return len(prs)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("db")
     ap.add_argument("--only", type=int, nargs="+")
     ap.add_argument("--rerun", action="store_true")
+    ap.add_argument("--all-open", action="store_true", help="every open issue, not only those in the report")
     ap.add_argument("--timeout", type=float, default=60)
     a = ap.parse_args()
     check_interpreter()
@@ -285,8 +316,12 @@ def main():
     con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
     cases = con.execute("select distinct i.number, i.title, coalesce(i.body,''), i.created_at from items i where i.kind='issue' "
                         "and (i.number in (select number from actions where kind in (%s)) "
-                        "or i.number in (select target from actions where kind in (%s))) order by i.number"
-                        % (",".join("?" * len(KINDS)), ",".join("?" * len(PAIRED))), KINDS + PAIRED).fetchall()
+                        "or i.number in (select target from actions where kind in (%s))%s) order by i.number"
+                        % (",".join("?" * len(KINDS)), ",".join("?" * len(PAIRED)), " or i.state = 'open'" * a.all_open),
+                        KINDS + PAIRED).fetchall()
+    in_report = {n for (n,) in con.execute("select number from actions where kind in (%s) union select target from actions "
+                                          "where kind in (%s)" % (",".join("?" * len(KINDS)), ",".join("?" * len(PAIRED))),
+                                          KINDS + PAIRED)}
     pairs = collections.defaultdict(set)
     for n, t in con.execute("select number, target from actions where kind in (%s)" % ",".join("?" * len(PAIRED)), PAIRED):
         pairs[n].add(t)
@@ -315,8 +350,8 @@ def main():
         if py.exists() and tpl and code and code_of(py.read_text(encoding="utf-8")) == (extract(body) or "").strip() != code.strip():
             py.write_text(header(n, title, created) + code + "\n", encoding="utf-8")  # untouched guess -> the template's code
         if not py.exists():
-            if code is None:
-                hints[n] = "crawl_error"
+            if code is None or (tpl is None and a.all_open and n not in in_report):
+                hints[n] = "crawl_error" if tpl else "no_template"  # outside the report only templated issues are tried
                 continue
             with open(py, "x", encoding="utf-8") as f:
                 f.write(header(n, title, created) + code + "\n")
@@ -348,6 +383,7 @@ def main():
     tmp.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
     tmp.replace(sheet)
     write_review(out_dir, rows, con)
+    print(f"{write_prs(out_dir, rows, con)} open PRs linked to issues: {out_dir / 'prs.md'}")
     print(f"created {made} .py files; sheet {sheet}; review {out_dir / 'review.md'}")
     for hint, count in collections.Counter(r["hint"] for r in rows if r["number"] in current).most_common():
         print(f"{hint:15} {count}")
