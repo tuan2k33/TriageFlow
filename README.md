@@ -13,7 +13,7 @@ The steps `run.py` runs, each rerunnable on its own:
 R=data/numpy__numpy/repo.db
 python triageflow.py numpy/numpy       # all issues/PRs + comments + GitHub's own links: PR closes issue, duplicate of, sub-issue (GitHub API; token from `gh auth token`); reruns sync only what changed
 python analyze.py $R                   # embed new or changed threads (bge-small, fp16; title+description averaged with an extractive digest of the comments); categories once (--init to redo); semantic links; PR status of open issues; duplicate candidates
-python suggest.py $R                   # labels for open items that lack them, by kNN over the 10 nearest labeled items (type) and votes of the 5 nearest and linked items (components) (any repo)
+python suggest.py $R                   # labels for open items that lack them: rules learned from titles (BUG:, f2py), then kNN over the 10 nearest labeled items (type) and votes of the 5 nearest and linked items (components); any repo
 python report.py $R                    # proposals with the algorithm's confidence -> report.md + actions.sh (gh commands, all commented out)
 python build_html.py $R                # -> data/numpy__numpy/browse.html: filters, list of open items, details with a timeline
 datasette $R                           # browse / SQL / full-text search
@@ -37,6 +37,6 @@ Of the 2251 open items, the report proposes a quick action for 195 (187 issues, 
 
 ## AI Disclosure
 
-- The code was written with the help of Claude Code (Anthropic).
-- The proposals in the report come from the algorithm above, not from an LLM.
-- `tools/llm_judge.py` asked a free model on OpenRouter (`nvidia/nemotron-3-ultra-550b-a55b:free`) to read both items of each non-label proposal and say whether it holds; its verdicts are the Check column. Rows it called unrelated were reread by hand (`manual.jsonl`).
+- **Idea and flow:** mine. I designed what to crawl, how to compare items and what to propose, and Claude (Claude Code, Anthropic) implemented it.
+- **Results:** every proposal in the report comes from the algorithm described above (GitHub's own links, a local embedding model, kNN and vote counts, rules learned from titles). No LLM makes or edits a proposal.
+- **Recheck:** an LLM (`nvidia/nemotron-3-ultra-550b-a55b:free` on OpenRouter, `tools/llm_judge.py`) read both items of each of the 195 non-label proposals for numpy and judged over 90% of them at least related (180 of 195). The 15 it called unrelated were reread by hand (`manual.jsonl`); all 15 turned out related (same function or area). Its verdicts are the Check column of the report.
