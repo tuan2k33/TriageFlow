@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Mục đích
 
-Crawl toàn bộ issue/PR (mở và đóng) của một repo GitHub vào SQLite, chỉ lấy văn bản và metadata, **không bao giờ đọc code hay diff**, rồi xếp chúng vào category, gợi ý nhãn từ nhãn sẵn có của repo, và dựng một trang HTML để xem. Từ crawl tới trang xem chỉ là phân tích dữ liệu và học máy cổ điển (embedding local, KMeans, kNN, đếm phiếu); **không có LLM** ở bất kỳ bước nào (các bước LLM cũ đã bị gỡ theo quyết định của người dùng, đừng thêm lại). Mục tiêu, phạm vi và trạng thái từng phân hệ nằm trong `GOAL.md`; đọc nó trước khi thêm tính năng. Repo dùng để thử: `numpy/numpy` (33 nghìn mục) và `tqdm/tqdm` (1,8 nghìn mục, crawl đầy đủ khoảng 90 request, hợp để thử nhanh).
+Crawl toàn bộ issue/PR (mở và đóng) của một repo GitHub vào SQLite, chỉ lấy văn bản và metadata, **không bao giờ đọc code hay diff**, rồi xếp chúng vào category, gợi ý nhãn từ nhãn sẵn có của repo, và dựng một trang HTML để xem. Từ crawl tới trang xem chỉ là phân tích dữ liệu và học máy cổ điển (embedding local, KMeans, kNN, đếm phiếu); **không có LLM** ở bất kỳ bước nào (các bước LLM cũ đã bị gỡ theo quyết định của người dùng, đừng thêm lại). Ngoại lệ duy nhất là `tools/llm_judge.py`: người dùng muốn một model free trên OpenRouter chấm sơ các dòng của báo cáo để đỡ việc kiểm chứng bằng tay; nó nằm ngoài pipeline, chỉ ghi `judge.jsonl`, không bước nào đọc lại. Mục tiêu, phạm vi và trạng thái từng phân hệ nằm trong `GOAL.md`; đọc nó trước khi thêm tính năng. Repo dùng để thử: `numpy/numpy` (33 nghìn mục) và `tqdm/tqdm` (1,8 nghìn mục, crawl đầy đủ khoảng 90 request, hợp để thử nhanh).
 
 ## Lệnh
 
