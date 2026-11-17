@@ -135,7 +135,7 @@ def main(path):
         rows = sorted(by[kind], key=lambda a: (-a[3], a[1]))
         if not rows:
             continue
-        md += [f'<details><summary><h2 style="display:inline">{e(title)} ({len(rows)})</h2></summary>',  # click the title to show / hide the table
+        md += [f'<details><summary><h2 style="display:inline;border:none;padding:0;margin:0">{e(title)} ({len(rows)})</h2></summary>',  # click the title to show / hide the table
                '<table class="rep" style="table-layout:fixed;width:100%"><colgroup><col width="30%" style="width:30%">'
                '<col width="20%" style="width:20%"><col width="50%" style="width:50%"></colgroup>',
                "<tr><th>Item</th><th>Proposal (confidence)</th><th>Check</th></tr>"]
