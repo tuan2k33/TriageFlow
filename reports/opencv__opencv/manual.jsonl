@@ -1,0 +1,7 @@
+{"kind": "check_recurrence", "number": 18759, "target": 11452, "verdict": "related", "note": "both readNetFromTensorflow failing on a .pb; custom layer vs const node assertion", "by": "manual"}
+{"kind": "check_recurrence", "number": 21419, "target": 16397, "verdict": "related", "note": "both building OpenCV with CUDA fails; different targets and versions", "by": "manual"}
+{"kind": "check_recurrence", "number": 22984, "target": 6093, "verdict": "related", "note": "both build_framework.py for iOS fails; contrib modules vs zlib", "by": "manual"}
+{"kind": "check_recurrence", "number": 23212, "target": 8625, "verdict": "related", "note": "both CMake configure with CUDA fails; FindCUDA removed in cmake 3.25 vs missing source file", "by": "manual"}
+{"kind": "check_recurrence", "number": 24831, "target": 7332, "verdict": "related", "note": "same function getOptimalNewCameraMatrix, wrong ROI vs odd result on own data", "by": "manual"}
+{"kind": "check_recurrence", "number": 25614, "target": 14706, "verdict": "related", "note": "both AttributeError on cv2.dnn; missing DictValue vs broken install", "by": "manual"}
+{"kind": "close_duplicate_likely", "number": 21443, "target": 21419, "verdict": "related", "note": "same setup (4.5.5, CUDA, Jetson Nano), different failing target: cudacodec vs python3", "by": "manual"}
