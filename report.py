@@ -125,7 +125,8 @@ def main(path):
           "- **Confidence** (in brackets after each proposal): the algorithm's score for that row, 0-1. 1.00 only when certainly right "
           "(a maintainer marked it on GitHub); anything an algorithm or ML model decides is at most 0.99. Rows are sorted by it.",
           f"- **Check**: manual check (a person read both items) and LLM check ({jmodel or 'no LLM run yet'} read both threads). "
-          "Neither is part of the algorithm.", "", "## Tech used", ""]
+          "Neither is part of the algorithm.",
+          "- Each section below is folded: click its title to show or hide its table.", "", "## Tech used", ""]
     md += [f"- **{title}**: {tech}." + (label_test() if kind == "add_label" else "") for kind, (tech, title) in RULES.items() if by[kind]]
     md.append("")
     sh = ["#!/bin/sh", f"# Proposed actions for {repo}. Review report.md, then remove the leading '# ' from the lines you agree with.", ""]
@@ -134,7 +135,7 @@ def main(path):
         rows = sorted(by[kind], key=lambda a: (-a[3], a[1]))
         if not rows:
             continue
-        md += [f"## {title} ({len(rows)})", "",
+        md += [f'<details><summary><h2 style="display:inline">{e(title)} ({len(rows)})</h2></summary>',  # click the title to show / hide the table
                '<table class="rep" style="table-layout:fixed;width:100%"><colgroup><col width="30%" style="width:30%">'
                '<col width="20%" style="width:20%"><col width="50%" style="width:50%"></colgroup>',
                "<tr><th>Item</th><th>Proposal (confidence)</th><th>Check</th></tr>"]
@@ -147,7 +148,7 @@ def main(path):
             md.append(f'<tr><td><a href="https://github.com/{repo}/issues/{n}">#{n}</a> {e(info[n][2])}</td>'
                       f"<td>{e(reason)} ({conf:.2f})</td><td>{check}</td></tr>")
             sh.append(f"# {cmd}   # {conf:.2f}")
-        md += ["</table>", ""]
+        md += ["</table></details>", ""]
         sh.append("")
     out = Path(path).parent
     (out / "report.md").write_text("\n".join(md), encoding="utf-8")

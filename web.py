@@ -21,7 +21,7 @@ nav{display:flex;gap:4px;align-items:center;padding:6px 12px;background:var(--pa
 nav a{padding:4px 12px;border-radius:6px;color:var(--mute);text-decoration:none}nav a.on{background:var(--bg);color:var(--ink);font-weight:600}nav b{margin-right:12px}
 main{padding:16px 20px;overflow:auto;flex:1}iframe{border:0;flex:1;width:100%}
 table{border-collapse:collapse;margin:8px 0 20px}td,th{border:1px solid var(--line);padding:3px 8px;text-align:left;vertical-align:top;max-width:620px;overflow-wrap:break-word}th{background:var(--panel)}
-table.rep{table-layout:fixed;width:100%}table.rep td,table.rep th{max-width:none}table.rep th:nth-child(1){width:30%}table.rep th:nth-child(2){width:20%}
+summary{cursor:pointer;margin:14px 0 6px}table.rep{table-layout:fixed;width:100%}table.rep td,table.rep th{max-width:none}table.rep th:nth-child(1){width:30%}table.rep th:nth-child(2){width:20%}
 a{color:inherit}pre{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;overflow:auto}
 input[type=text],textarea{width:min(720px,100%);padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);font:inherit}
 button{padding:6px 14px;border:1px solid var(--line);border-radius:6px;background:var(--ink);color:var(--bg);font:inherit;cursor:pointer}.mute{color:var(--mute)}
@@ -38,8 +38,9 @@ def page(title, body, repo=None, on=None, raw=False):
 
 
 def md_to_html(md):
-    """Enough Markdown for report.md: headings, paragraphs, tables, [text](url) links, **bold**."""
-    link = lambda t: re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2" target="_blank">\1</a>', html.escape(t)))
+    """Enough Markdown for report.md: headings, paragraphs, tables, [text](url) links, **bold**, `code`, - and 1. lists."""
+    link = lambda t: re.sub(r"`([^`]+)`", r"<code>\1</code>", re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>",
+                            re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2" target="_blank">\1</a>', html.escape(t))))
     out, table = [], False
     for line in md.split("\n"):
         if line.startswith("<"):  # report.py writes its tables as HTML (fixed column widths); it is our own file
@@ -57,7 +58,7 @@ def md_to_html(md):
             table = False
         m = re.match(r"(#+) (.*)", line)
         if not m and re.match(r"(- |\d+\. )", line):
-            out.append(f"<p style='margin:2px 0 2px 16px'>{link(line)}</p>")
+            out.append(f"<p style='margin:2px 0 2px 16px'>{link(re.sub(r'^- ', '• ', line))}</p>")
             continue
         out.append(f"<h{len(m.group(1))}>{link(m.group(2))}</h{len(m.group(1))}>" if m else f"<p>{link(line)}</p>" if line.strip() else "")
     return "\n".join(out) + ("</table>" if table else "")
