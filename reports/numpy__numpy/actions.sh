@@ -24,7 +24,7 @@
 # gh issue close 29524 -R numpy/numpy --reason completed --comment "Closed by #29539"   # 0.99
 # gh issue close 30440 -R numpy/numpy --reason completed --comment "Closed by #31113"   # 0.99
 
-# --- Likely duplicates of an older open issue (48)
+# --- Likely duplicates of an older open issue (58)
 # gh issue close 20022 -R numpy/numpy --reason "not planned" --comment "Duplicate of #6661"   # 0.97
 # gh issue close 6083 -R numpy/numpy --reason "not planned" --comment "Duplicate of #6082"   # 0.95
 # gh issue close 17310 -R numpy/numpy --reason "not planned" --comment "Duplicate of #12283"   # 0.95
@@ -42,44 +42,53 @@
 # gh issue close 17744 -R numpy/numpy --reason "not planned" --comment "Duplicate of #6051"   # 0.93
 # gh issue close 18519 -R numpy/numpy --reason "not planned" --comment "Duplicate of #5236"   # 0.93
 # gh issue close 20226 -R numpy/numpy --reason "not planned" --comment "Duplicate of #2457"   # 0.93
-# gh issue close 21539 -R numpy/numpy --reason "not planned" --comment "Duplicate of #9023"   # 0.93
-# gh issue close 22141 -R numpy/numpy --reason "not planned" --comment "Duplicate of #5613"   # 0.93
 # gh issue close 22881 -R numpy/numpy --reason "not planned" --comment "Duplicate of #9450"   # 0.93
 # gh issue close 24897 -R numpy/numpy --reason "not planned" --comment "Duplicate of #13105"   # 0.93
 # gh issue close 28602 -R numpy/numpy --reason "not planned" --comment "Duplicate of #9009"   # 0.93
 # gh issue close 28946 -R numpy/numpy --reason "not planned" --comment "Duplicate of #15770"   # 0.93
 # gh issue close 29071 -R numpy/numpy --reason "not planned" --comment "Duplicate of #11686"   # 0.93
-# gh issue close 30171 -R numpy/numpy --reason "not planned" --comment "Duplicate of #29071"   # 0.93
 # gh issue close 30349 -R numpy/numpy --reason "not planned" --comment "Duplicate of #10926"   # 0.93
-# gh issue close 33219 -R numpy/numpy --reason "not planned" --comment "Duplicate of #21944"   # 0.93
 # gh issue close 7730 -R numpy/numpy --reason "not planned" --comment "Duplicate of #6971"   # 0.92
 # gh issue close 9023 -R numpy/numpy --reason "not planned" --comment "Duplicate of #6661"   # 0.92
+# gh issue close 9394 -R numpy/numpy --reason "not planned" --comment "Duplicate of #4425"   # 0.92
+# gh issue close 11541 -R numpy/numpy --reason "not planned" --comment "Duplicate of #10926"   # 0.92
 # gh issue close 13683 -R numpy/numpy --reason "not planned" --comment "Duplicate of #5972"   # 0.92
-# gh issue close 16159 -R numpy/numpy --reason "not planned" --comment "Duplicate of #13349"   # 0.92
+# gh issue close 14462 -R numpy/numpy --reason "not planned" --comment "Duplicate of #12313"   # 0.92
+# gh issue close 16159 -R numpy/numpy --reason "not planned" --comment "Duplicate of #2457"   # 0.92
+# gh issue close 16391 -R numpy/numpy --reason "not planned" --comment "Duplicate of #8449"   # 0.92
+# gh issue close 17335 -R numpy/numpy --reason "not planned" --comment "Duplicate of #13011"   # 0.92
 # gh issue close 17408 -R numpy/numpy --reason "not planned" --comment "Duplicate of #4440"   # 0.92
+# gh issue close 18881 -R numpy/numpy --reason "not planned" --comment "Duplicate of #8909"   # 0.92
 # gh issue close 19039 -R numpy/numpy --reason "not planned" --comment "Duplicate of #9331"   # 0.92
-# gh issue close 20586 -R numpy/numpy --reason "not planned" --comment "Duplicate of #15601"   # 0.92
 # gh issue close 21787 -R numpy/numpy --reason "not planned" --comment "Duplicate of #4965"   # 0.92
 # gh issue close 22182 -R numpy/numpy --reason "not planned" --comment "Duplicate of #14804"   # 0.92
 # gh issue close 23574 -R numpy/numpy --reason "not planned" --comment "Duplicate of #14396"   # 0.92
 # gh issue close 24689 -R numpy/numpy --reason "not planned" --comment "Duplicate of #8352"   # 0.92
 # gh issue close 25235 -R numpy/numpy --reason "not planned" --comment "Duplicate of #11723"   # 0.92
 # gh issue close 25363 -R numpy/numpy --reason "not planned" --comment "Duplicate of #15726"   # 0.92
-# gh issue close 26145 -R numpy/numpy --reason "not planned" --comment "Duplicate of #5657"   # 0.92
 # gh issue close 26177 -R numpy/numpy --reason "not planned" --comment "Duplicate of #8449"   # 0.92
 # gh issue close 26779 -R numpy/numpy --reason "not planned" --comment "Duplicate of #23694"   # 0.92
 # gh issue close 27588 -R numpy/numpy --reason "not planned" --comment "Duplicate of #20850"   # 0.92
 # gh issue close 29117 -R numpy/numpy --reason "not planned" --comment "Duplicate of #17310"   # 0.92
-# gh issue close 31868 -R numpy/numpy --reason "not planned" --comment "Duplicate of #27258"   # 0.92
+# gh issue close 30171 -R numpy/numpy --reason "not planned" --comment "Duplicate of #11686"   # 0.92
+# gh issue close 30804 -R numpy/numpy --reason "not planned" --comment "Duplicate of #27163"   # 0.92
+# gh issue close 31868 -R numpy/numpy --reason "not planned" --comment "Duplicate of #4332"   # 0.92
 # gh issue close 32372 -R numpy/numpy --reason "not planned" --comment "Duplicate of #8775"   # 0.92
 # gh issue close 33203 -R numpy/numpy --reason "not planned" --comment "Duplicate of #6854"   # 0.92
+# gh issue close 33219 -R numpy/numpy --reason "not planned" --comment "Duplicate of #4332"   # 0.92
+# gh issue close 12183 -R numpy/numpy --reason "not planned" --comment "Duplicate of #4959"   # 0.91
+# gh issue close 15219 -R numpy/numpy --reason "not planned" --comment "Duplicate of #10709"   # 0.91
+# gh issue close 15713 -R numpy/numpy --reason "not planned" --comment "Duplicate of #11136"   # 0.91
+# gh issue close 21826 -R numpy/numpy --reason "not planned" --comment "Duplicate of #21746"   # 0.91
+# gh issue close 23540 -R numpy/numpy --reason "not planned" --comment "Duplicate of #17192"   # 0.91
+# gh issue close 32431 -R numpy/numpy --reason "not planned" --comment "Duplicate of #28165"   # 0.91
+# gh issue close 33324 -R numpy/numpy --reason "not planned" --comment "Duplicate of #10926"   # 0.91
 
-# --- Open issues very similar to an older closed one (came back, or a duplicate of something settled?) (67)
+# --- Open issues very similar to an older closed one (came back, or a duplicate of something settled?) (98)
 # gh issue view 32270 -R numpy/numpy; gh issue view 32272 -R numpy/numpy   # 0.97
 # gh issue view 9769 -R numpy/numpy; gh issue view 9775 -R numpy/numpy   # 0.96
 # gh issue view 19307 -R numpy/numpy; gh issue view 19308 -R numpy/numpy   # 0.96
 # gh issue view 17697 -R numpy/numpy; gh issue view 25677 -R numpy/numpy   # 0.95
-# gh issue view 26387 -R numpy/numpy; gh issue view 27250 -R numpy/numpy   # 0.95
 # gh issue view 8192 -R numpy/numpy; gh issue view 28920 -R numpy/numpy   # 0.95
 # gh issue view 31686 -R numpy/numpy; gh issue view 31926 -R numpy/numpy   # 0.95
 # gh issue view 8192 -R numpy/numpy; gh issue view 9331 -R numpy/numpy   # 0.94
@@ -94,7 +103,6 @@
 # gh issue view 1989 -R numpy/numpy; gh issue view 7329 -R numpy/numpy   # 0.93
 # gh issue view 4445 -R numpy/numpy; gh issue view 7330 -R numpy/numpy   # 0.93
 # gh issue view 6040 -R numpy/numpy; gh issue view 9465 -R numpy/numpy   # 0.93
-# gh issue view 7462 -R numpy/numpy; gh issue view 10004 -R numpy/numpy   # 0.93
 # gh issue view 5903 -R numpy/numpy; gh issue view 11881 -R numpy/numpy   # 0.93
 # gh issue view 8323 -R numpy/numpy; gh issue view 12098 -R numpy/numpy   # 0.93
 # gh issue view 8769 -R numpy/numpy; gh issue view 13011 -R numpy/numpy   # 0.93
@@ -116,34 +124,67 @@
 # gh issue view 21782 -R numpy/numpy; gh issue view 26401 -R numpy/numpy   # 0.93
 # gh issue view 26596 -R numpy/numpy; gh issue view 26761 -R numpy/numpy   # 0.93
 # gh issue view 17038 -R numpy/numpy; gh issue view 27498 -R numpy/numpy   # 0.93
-# gh issue view 19552 -R numpy/numpy; gh issue view 27985 -R numpy/numpy   # 0.93
 # gh issue view 4107 -R numpy/numpy; gh issue view 28104 -R numpy/numpy   # 0.93
 # gh issue view 18748 -R numpy/numpy; gh issue view 28371 -R numpy/numpy   # 0.93
 # gh issue view 3213 -R numpy/numpy; gh issue view 5613 -R numpy/numpy   # 0.92
 # gh issue view 6753 -R numpy/numpy; gh issue view 8987 -R numpy/numpy   # 0.92
+# gh issue view 4054 -R numpy/numpy; gh issue view 9068 -R numpy/numpy   # 0.92
 # gh issue view 5775 -R numpy/numpy; gh issue view 10496 -R numpy/numpy   # 0.92
 # gh issue view 5110 -R numpy/numpy; gh issue view 10520 -R numpy/numpy   # 0.92
 # gh issue view 8664 -R numpy/numpy; gh issue view 14804 -R numpy/numpy   # 0.92
+# gh issue view 7122 -R numpy/numpy; gh issue view 15200 -R numpy/numpy   # 0.92
+# gh issue view 3336 -R numpy/numpy; gh issue view 15601 -R numpy/numpy   # 0.92
+# gh issue view 15057 -R numpy/numpy; gh issue view 15856 -R numpy/numpy   # 0.92
 # gh issue view 10092 -R numpy/numpy; gh issue view 15978 -R numpy/numpy   # 0.92
+# gh issue view 9694 -R numpy/numpy; gh issue view 18099 -R numpy/numpy   # 0.92
+# gh issue view 8220 -R numpy/numpy; gh issue view 18158 -R numpy/numpy   # 0.92
+# gh issue view 14565 -R numpy/numpy; gh issue view 18434 -R numpy/numpy   # 0.92
 # gh issue view 14659 -R numpy/numpy; gh issue view 18700 -R numpy/numpy   # 0.92
-# gh issue view 14883 -R numpy/numpy; gh issue view 19146 -R numpy/numpy   # 0.92
+# gh issue view 7126 -R numpy/numpy; gh issue view 19146 -R numpy/numpy   # 0.92
+# gh issue view 3336 -R numpy/numpy; gh issue view 20586 -R numpy/numpy   # 0.92
 # gh issue view 9393 -R numpy/numpy; gh issue view 20684 -R numpy/numpy   # 0.92
+# gh issue view 5745 -R numpy/numpy; gh issue view 20905 -R numpy/numpy   # 0.92
 # gh issue view 3502 -R numpy/numpy; gh issue view 21280 -R numpy/numpy   # 0.92
+# gh issue view 8192 -R numpy/numpy; gh issue view 21539 -R numpy/numpy   # 0.92
+# gh issue view 10713 -R numpy/numpy; gh issue view 21631 -R numpy/numpy   # 0.92
+# gh issue view 2031 -R numpy/numpy; gh issue view 21933 -R numpy/numpy   # 0.92
 # gh issue view 8546 -R numpy/numpy; gh issue view 22197 -R numpy/numpy   # 0.92
 # gh issue view 21105 -R numpy/numpy; gh issue view 22609 -R numpy/numpy   # 0.92
 # gh issue view 5681 -R numpy/numpy; gh issue view 22956 -R numpy/numpy   # 0.92
 # gh issue view 18294 -R numpy/numpy; gh issue view 23305 -R numpy/numpy   # 0.92
+# gh issue view 3145 -R numpy/numpy; gh issue view 23496 -R numpy/numpy   # 0.92
+# gh issue view 18608 -R numpy/numpy; gh issue view 23518 -R numpy/numpy   # 0.92
+# gh issue view 10892 -R numpy/numpy; gh issue view 23694 -R numpy/numpy   # 0.92
 # gh issue view 11142 -R numpy/numpy; gh issue view 24836 -R numpy/numpy   # 0.92
 # gh issue view 16609 -R numpy/numpy; gh issue view 24976 -R numpy/numpy   # 0.92
 # gh issue view 5819 -R numpy/numpy; gh issue view 25606 -R numpy/numpy   # 0.92
+# gh issue view 18557 -R numpy/numpy; gh issue view 26818 -R numpy/numpy   # 0.92
 # gh issue view 24430 -R numpy/numpy; gh issue view 26861 -R numpy/numpy   # 0.92
+# gh issue view 25969 -R numpy/numpy; gh issue view 27310 -R numpy/numpy   # 0.92
+# gh issue view 4012 -R numpy/numpy; gh issue view 27797 -R numpy/numpy   # 0.92
+# gh issue view 9694 -R numpy/numpy; gh issue view 27985 -R numpy/numpy   # 0.92
+# gh issue view 8532 -R numpy/numpy; gh issue view 28592 -R numpy/numpy   # 0.92
 # gh issue view 28438 -R numpy/numpy; gh issue view 29125 -R numpy/numpy   # 0.92
 # gh issue view 23286 -R numpy/numpy; gh issue view 29336 -R numpy/numpy   # 0.92
+# gh issue view 13016 -R numpy/numpy; gh issue view 30492 -R numpy/numpy   # 0.92
 # gh issue view 27325 -R numpy/numpy; gh issue view 31037 -R numpy/numpy   # 0.92
+# gh issue view 10789 -R numpy/numpy; gh issue view 31436 -R numpy/numpy   # 0.92
 # gh issue view 11361 -R numpy/numpy; gh issue view 31485 -R numpy/numpy   # 0.92
-# gh issue view 32414 -R numpy/numpy; gh issue view 32431 -R numpy/numpy   # 0.92
+# gh issue view 3840 -R numpy/numpy; gh issue view 5776 -R numpy/numpy   # 0.91
+# gh issue view 5408 -R numpy/numpy; gh issue view 7212 -R numpy/numpy   # 0.91
+# gh issue view 3831 -R numpy/numpy; gh issue view 9456 -R numpy/numpy   # 0.91
+# gh issue view 5664 -R numpy/numpy; gh issue view 10004 -R numpy/numpy   # 0.91
+# gh issue view 8215 -R numpy/numpy; gh issue view 10590 -R numpy/numpy   # 0.91
+# gh issue view 10322 -R numpy/numpy; gh issue view 12142 -R numpy/numpy   # 0.91
+# gh issue view 8810 -R numpy/numpy; gh issue view 19876 -R numpy/numpy   # 0.91
+# gh issue view 3213 -R numpy/numpy; gh issue view 22141 -R numpy/numpy   # 0.91
+# gh issue view 5018 -R numpy/numpy; gh issue view 26145 -R numpy/numpy   # 0.91
+# gh issue view 19591 -R numpy/numpy; gh issue view 26289 -R numpy/numpy   # 0.91
+# gh issue view 16701 -R numpy/numpy; gh issue view 27250 -R numpy/numpy   # 0.91
+# gh issue view 1989 -R numpy/numpy; gh issue view 28450 -R numpy/numpy   # 0.91
+# gh issue view 7267 -R numpy/numpy; gh issue view 31435 -R numpy/numpy   # 0.91
 
-# --- Open issues that a later merged PR seems to fix (69)
+# --- Open issues that a later merged PR seems to fix (59)
 # gh issue close 24568 -R numpy/numpy --reason completed --comment "Looks fixed by #24745"   # 0.95
 # gh issue close 28205 -R numpy/numpy --reason completed --comment "Looks fixed by #28221"   # 0.95
 # gh issue close 33240 -R numpy/numpy --reason completed --comment "Looks fixed by #33241"   # 0.95
@@ -201,18 +242,8 @@
 # gh issue close 24976 -R numpy/numpy --reason completed --comment "Looks fixed by #32320"   # 0.89
 # gh issue close 25640 -R numpy/numpy --reason completed --comment "Looks fixed by #26261"   # 0.89
 # gh issue close 27542 -R numpy/numpy --reason completed --comment "Looks fixed by #29811"   # 0.89
-# gh issue close 28428 -R numpy/numpy --reason completed --comment "Looks fixed by #29905"   # 0.89
 # gh issue close 31764 -R numpy/numpy --reason completed --comment "Looks fixed by #31771"   # 0.89
 # gh issue close 31930 -R numpy/numpy --reason completed --comment "Looks fixed by #31992"   # 0.89
-# gh issue close 5098 -R numpy/numpy --reason completed --comment "Looks fixed by #9306"   # 0.88
-# gh issue close 7490 -R numpy/numpy --reason completed --comment "Looks fixed by #23087"   # 0.88
-# gh issue close 10989 -R numpy/numpy --reason completed --comment "Looks fixed by #25541"   # 0.88
-# gh issue close 13357 -R numpy/numpy --reason completed --comment "Looks fixed by #13710"   # 0.88
-# gh issue close 15488 -R numpy/numpy --reason completed --comment "Looks fixed by #33042"   # 0.88
-# gh issue close 17744 -R numpy/numpy --reason completed --comment "Looks fixed by #18965"   # 0.88
-# gh issue close 21787 -R numpy/numpy --reason completed --comment "Looks fixed by #25230"   # 0.88
-# gh issue close 26059 -R numpy/numpy --reason completed --comment "Looks fixed by #33312"   # 0.88
-# gh issue close 26761 -R numpy/numpy --reason completed --comment "Looks fixed by #33213"   # 0.88
 
 # --- Open PRs after the same thing (10)
 # gh pr view 22611 -R numpy/numpy; gh pr view 26798 -R numpy/numpy   # 0.99

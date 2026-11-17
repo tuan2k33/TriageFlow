@@ -27,8 +27,17 @@ import digest
 MODEL = "BAAI/bge-small-en-v1.5"
 EMB_VERSION = "v3: template lines removed"  # part of every item's hash: changing it re-embeds everything once
 CATEGORY_RANGE = (8, 60)  # k = sqrt(open items), clipped
-ZOMBIE_SIM = 0.88  # issue and merged PR nearest to each other: on closed numpy issues with a known closer, the PR is one of them 87% of the time
-DUP_SIM = 0.918  # hand-graded on numpy: >= 0.92 ~79% the same problem, 0.91-0.92 ~29%; lowered from 0.92 when template lines were left out of the embedding (similarities fell ~0.002): 0.918 gives the same pair count as before, and the LLM-confirmed duplicates that had dropped to 0.918-0.919 come back
+# Similarity thresholds are calibrated on each repo at every run, never typed in (they move whenever the embedding does):
+DUP_SHARE = 0.12  # "likely duplicate" = a pair at or above the similarity that the 12% most-similar issues reach with
+#                   their nearest issue (per repo; competing() uses the same cut for open PRs). Chosen once, leaning to recall:
+#                   on numpy's earlier embedding 12% = cosine 0.915, between the hand-graded 0.92 (~79% the same problem)
+#                   and 0.91 (15%, ~29%); the rows below are rechecked afterwards, so a few false alarms are acceptable.
+ZOMBIE_PRECISION, ZOMBIE_WINDOW = 0.75, 100  # zombie cut: apply the rule to closed issues with a known closing PR,
+#                   sort by similarity and walk down; stop where the 100 cases around the cut pick one of their closing PRs
+#                   less than 75% of the time. Local, not cumulative: the cumulative share stays ~0.82 even at 0.78 because
+#                   the surest pairs on top carry it (numpy 0.887, opencv 0.871 with this rule; 0.88 was the old hand cut)
+ZOMBIE_FALLBACK = 0.86  # fewer than ZOMBIE_WINDOW such issues to calibrate on (small repos): a bit under the lowest
+#                   calibrated cut seen (opencv 0.871), leaning to recall
 
 
 def encoder():
@@ -115,6 +124,27 @@ def distinctive_names(members, titles, labels):
     return names
 
 
+def share_cut(E):
+    """The similarity reached by the DUP_SHARE most-similar items with their nearest other item (1.0 if there are too few)."""
+    if len(E) < 2:
+        return 1.0
+    best = []
+    for c in range(0, len(E), 2000):
+        S = E[c:c + 2000] @ E.T
+        S[np.arange(S.shape[0]), np.arange(c, c + S.shape[0])] = -9
+        best.append(S.max(1))
+    return float(np.quantile(np.concatenate(best), 1 - DUP_SHARE))
+
+
+def set_threshold(db, name, value, note=""):
+    """Remember the cut each run used (meta 'thresholds'), so the report and a reader can see it."""
+    row = db.execute("select v from meta where k = 'thresholds'").fetchone()
+    th = json.loads(row[0]) if row else {}
+    th[name] = round(value, 4)
+    db.execute("insert or replace into meta values('thresholds', ?)", (json.dumps(th),))
+    print(f"  {name} cut {value:.4f}{' (' + note + ')' if note else ''}", flush=True)
+
+
 def neighbors(db, k=5):
     """Top-k most similar items for every item (open or closed), recomputed each run: new items can be anyone's neighbor."""
     nums, _, E = load_emb(db)
@@ -164,17 +194,19 @@ def pr_status(db):
 
 def duplicates(db):
     """Duplicate candidates among issues, in three levels: 'github' (marked as duplicate on GitHub), 'likely' (cosine
-    >= DUP_SIM), 'possible' (each is the other's nearest issue). The issue to keep (master) is the
+    >= the repo's DUP_SHARE cut), 'possible' (each is the other's nearest issue). The issue to keep (master) is the
     one GitHub names as the original, else the oldest among an issue's direct likely partners."""
     nums, states, E = load_emb(db, "i.kind = 'issue'")
     idx = {n: i for i, n in enumerate(nums)}
+    cut = share_cut(E)
+    set_threshold(db, "duplicate", cut)
     pairs = {}
     for c in range(0, len(nums), 2000):
         S = E[c:c + 2000] @ E.T
         S[np.arange(S.shape[0]), np.arange(c, c + S.shape[0])] = -9
         for r, j in enumerate(S.argmax(1)):
             pairs[c + r] = (int(j), float(S[r, j]))
-        for r, j in zip(*np.where(S >= DUP_SIM)):
+        for r, j in zip(*np.where(S >= cut)):
             a, b = sorted((nums[c + r], nums[j]))
             pairs[(a, b)] = (float(S[r, j]), "likely")
     out = {k: v for k, v in pairs.items() if isinstance(k, tuple)}
@@ -219,12 +251,30 @@ def zombies(db):
         is_open = {r[0] for r in db.execute("select number from items where state = 'open'")}
         linked = set(db.execute("select dst, src from links where kind in ('closes_official', 'closes')"))
         back = np.concatenate([(Ep[c:c + 2000] @ Ei.T).argmax(1) for c in range(0, len(np_), 2000)])
+        pairs = []  # (issue, pr, sim) where the issue and a later merged PR are each other's nearest
         for c in range(0, len(ni), 2000):
             S = Ei[c:c + 2000] @ Ep.T
             for r, j in enumerate(S.argmax(1)):
-                n, p, s = ni[c + r], np_[j], float(S[r, j])
-                if n in is_open and s >= ZOMBIE_SIM and back[j] == c + r and created[p] > created[n] and (n, p) not in linked:
-                    db.execute("insert into zombie values(?,?,?)", (n, p, s))
+                n, p = ni[c + r], np_[j]
+                if back[j] == c + r and created[p] > created[n]:
+                    pairs.append((n, p, float(S[r, j])))
+        # calibration: closed issues that have a known closing PR, is the matched PR one of them?
+        closers = collections.defaultdict(set)
+        for i, pr in linked:
+            closers[i].add(pr)
+        known = sorted(((s, p in closers[n]) for n, p, s in pairs if n not in is_open and closers[n]), reverse=True)
+        cut, half = ZOMBIE_FALLBACK, ZOMBIE_WINDOW // 2
+        if len(known) >= ZOMBIE_WINDOW:
+            hit = np.array([h for _, h in known], dtype=float)
+            cut = known[-1][0]
+            for k in range(half, len(known)):
+                if hit[k - half:k + half].mean() < ZOMBIE_PRECISION:
+                    cut = known[k - 1][0]
+                    break
+        set_threshold(db, "zombie", cut, f"{len(known)} closed issues to calibrate on")
+        for n, p, s in pairs:
+            if n in is_open and s >= cut and (n, p) not in linked:
+                db.execute("insert into zombie values(?,?,?)", (n, p, s))
     db.commit()
     print(f"zombies: {db.execute('select count(*) from zombie').fetchone()[0]} open issues look fixed by an unlinked merged PR")
 
@@ -232,12 +282,14 @@ def zombies(db):
 def competing(db):
     """Open PRs after the same thing: two that close the same issue, or two very similar ones by different authors
     (the same author's similar PRs are a series, not a competition)."""
+    cut = json.loads(db.execute("select v from meta where k = 'thresholds'").fetchone()[0])["duplicate"]  # the issues' cut:
+    # PRs have near-twins (backports, bot bumps), so a share rule on PRs would give ~0.99; the same similarity as duplicates
     nums, _, E = load_emb(db, "i.kind = 'pr' and i.state = 'open'")
     author = dict(db.execute("select number, author from items where kind = 'pr' and state = 'open'"))
     rows = {}
     for c in range(0, len(nums), 2000):
         S = E[c:c + 2000] @ E.T
-        for r, j in zip(*np.where(S >= DUP_SIM)):
+        for r, j in zip(*np.where(S >= cut)):
             if c + r < j and author[nums[c + r]] != author[nums[j]]:
                 rows[(nums[c + r], nums[j])] = ("very similar", None, float(S[r, j]))
     by_issue = collections.defaultdict(set)

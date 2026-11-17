@@ -32,9 +32,9 @@ When an issue/PR is selected, show everything connected to it:
 * ✅ **Full-text search** over titles, descriptions and comments.
 
 ### 3.2. Actionable cleanup
-* ✅ **Duplicates:** three levels for issue pairs: marked on GitHub (numpy: 74 pairs), likely (similarity ≥ 0.918, the same strictness as the hand-graded 0.92 before template text was left out: ~79% the same problem; when the older issue is closed the proposal is "check recurrence", not close), possible (each other's nearest issue). The **master issue** is GitHub's original if marked, otherwise the oldest of the direct pairs (no chaining: chains drift from "same problem" to "same topic"). With the thread digest the right original of a marked duplicate ranks first 47% of the time (title + description only: 36%). Proposals with a reason and a sample comment are in `report.md` and `actions.sh`.
-* ✅ **Zombie issues (open although a merged PR solved them):** by links and PR state (merged closing PR, open PR, only abandoned PRs, no PR; numpy: 9 / 139 / 151 / 1617 open issues; issues with sub-issues are "tracking"), filterable in the page. When the author forgot to link: the open issue and a later merged PR are each other's nearest, similarity ≥ 0.88, no closing link (numpy: 72 issues; on closed issues with a known closing PR the rule is right 87%; 20 open ones by hand: 10 fixed, 6 partly, 4 only related).
-* ✅ **Competing PRs:** two open PRs that close the same issue, or two very similar open PRs (≥ 0.918) by different authors (one author's similar PRs are a series). numpy: 5 + 5 pairs.
+* ✅ **Duplicates:** three levels for issue pairs: marked on GitHub (numpy: 74 pairs), likely (similarity at or above a cut calibrated per repo: the level the 12% most-similar issues reach with their nearest issue, numpy 0.913; when the older issue is closed the proposal is "check recurrence", not close), possible (each other's nearest issue). The **master issue** is GitHub's original if marked, otherwise the oldest of the direct pairs (no chaining: chains drift from "same problem" to "same topic"). With the thread digest the right original of a marked duplicate ranks first 47% of the time (title + description only: 36%). Proposals with a reason and a sample comment are in `report.md` and `actions.sh`.
+* ✅ **Zombie issues (open although a merged PR solved them):** by links and PR state (merged closing PR, open PR, only abandoned PRs, no PR; numpy: 9 / 139 / 151 / 1617 open issues; issues with sub-issues are "tracking"), filterable in the page. When the author forgot to link: the open issue and a later merged PR are each other's nearest, similarity at or above a cut calibrated per repo on closed issues with a known closing PR (where the rule stops being right 75% of the time; numpy 0.887), no closing link (numpy: 59 open issues; 20 open ones by hand: 10 fixed, 6 partly, 4 only related).
+* ✅ **Competing PRs:** two open PRs that close the same issue, or two very similar open PRs (≥ the duplicate cut) by different authors (one author's similar PRs are a series). numpy: 5 + 5 pairs.
 * ✅ **Staleness:** filter by last activity (within 1 year, 1-3, 3-5, over 5 years) instead of one fixed cut; numpy: 728 open items quiet for over 5 years. ⬜ "Belongs to an old version" is not detected.
 * 🟡 **Reverted fixes:** the LLM recheck found that 3 of the 9 "closing PR merged" issues are open because the PR was reverted; the algorithm does not detect reverts yet (a PR titled `Revert "..."` would be enough).
 
@@ -54,10 +54,10 @@ Only **labels the repo already uses** are suggested, to issues/PRs that lack the
 * An abstractive summary needs an LLM, so it is out of scope. An extractive digest of each thread (sentences picked by MMR, no generated text) exists and feeds the embedding, but is not shown as a summary. The outcome of a discussion is read from links, PR states and the item's timeline.
 
 ### 3.5. Triage health dashboard ✅
-* ✅ **Fragmentation index:** distinct problems vs open issues, shown in the page corner (numpy: *1917 open issues ≈ 1793 problems*, from GitHub-marked and likely duplicates).
+* ✅ **Fragmentation index:** distinct problems vs open issues, shown in the page corner (numpy: *1917 open issues ≈ 1752 problems*, from GitHub-marked and likely duplicates).
 * ✅ **Hot spots:** categories with the most comments on open items, and the most discussed items, in the overview (click the repo name).
 * ✅ **Type × component matrix:** open items by type (rows) and component (columns), or by last activity and content category in a repo without such labels; size = count, color = share quiet for 3+ years; click a cell to list its items.
-* ✅ **Quick wins:** proposals sorted by the algorithm's confidence in the overview and in `report.md` (numpy: 197 items with a quick action besides labels, e.g. 9 open issues already marked as duplicates, 9 with a merged closing PR).
+* ✅ **Quick wins:** proposals sorted by the algorithm's confidence in the overview and in `report.md` (numpy: 228 items with a quick action besides labels, e.g. 10 open issues already marked as duplicates, 9 with a merged closing PR).
 
 ---
 
