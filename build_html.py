@@ -30,19 +30,23 @@ h2{font-size:15px;margin:2px 0 6px}h3{font-size:12px;color:var(--mute);margin:12
 .tl{display:grid;grid-template-columns:auto 1fr;gap:0 8px;border-left:2px solid var(--line);padding-left:8px;margin:2px 0}.tl .me{font-weight:600}.tl time{color:var(--mute);white-space:nowrap}
 pre{white-space:pre-wrap;word-break:break-word;font:12px/1.5 inherit;background:var(--bg);padding:8px;border-radius:6px}
 a{color:inherit}.rel{display:block;padding:2px 0;cursor:pointer;text-decoration:underline dotted}
+#mx{padding:3px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);cursor:pointer}#mx.on{background:var(--ink);color:var(--bg)}
+table.mx{border-collapse:collapse;font-size:11px}table.mx th{font-weight:500;color:var(--mute);padding:2px 4px}table.mx thead th{writing-mode:vertical-rl;transform:rotate(180deg);text-align:left;height:120px;vertical-align:bottom}
+table.mx tbody th{text-align:right;white-space:nowrap;position:sticky;left:0;background:var(--bg)}table.mx td{width:42px;height:42px;text-align:center;vertical-align:middle;border:1px solid var(--line);cursor:pointer;padding:0}
+table.mx td:hover{outline:2px solid var(--ink)}.bub{margin:auto;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px}.bub.sg{border:1.5px dashed var(--mute)}table.mx td.tot,table.mx th.tot{color:var(--mute);cursor:default}
 @media (max-width:900px){body{grid-template-columns:1fr;grid-template-rows:auto 45vh 1fr}#list{display:none}}
 </style></head><body>
 <header><b id="home" style="cursor:pointer" title="Overview">__REPO__</b><input id="q" type="search" placeholder="Search title / body…">
 <select id="sort"><option value="up">recently active</option><option value="old">longest quiet</option><option value="cm">most comments</option><option value="n">newest</option></select>
 <label title="count suggested labels when filtering by label"><input id="showS" type="checkbox" checked> suggested</label>
 <label><input id="showI" type="checkbox" checked> issues</label>
-<label><input id="showP" type="checkbox" checked> PRs</label><span id="count" class="mute"></span><span id="frag" class="mute" style="margin-left:auto"></span></header>
+<label><input id="showP" type="checkbox" checked> PRs</label><button id="mx" title="open items by type and component">Matrix</button><span id="count" class="mute"></span><span id="frag" class="mute" style="margin-left:auto"></span></header>
 <div id="list"></div><div id="rows"></div><div id="detail"></div>
 <script>
 const D=__DATA__;
 const items=D.items,byNum=new Map(items.map((d,i)=>[d.n,i]));
 items.forEach(d=>{d.ls=d.l;d.sg=d.sg||[]});
-let sel=-1,term='',shown=200;
+let sel=-1,term='',shown=200,view='list',cellF=null;
 const chosen=new Set(),NONE='\0none',TYPE=new RegExp(D.type);
 const PS={'pr:merged':'Closing PR merged: still open?','pr:similar':'Later merged PR looks like the fix (no link)','pr:open':'Closing PR open','pr:abandoned':'Closing PR abandoned','pr:tracking':'Tracking issue (has sub-issues)','pr:none':'No closing PR'};
 const DUP={'dup:github':'Marked duplicate on GitHub','dup:likely':'Likely duplicate (very similar)','dup:possible':'Possible duplicate (nearest of each other)'};
@@ -56,11 +60,28 @@ const keysOf=d=>{const k=lsOf(d).slice();if(d.ps)k.push('pr:'+d.ps[0]);if(d.zb)k
 function passAll(d,skip){const k=keysOf(d),by={};for(const c of chosen){const g=grp(c);if(g!==skip)(by[g]=by[g]||[]).push(c)}
  for(const g in by){if(!by[g].some(c=>c===NONE?!lsOf(d).length:k.includes(c)))return false}return true}
 const kindOk=d=>d.k==='pr'?showP.checked:showI.checked;
-const visible=d=>kindOk(d)&&passAll(d,null)&&(!term||d.t.toLowerCase().includes(term)||d.s.toLowerCase().includes(term));
+const short=l=>l==='(none)'?l:l.replace(/^component:\s*/,'').replace(/^numpy\./,'').replace(/^\d+ - /,'');
+const axOf=(d,g)=>{const r=lsOf(d).filter(l=>grp(l)===g);return r.length?r:['(none)']};
+const inCell=d=>!cellF||axOf(d,'type').includes(cellF[0])&&axOf(d,'component').includes(cellF[1]);
+const base=d=>kindOk(d)&&passAll(d,null)&&(!term||d.t.toLowerCase().includes(term)||d.s.toLowerCase().includes(term));
+const visible=d=>base(d)&&inCell(d);
 const SORT={up:(a,b)=>b.up.localeCompare(a.up),old:(a,b)=>a.up.localeCompare(b.up),cm:(a,b)=>b.cm-a.cm,n:(a,b)=>b.n-a.n};
 function esc(t){return t.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
 const tags=d=>d.ls.map(l=>`<span class="tag">${esc(l)}</span>`).join('')+d.sg.map(([l,p,src])=>`<span class="tag sug" title="suggested: ${src==='vote'?p+' votes':'kNN score '+p}">${esc(l)} ?</span>`).join('');
-function renderRows(){const vis=items.filter(visible).sort(SORT[sort.value]);count.textContent=vis.length+' / '+items.length;
+function matrix(){const vis=items.filter(base),M={},T={},C={};mx.classList.add('on');
+ for(const d of vis){const ts=axOf(d,'type'),cs=axOf(d,'component'),st=['age:3','age:5'].includes(ageOf(d));
+  const sg=(ts[0]!=='(none)'&&!d.ls.some(l=>grp(l)==='type'))||(cs[0]!=='(none)'&&!d.ls.some(l=>grp(l)==='component'));
+  for(const a of ts)for(const b of cs){const m=M[a+'\u0001'+b]=M[a+'\u0001'+b]||{n:0,s:0,g:0};m.n++;m.s+=st;m.g+=sg;T[a]=(T[a]||0)+1;C[b]=(C[b]||0)+1}}
+ const ord=o=>Object.keys(o).sort((a,b)=>(a==='(none)')-(b==='(none)')||o[b]-o[a]),R=ord(T),K=ord(C),mx_=Math.max(1,...Object.values(M).map(m=>m.n));
+ count.textContent=vis.length+' / '+items.length;matrix.R=R;matrix.K=K;
+ rows.innerHTML=`<div class="meta">Open items by type (rows) and component (columns), with the filters on the left. Size = number of items; color = share quiet for 3+ years (pale: active, dark: forgotten); dashed = some items are here only through a suggested label (toggle “suggested”). An item with two labels counts in both cells. Click a cell to list its items.</div>
+ <table class="mx"><thead><tr><th></th>${K.map(k=>`<th title="${esc(k)}">${esc(short(k))}</th>`).join('')}<th class="tot">all</th></tr></thead><tbody>${R.map((r,i)=>`<tr><th title="${esc(r)}">${esc(short(r))}</th>${K.map((k,j)=>{const m=M[r+'\u0001'+k];if(!m)return'<td></td>';
+  const w=Math.round(18+20*Math.sqrt(m.n/mx_)),s=m.s/m.n;return`<td data-r="${i}" data-k="${j}" title="${esc(short(r))} × ${esc(short(k))}: ${m.n} open, ${Math.round(s*100)}% quiet 3+ years${m.g?', '+m.g+' via suggested labels':''}"><div class="bub${m.g?' sg':''}" style="width:${w}px;height:${w}px;background:rgba(217,130,43,${(0.12+0.85*s).toFixed(2)})">${m.n}</div></td>`}).join('')}<td class="tot">${T[r]}</td></tr>`).join('')}
+ <tr><th class="tot">all</th>${K.map(k=>`<td class="tot">${C[k]}</td>`).join('')}<td class="tot">${vis.length}</td></tr></tbody></table>`}
+rows.addEventListener('click',e=>{const c=view==='matrix'&&e.target.closest('td[data-r]');if(!c)return;e.stopImmediatePropagation();
+ cellF=[matrix.R[+c.dataset.r],matrix.K[+c.dataset.k]];view='list';mx.classList.remove('on');refresh()},true);
+mx.onclick=()=>{view=view==='matrix'?'list':'matrix';if(view==='list')mx.classList.remove('on');refresh()};
+function renderRows(){if(view==='matrix')return matrix();const vis=items.filter(visible).sort(SORT[sort.value]);count.textContent=vis.length+' / '+items.length;
  rows.innerHTML=vis.slice(0,shown).map(d=>`<div class="row${byNum.get(d.n)===sel?' on':''}" data-i="${byNum.get(d.n)}"><b>${d.k==='pr'?'PR':'Issue'} #${d.n}</b> ${esc(d.t)}<br>${tags(d)}<small>${d.cm} comments · active ${d.up.slice(0,10)}${d.du?' · '+DUP['dup:'+d.du[1][0][1]]:''}${d.ps&&d.ps[0]!=='none'?' · '+PS['pr:'+d.ps[0]]:''}</small></div>`).join('')
   +(vis.length>shown?`<div class="row mute" id="more">Show more (${vis.length-shown} left)</div>`:'')||'<div class="mute" style="padding:8px">Nothing matches.</div>'}
 rows.onclick=e=>{if(e.target.closest('#more')){shown+=400;renderRows();return}const r=e.target.closest('.row');if(r)show(+r.dataset.i)};
@@ -94,13 +115,14 @@ function renderList(){const gl={},tot={},cnt={};for(const g in GN)gl[g]={};
  for(const d of items)for(const l of keysOf(d)){tot[l]=(tot[l]||0)+1;gl[grp(l)][l]=1;cnt[l]=0}
  for(const d of items){if(!kindOk(d))continue;const k=new Set(keysOf(d));for(const g in gl){if(!passAll(d,g))continue;for(const l of k)if(grp(l)===g)cnt[l]++}}
  const nl=items.filter(d=>kindOk(d)&&!lsOf(d).length&&passAll(d,'none')).length,nm=c=>c===NONE?'(no label)':NAME[c]||c;
- let h=`<div class="chips">${[...chosen].map(c=>`<span class="chip" data-l="${esc(c)}">${esc(nm(c))} ×</span>`).join('')}${chosen.size?'<span class="clear">clear all</span>':'<span class="mute">Pick filters: OR within a group, AND across groups</span>'}</div>`;
+ let h=`<div class="chips">${cellF?`<span class="chip" data-cell="1">${esc(short(cellF[0]))} × ${esc(short(cellF[1]))} ×</span>`:''}${[...chosen].map(c=>`<span class="chip" data-l="${esc(c)}">${esc(nm(c))} ×</span>`).join('')}${chosen.size||cellF?'<span class="clear">clear all</span>':'<span class="mute">Pick filters: OR within a group, AND across groups</span>'}</div>`;
  for(const g in GN){const ls=Object.keys(gl[g]).sort((a,b)=>g==='age'?a.localeCompare(b):tot[b]-tot[a]);if(!ls.length)continue;
   h+=`<div class="gh">${GN[g]}</div>`+(g==='type'?`<div class="cl${chosen.has(NONE)?' on':''}" data-l="${NONE}"><span>(no label)</span><em>${nl}</em></div>`:'')
    +ls.map(l=>`<div class="cl${chosen.has(l)?' on':''}${cnt[l]?'':' zero'}" data-l="${esc(l)}"><span>${esc(nm(l))}</span><em>${cnt[l]}</em></div>`).join('')}
  const top=list.scrollTop;list.innerHTML=h;list.scrollTop=top}
 function refresh(){shown=200;renderList();renderRows()}
-list.onclick=e=>{if(e.target.closest('.clear')){chosen.clear();refresh();return}
+list.onclick=e=>{if(e.target.closest('.clear')){chosen.clear();cellF=null;refresh();return}
+ if(e.target.closest('[data-cell]')){cellF=null;refresh();return}
  const el=e.target.closest('.cl,.chip');if(!el)return;const l=el.dataset.l;
  if(chosen.has(l))chosen.delete(l);else{if(l===NONE)chosen.clear();else chosen.delete(NONE);chosen.add(l)}refresh()};
 q.oninput=()=>{term=q.value.trim().toLowerCase();shown=200;renderRows()};[showI,showP,showS].forEach(x=>x.onchange=refresh);sort.onchange=renderRows;
