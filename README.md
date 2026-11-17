@@ -22,6 +22,17 @@ datasette $R                           # browse / SQL / full-text search
 
 Tables: `items` (all states), `comments`, `links` (closes_official / closes / mentions / duplicate_of / sub_issue), `emb`, `categories`, `topics` (category per item), `neighbors`, `similar` (semantic links), `pr_status`, `dup_pairs` / `dup_master` (duplicate candidates), `zombie`, `pr_compete`, `actions`, `suggested`, `fts`.
 
+## Checking the results (outside the pipeline)
+
+```bash
+set -a; . ~/.dev/secrets.env; set +a          # OPENROUTER_API_KEY for the two LLM tools
+python tools/llm_judge.py $R                    # a free LLM reads both items of each report row -> judge.jsonl (the report's Check column)
+python tools/repro.py $R --all-open             # rerun issue snippets on the installed numpy -> data/numpy__numpy/repro/
+python tools/llm_extract.py $R                  # optional: an LLM quotes expected / reported for issues without a template
+```
+
+`tools/repro.py` reruns the code of open issues to see whether old bugs still happen. Code, the expected result and the error the reporter got are read from the sections of the repo's issue templates (`tools/issue_templates.json`: numpy's bug, typing and post-install forms and its older Markdown template); issues without a template are left for review (or `llm_extract.py`, whose quotes are kept only when found word for word in the description). Each snippet runs like the REPL it was copied from (every statement echoed, values printed, going on after an error) in a separate process (`python -I`, minimal environment, timeout). Each `repro/<number>.py` holds the code, then as comments: an automatic comparison (outputs the reporter pasted after `>>>` against the new ones, ignoring printing differences such as numpy 2's `np.int64(1)`; the reported exception against the new one), the expected result, what this numpy printed, and the description. `sheet.jsonl` has a verdict column to fill by hand, `review.md` lists the cases side by side, `prs.md` links every open PR to the issues it fixes and their results (nothing of a PR is built or run). Only numpy is set up (its templates and version).
+
 ## Requirements and tests
 
 `gh` logged in (the crawler reads the token from `gh auth token`), Python 3.12+, and `numpy`, `scikit-learn`, `torch`, `transformers` (here they come from the shared env, so `requirements.txt` only lists what this project adds). A GPU is used when there is one; without it the embedding step runs on the CPU, slower. `datasette` is optional.

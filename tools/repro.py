@@ -146,9 +146,70 @@ def errors(text):
     return list(seen.values())
 
 
-def compare(reported, now):
-    if not reported:
-        return "no error in the description to compare with"
+PROMPT = re.compile(r"^\s*(?:>>>|In \[\d+\]:)\s?(.*)$")
+CONT = re.compile(r"^\s*(?:\.\.\.|\s+\.\.\.:)\s?(.*)$")
+UNSTABLE = re.compile(r"0x[0-9a-f]{6,}|per loop|loops?,|\b\d+(\.\d+)?\s*[µun]?s\b|random|time\(|timeit|%|version|show_config|platform|getsizeof|id\(|\bnow\b|today", re.I)
+
+
+def transcript(text):
+    """[(statement, output)] from a REPL session (>>> / In [n]: prompts) in a description or in a run's output."""
+    out, stmt, res = [], None, []
+    for line in text.splitlines() + [">>> "]:
+        m, c = PROMPT.match(line), CONT.match(line)
+        if m or line.strip().startswith(("```", "(exit ")):
+            if stmt is not None:
+                out.append((stmt, "\n".join(res).strip()))
+            stmt, res = (m.group(1) if m else None), []
+        elif stmt is not None and c and not res:
+            stmt += "\n" + c.group(1)
+        elif stmt is not None:
+            res.append(re.sub(r"^\s*Out\[\d+\]:\s?", "", line))
+    return [(s, r) for s, r in out if s.strip()]
+
+
+def flat(s):
+    return re.sub(r"\s+", "", s)
+
+
+SCALAR = re.compile(r"\bnp\.(?:u?int\d*|float\d*|complex\d*|longdouble|clongdouble|bool_?|str_|bytes_|intp|uintp)\(((?:[^()]|\([^()]*\))*)\)")
+
+
+def same_value(a, b):
+    """Outputs equal once printing differences are taken out: numpy 2's scalar reprs (np.int64(1) for 1), "numpy." for
+    "np.", np.True_, a comment the reporter added after the output, warning lines printed in between, spacing."""
+    def norm(s):
+        s = re.sub(r"^\S+:\d+: \w*Warning:.*\n?(?:[ \t]+\S.*\n?)?", "", s, flags=re.M)
+        s = re.sub(r"\s+#.*$|`+", "", s, flags=re.M).replace("numpy.", "np.")
+        s = re.sub(r"\bnp\.(True|False)_\b", r"\1", s)
+        while SCALAR.search(s):
+            s = SCALAR.sub(r"\1", s)
+        return flat(s)
+    return norm(a) == norm(b)
+
+
+def compare_values(body, got):
+    """Statements whose output the reporter pasted and the run printed again: [(statement, reported, got)]."""
+    said = {flat(s): r for s, r in transcript(clean_body(body)) if r}
+    now = {flat(s): (s, r) for s, r in transcript(got)}
+    pairs = []
+    for k, rep in said.items():
+        if k in now and not UNSTABLE.search(k + rep) and "Traceback" not in rep and not EXC.search(rep):
+            pairs.append((now[k][0], rep, now[k][1]))
+    return pairs
+
+
+def compare(reported, now, values=()):
+    parts = []
+    if values:
+        changed = sum(not same_value(r, g) for _, r, g in values)
+        parts.append(f"same output as reported ({len(values)} statements)" if not changed
+                     else f"output changed ({changed} of {len(values)} statements)")
+    if reported:
+        parts.append(compare_errors(reported, now))
+    return "; ".join(parts) or "nothing in the description to compare with"
+
+
+def compare_errors(reported, now):
     kind = lambda e: e.split(":", 1)[0]
     if not now:
         return "reported error gone"
@@ -186,8 +247,11 @@ def write_result(py, body, text, hint, ext=None, tpl=None):
     else:
         title = "expected (no template: guessed from the description and the code; 'reported:' is the error the reporter got)"
         exp = expected(body, code) + [f"reported: {e}" for e in reported[:3]]
+    values = compare_values(body, text)
+    diff = "".join(f"# changed: >>> {st.splitlines()[0]}\n#   reported: {' | '.join(r.splitlines())[:200]}\n"
+                   f"#   got:      {' | '.join(g.splitlines())[:200]}\n" for st, r, g in values if not same_value(r, g))
     py.write_text(
-        f"{head}\n{code}\n\n\n{GEN}\n# auto: {compare(reported, now)}\n"
+        f"{head}\n{code}\n\n\n{GEN}\n# auto: {compare(reported, now, values)}\n{diff}"
         f"# --- {title} ---\n{comment(exp or ['(none found)'])}\n"
         f"# --- got on numpy {EXPECTED} (hint: {hint}, code {digest(cur)}) ---\n{comment(lines)}\n"
         f"# --- description (verbatim) ---\n{comment(re.sub(chr(10) + '{3,}', chr(10) * 2, clean_body(body)).splitlines())}\n",
@@ -267,7 +331,7 @@ def write_review(out_dir, rows, con):
     for (n,) in con.execute("select target from actions where kind in (%s)" % ",".join("?" * len(PAIRED)), PAIRED):
         section.setdefault(n, "original of a duplicate")
     order = {k: i for i, k in enumerate(KINDS + ("original of a duplicate", "not in the report"))}
-    first = lambda a: 0 if a == "reported error gone" else 1 if a.startswith("different") else 2 if a.startswith("same") else 3
+    first = lambda a: (0 if "error gone" in a or "output changed" in a else 1 if "different" in a else 2 if "same" in a else 3)
     todo = sorted((r for r in rows if r["hint"] in ("ok", "error")),
                   key=lambda r: (order[section.get(r["number"], "not in the report")], first(r["auto"]), r["number"]))
     out = [f"# Reproduce on numpy {EXPECTED}: {len(todo)} cases that ran\n",

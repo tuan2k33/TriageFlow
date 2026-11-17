@@ -18,7 +18,7 @@ A tool that analyses, organises and cleans up a GitHub repository from the **met
 3. **Vectorize & links** ✅ One embedding per item (open and closed) from its title, description and an extractive digest of its comments, with template text (lines repeated verbatim in ≥ 1% of items, e.g. PR checklists) left out. Hard links, and semantic links (two items in each other's top 5).
 4. **Analysis:** categories made once (k = sqrt(open items), 8-60: the embedding has no natural cluster count, so k is a reading choice), new items assigned to existing ones ✅; label suggestions ✅; the PR status of each issue from its links ✅; duplicates, zombies, competing PRs, staleness ✅.
 5. **Output & action:** a one-file HTML browser (filters, list of open items, details with a timeline, a type × component matrix) ✅; an overview, a Markdown report and a `gh` script to review ✅.
-6. **Recheck (outside the pipeline):** `tools/llm_judge.py` has a free LLM read both items of each proposal; rows it doubts are reread by hand (`manual.jsonl`) ✅.
+6. **Recheck (outside the pipeline):** `tools/llm_judge.py` has a free LLM read both items of each proposal; rows it doubts are reread by hand (`manual.jsonl`) ✅. `tools/repro.py` reruns the snippets of open issues on the installed numpy (code / expected / reported read from the issue template's sections; issues without a template left for review) and compares the new output with what the reporter pasted; open PRs are linked to their issues' results 🟡 (numpy only; the report does not show the results yet).
 
 ---
 
