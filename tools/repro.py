@@ -172,7 +172,7 @@ def write_result(py, body, text, hint, ext=None, tpl=None):
         lines = [f"... {len(lines) - MAX_OUT} lines cut ..."] + lines[-MAX_OUT:]
     tpl, secs = tpl if tpl else (None, None)
     reported = errors(clean_body(body))
-    now = errors(text.split("--- stderr ---", 1)[-1])
+    now = errors("\n".join(l for l in text.splitlines() if not l.startswith((">>> ", "... "))))
     head = HEAD.match(cur).group(0) if HEAD.match(cur) else ""
     if tpl:
         _, exp_lines, rep_lines = template_fields(tpl, secs)
@@ -194,26 +194,45 @@ def write_result(py, body, text, hint, ext=None, tpl=None):
         encoding="utf-8")
 
 
+RUNNER = r"""
+import ast, sys, traceback
+path = sys.argv[1]
+src = open(path, encoding="utf-8").read()
+lines = src.splitlines()
+ns = {"__name__": "__main__", "__file__": path}
+failed = False
+for node in ast.parse(src, path).body:
+    print(">>> " + "\n... ".join(lines[node.lineno - 1:node.end_lineno]), flush=True)
+    try:
+        exec(compile(ast.Interactive([node]), path, "single"), ns)
+    except SystemExit:
+        raise
+    except BaseException:
+        failed = True
+        traceback.print_exc(file=sys.stdout)
+    sys.stdout.flush()
+sys.exit(1 if failed else 0)
+"""  # run the snippet like the REPL it was copied from: echo each statement, print expression values, go on after an error
+
+
 def run(py, cwd, timeout):
     env = {k: os.environ[k] for k in ("PATH", "HOME", "LANG") if k in os.environ}
     env["MPLBACKEND"] = "Agg"
     t = time.monotonic()
     try:
-        p = subprocess.run([str(PYTHON), "-I", py.name], cwd=cwd, env=env, stdin=subprocess.DEVNULL,
-                           capture_output=True, timeout=timeout)
-        code, out, err = str(p.returncode), p.stdout, p.stderr
+        p = subprocess.run([str(PYTHON), "-I", "-c", RUNNER, py.name], cwd=cwd, env=env, stdin=subprocess.DEVNULL,
+                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
+        code, out = str(p.returncode), p.stdout
     except subprocess.TimeoutExpired as e:
-        code, out, err = "timeout", e.stdout or b"", e.stderr or b""
-    dur = time.monotonic() - t
-    text = (f"--- stdout ---\n{out.decode(errors='replace')}\n--- stderr ---\n{err.decode(errors='replace')}\n"
-            f"--- exit ---\nexit: {code}  duration: {dur:.1f}s\n")
-    return text, code, err.decode(errors="replace")
+        code, out = "timeout", e.stdout or b""
+    out = out.decode(errors="replace")
+    return f"{out.rstrip()}\n(exit {code}, {time.monotonic() - t:.1f}s)\n", code, out
 
 
 def classify(code, stderr):
     if code == "timeout":
         return "timeout"
-    if code == "0" and "Traceback" not in stderr:
+    if code == "0":
         return "ok"
     if BROKEN.search(stderr):
         return "snippet_broken"
