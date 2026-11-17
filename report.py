@@ -72,8 +72,8 @@ def main(path):
                 f'gh issue close {n} -R {repo} --reason completed --comment "Looks fixed by #{p}"', s)
     for a, b, reason, issue, s in db.execute("select a, b, reason, issue, sim from pr_compete"):
         same = issue is not None
-        add("review_competing", a, b, f"#{b} ({info[b][2][:60]}) also closes #{issue}: keep one" if same
-            else f"looks like #{b} ({info[b][2][:60]}) by another author",
+        add("review_competing", a, b, f"#{b} ({info[b][2]}) also closes #{issue}: keep one" if same
+            else f"looks like #{b} ({info[b][2]}) by another author",
             f"gh pr view {a} -R {repo}; gh pr view {b} -R {repo}", 1 if same else s)
     cal = json.loads((db.execute("select v from meta where k='calibration'").fetchone() or ["{}"])[0])
 
@@ -121,10 +121,10 @@ def main(path):
                "| Item | Proposal (confidence) |" + (" LLM check |" if checked else ""), "|---|---|" + ("---|" if checked else "")]
         sh += [f"# --- {title} ({len(rows)})"]
         for _, n, target, conf, reason, cmd in rows:
-            cells = [f"[#{n}](https://github.com/{repo}/issues/{n}) {info[n][2][:80]}", f"{reason} ({conf:.2f})"]
+            cells = [f"[#{n}](https://github.com/{repo}/issues/{n}) {info[n][2]}", f"{reason} ({conf:.2f})"]
             if checked:
                 v = judge.get((kind, n, target))
-                cells.append(f"**{v[0]}**: {v[1][:160]}" if v else "")
+                cells.append(f"**{v[0]}**: {v[1]}" if v else "")
             md.append("| " + " | ".join(c.replace("|", "/").replace("\n", " ") for c in cells) + " |")
             sh.append(f"# {cmd}   # {conf:.2f}")
         md.append("")

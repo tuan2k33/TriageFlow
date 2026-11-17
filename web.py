@@ -20,7 +20,7 @@ CSS = """<style>
 nav{display:flex;gap:4px;align-items:center;padding:6px 12px;background:var(--panel);border-bottom:1px solid var(--line);flex:none}
 nav a{padding:4px 12px;border-radius:6px;color:var(--mute);text-decoration:none}nav a.on{background:var(--bg);color:var(--ink);font-weight:600}nav b{margin-right:12px}
 main{padding:16px 20px;overflow:auto;flex:1}iframe{border:0;flex:1;width:100%}
-table{border-collapse:collapse;margin:8px 0 20px}td,th{border:1px solid var(--line);padding:3px 8px;text-align:left;vertical-align:top;max-width:520px;overflow-wrap:anywhere}th{background:var(--panel)}
+table{border-collapse:collapse;margin:8px 0 20px}td,th{border:1px solid var(--line);padding:3px 8px;text-align:left;vertical-align:top;max-width:620px;overflow-wrap:break-word}th{background:var(--panel)}
 a{color:inherit}pre{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;overflow:auto}
 input[type=text],textarea{width:min(720px,100%);padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);font:inherit}
 button{padding:6px 14px;border:1px solid var(--line);border-radius:6px;background:var(--ink);color:var(--bg);font:inherit;cursor:pointer}.mute{color:var(--mute)}
