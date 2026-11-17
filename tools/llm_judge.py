@@ -85,6 +85,10 @@ def main():
                 if attempt == 3:
                     raise
                 time.sleep(10 * (attempt + 1))
+            except (urllib.error.URLError, TimeoutError, ConnectionError, KeyError, json.JSONDecodeError):  # network drop, empty answer
+                if attempt == 3:
+                    raise
+                time.sleep(10 * (attempt + 1))
         j = re.search(r"\{.*\}", text, re.S)
         try:
             v = json.loads(j.group(0)) if j else {}
