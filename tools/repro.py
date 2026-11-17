@@ -53,8 +53,14 @@ def extract(body):
     return code
 
 
-def header(n, title, created):
-    return (f"# https://github.com/numpy/numpy/issues/{n}\n# {title.replace(chr(10), ' ')}\n# created_at: {created}\n\n")
+MARK = "# --- snippet ---"
+
+
+def header(n, title, created, body):
+    desc = re.sub(r"<!--.*?-->", "", body.replace("\r\n", "\n"), flags=re.S).strip()
+    desc = "\n".join(("# " + l).rstrip() for l in re.sub(r"\n{3,}", "\n\n", desc).splitlines())
+    return (f"# https://github.com/numpy/numpy/issues/{n}\n# {title.replace(chr(10), ' ')}\n# created_at: {created}\n#\n"
+            f"# Description:\n{desc}\n\n{MARK}\n")
 
 
 def run(py, cwd, timeout):
@@ -131,7 +137,8 @@ def write_review(out_dir, rows, bodies, con):
             out.append(f"\n## {sec}\n")
             last = sec
         pair = f" · pair with {', '.join(f'#{w}' for w in r['with'])}" if r["with"] else ""
-        code = re.sub(r"\A(#.*\n){1,3}", "", (out_dir / f"{n}.py").read_text(encoding="utf-8")).strip()
+        code = (out_dir / f"{n}.py").read_text(encoding="utf-8")
+        code = (code.split(MARK + "\n", 1)[1] if MARK in code else re.sub(r"\A(#.*\n){1,3}", "", code)).strip()
         res = (out_dir / f"{n}.out").read_text(encoding="utf-8", errors="replace")
         out.append(f"### [#{n}]({r['url']}) {r['title']}\n\n`{r['hint']}`{pair}\n\n**Description**\n\n"
                    + "\n".join("> " + l for l in prose(bodies[n]).splitlines())
@@ -176,7 +183,7 @@ def main():
                 hints[n] = "crawl_error"
                 continue
             with open(py, "x", encoding="utf-8") as f:
-                f.write(header(n, title, created) + code + "\n")
+                f.write(header(n, title, created, body) + code + "\n")
             made += 1
         if not a.rerun and outf.exists() and outf.stat().st_mtime > py.stat().st_mtime:
             hints[n] = hint_from_out(outf)
