@@ -128,7 +128,7 @@ def main(path):
         md += [f'<details><summary><h2 style="display:inline;border:none;padding:0;margin:0">{e(title)} ({len(rows)})</h2></summary>',  # click the title to show / hide the table
                '<table class="rep" style="table-layout:fixed;width:100%"><colgroup><col width="30%" style="width:30%">'
                '<col width="20%" style="width:20%"><col width="50%" style="width:50%"></colgroup>',
-               "<tr><th>Item</th><th>Proposal (confidence)</th><th>Check</th></tr>"]
+               "<tr><th width=\"30%\">Item</th><th width=\"20%\">Proposal (confidence)</th><th width=\"50%\">Check</th></tr>"]  # width on th too: GitHub drops colgroup and style
         sh += [f"# --- {title} ({len(rows)})"]
         for _, n, target, conf, reason, cmd in rows:
             key = (kind, n, target)

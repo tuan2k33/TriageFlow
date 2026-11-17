@@ -22,7 +22,7 @@
 
 <details><summary><h2 style="display:inline;border:none;padding:0;margin:0">Open issues already marked as duplicates (10)</h2></summary>
 <table class="rep" style="table-layout:fixed;width:100%"><colgroup><col width="30%" style="width:30%"><col width="20%" style="width:20%"><col width="50%" style="width:50%"></colgroup>
-<tr><th>Item</th><th>Proposal (confidence)</th><th>Check</th></tr>
+<tr><th width="30%">Item</th><th width="20%">Proposal (confidence)</th><th width="50%">Check</th></tr>
 <tr><td><a href="https://github.com/numpy/numpy/issues/4217">#4217</a> digitize is not the inverse of histogram (right limit treated differently)</td><td>marked as duplicate of #9208 (1.00)</td><td>checked by maintainer</td></tr>
 <tr><td><a href="https://github.com/numpy/numpy/issues/8352">#8352</a> apply_along_axis cuts strings</td><td>marked as duplicate of #16785 (1.00)</td><td>checked by maintainer</td></tr>
 <tr><td><a href="https://github.com/numpy/numpy/issues/8734">#8734</a> ENH: Make inspect.signature work for numpy C functions</td><td>marked as duplicate of #16384 (1.00)</td><td>checked by maintainer</td></tr>
@@ -37,7 +37,7 @@
 
 <details><summary><h2 style="display:inline;border:none;padding:0;margin:0">Open issues whose closing PR is merged (9)</h2></summary>
 <table class="rep" style="table-layout:fixed;width:100%"><colgroup><col width="30%" style="width:30%"><col width="20%" style="width:20%"><col width="50%" style="width:50%"></colgroup>
-<tr><th>Item</th><th>Proposal (confidence)</th><th>Check</th></tr>
+<tr><th width="30%">Item</th><th width="20%">Proposal (confidence)</th><th width="50%">Check</th></tr>
 <tr><td><a href="https://github.com/numpy/numpy/issues/4043">#4043</a> ma.asarray() should pass through objects of the right type</td><td>closing PR merged: #4045 (0.99)</td><td><b>fixed</b>, PR implements pass-through behavior for ma.asarray/ma.asanyarray when input is already of correct type, matching numpy consistency as requested.</td></tr>
 <tr><td><a href="https://github.com/numpy/numpy/issues/4959">#4959</a> Do not warn when invalid values are masked in a MaskedArray</td><td>closing PR merged: #16022, #21977 (0.99)</td><td><b>not_fixed</b>, The PR was reverted due to a regression, so the fix is not in the current codebase and the issue remains open.</td></tr>
 <tr><td><a href="https://github.com/numpy/numpy/issues/8720">#8720</a> ENH: broadcast lstsq</td><td>closing PR merged: #9986 (0.99)</td><td><b>not_fixed</b>, PR #9986 is a preparatory maintenance PR that explicitly states it doesn&#x27;t change behavior and is only &#x27;working towards&#x27; fixing #8720; the actual broadcastable lstsq implementation came later in PR #15777.</td></tr>
@@ -51,7 +51,7 @@
 
 <details><summary><h2 style="display:inline;border:none;padding:0;margin:0">Likely duplicates of an older open issue (44)</h2></summary>
 <table class="rep" style="table-layout:fixed;width:100%"><colgroup><col width="30%" style="width:30%"><col width="20%" style="width:20%"><col width="50%" style="width:50%"></colgroup>
-<tr><th>Item</th><th>Proposal (confidence)</th><th>Check</th></tr>
+<tr><th width="30%">Item</th><th width="20%">Proposal (confidence)</th><th width="50%">Check</th></tr>
 <tr><td><a href="https://github.com/numpy/numpy/issues/20022">#20022</a> BUG: np.ma.testutils.assert_equal error on two np.nan</td><td>duplicate of the older open #6661 (0.97)</td><td><b>same</b>, Both issues describe the identical bug where np.ma.testutils.assert_equal(np.nan, np.nan) incorrectly raises AssertionError unlike np.testing.assert_equal.</td></tr>
 <tr><td><a href="https://github.com/numpy/numpy/issues/6083">#6083</a> BUG: arctan inaccurate for small complex numbers</td><td>duplicate of the older open #6082 (0.95)</td><td><b>related</b>, Both issues report similar inaccuracies in complex trigonometric functions (arctan vs arcsin) for small complex numbers, likely sharing a common root cause, but they affect different functions.</td></tr>
 <tr><td><a href="https://github.com/numpy/numpy/issues/17310">#17310</a> nanmean of all masked values returns value error</td><td>duplicate of the older open #12283 (0.95)</td><td><b>same</b>, Both issues report np.nanmean raising &#x27;output array is read-only&#x27; ValueError on fully masked arrays due to _divide_by_count attempting in-place division on a read-only MaskedConstant.</td></tr>
@@ -100,7 +100,7 @@
 
 <details><summary><h2 style="display:inline;border:none;padding:0;margin:0">Open issues very similar to an older closed one (came back, or a duplicate of something settled?) (62)</h2></summary>
 <table class="rep" style="table-layout:fixed;width:100%"><colgroup><col width="30%" style="width:30%"><col width="20%" style="width:20%"><col width="50%" style="width:50%"></colgroup>
-<tr><th>Item</th><th>Proposal (confidence)</th><th>Check</th></tr>
+<tr><th width="30%">Item</th><th width="20%">Proposal (confidence)</th><th width="50%">Check</th></tr>
 <tr><td><a href="https://github.com/numpy/numpy/issues/32272">#32272</a> DOC: `.npz` zip container is unspecified</td><td>like #32270, closed as not planned (0.97)</td><td><b>same</b>, Issue A is a re-filed, more concise version of Issue B after the maintainer closed B and asked the author to open a new, briefer issue.</td></tr>
 <tr><td><a href="https://github.com/numpy/numpy/issues/9775">#9775</a> einsum_path &#x27;optimal&#x27; not optimal in at least one case</td><td>like #9769, closed as completed (0.96)</td><td><b>related</b>, Both issues involve einsum_path &#x27;optimal&#x27; not finding the best contraction path, but A is due to memory constraints limiting search space while B is a specific algorithmic bug.</td></tr>
 <tr><td><a href="https://github.com/numpy/numpy/issues/19308">#19308</a> Protential memory leak in function PyInit__multiarray_tests (a static analysis report)</td><td>like #19307, closed as completed (0.96)</td><td><b>related</b>, Both are static analysis reports of potential memory leaks in module initialization functions where a module reference is not decremented on error paths, but they occur in different modules (_multiarray_tests vs multiarray_umath).</td></tr>
@@ -167,7 +167,7 @@
 
 <details><summary><h2 style="display:inline;border:none;padding:0;margin:0">Open issues that a later merged PR seems to fix (72)</h2></summary>
 <table class="rep" style="table-layout:fixed;width:100%"><colgroup><col width="30%" style="width:30%"><col width="20%" style="width:20%"><col width="50%" style="width:50%"></colgroup>
-<tr><th>Item</th><th>Proposal (confidence)</th><th>Check</th></tr>
+<tr><th width="30%">Item</th><th width="20%">Proposal (confidence)</th><th width="50%">Check</th></tr>
 <tr><td><a href="https://github.com/numpy/numpy/issues/24568">#24568</a> ENH: Change default values for &quot;domain&quot; and &quot;window&quot; parameters of ``Polynomial`` class</td><td>merged PR #24745 is its nearest match and has no link to it (0.95)</td><td><b>fixed</b>, PR #24745 implements the exact change proposed in issue #24568, changing default domain/window values to float arrays for consistency across all polynomial convenience classes.</td></tr>
 <tr><td><a href="https://github.com/numpy/numpy/issues/33240">#33240</a> BUG: Excessive temporary memory use in string casts and string operations</td><td>merged PR #33241 is its nearest match and has no link to it (0.95)</td><td><b>partly</b>, PR fixes slice and replace excessive memory but not cast buffer allocations for astype, center, ljust, rjust.</td></tr>
 <tr><td><a href="https://github.com/numpy/numpy/issues/15726">#15726</a> Documentation for numpy.fromfunction induces an erroneous interpretation!</td><td>merged PR #32640 is its nearest match and has no link to it (0.94)</td><td><b>fixed</b>, PR B updates the numpy.fromfunction docstring to clarify it calls the function on coordinate arrays, not per coordinate, directly addressing the misleading documentation issue in A.</td></tr>
@@ -244,7 +244,7 @@
 
 <details><summary><h2 style="display:inline;border:none;padding:0;margin:0">Open PRs after the same thing (8)</h2></summary>
 <table class="rep" style="table-layout:fixed;width:100%"><colgroup><col width="30%" style="width:30%"><col width="20%" style="width:20%"><col width="50%" style="width:50%"></colgroup>
-<tr><th>Item</th><th>Proposal (confidence)</th><th>Check</th></tr>
+<tr><th width="30%">Item</th><th width="20%">Proposal (confidence)</th><th width="50%">Check</th></tr>
 <tr><td><a href="https://github.com/numpy/numpy/issues/22611">#22611</a> BUG: Increase accuracy of log1p for small inputs</td><td>#26798 (BUG: Rewrite complex log1p to improve precision.) also closes #22609: keep one (0.99)</td><td><b>same</b>, Both PRs address the same issue (gh-22609) to improve complex log1p precision using double-double arithmetic near |z+1|=1, with PR B implementing the approach discussed in PR A.</td></tr>
 <tr><td><a href="https://github.com/numpy/numpy/issues/30117">#30117</a> ENH: Speedup `np.vectorize` wrapped functions when keyword args are present</td><td>#33323 (PERF: generate the np.vectorize wrapper) also closes #30116: keep one (0.99)</td><td><b>same</b>, Both PRs address the same issue (gh-30116) to speed up np.vectorize with keyword arguments, with #33323 explicitly stating it&#x27;s an alternative to #30117.</td></tr>
 <tr><td><a href="https://github.com/numpy/numpy/issues/30281">#30281</a> BUG: Return first NaN occurence in np.unique for complex arrays</td><td>#30496 (ENH: Hash-based np.unique with support for return_index/return_inverse/return_counts) also closes #30113: keep one (0.99)</td><td><b>overlap</b>, Both PRs address issue #30113 (NaN handling in np.unique), but PR B is a comprehensive hash-based rewrite that would subsume PR A&#x27;s targeted bug fix.</td></tr>
@@ -257,7 +257,7 @@
 
 <details><summary><h2 style="display:inline;border:none;padding:0;margin:0">Labels to add (1392)</h2></summary>
 <table class="rep" style="table-layout:fixed;width:100%"><colgroup><col width="30%" style="width:30%"><col width="20%" style="width:20%"><col width="50%" style="width:50%"></colgroup>
-<tr><th>Item</th><th>Proposal (confidence)</th><th>Check</th></tr>
+<tr><th width="30%">Item</th><th width="20%">Proposal (confidence)</th><th width="50%">Check</th></tr>
 <tr><td><a href="https://github.com/numpy/numpy/issues/4979">#4979</a> NumPy&#x27;s Py_buffer format string doesn&#x27;t correctly handle sub-struct padding when the entire struct is a multiple of 4.</td><td>component: numpy._core, 5 votes (0.99)</td><td></td></tr>
 <tr><td><a href="https://github.com/numpy/numpy/issues/5735">#5735</a> The view method does not work with numpy scalars </td><td>component: numpy.ma, 5 votes (0.99)</td><td></td></tr>
 <tr><td><a href="https://github.com/numpy/numpy/issues/7644">#7644</a> polyfit should return nan values on nan input values</td><td>00 - Bug, kNN (0.99)</td><td></td></tr>
