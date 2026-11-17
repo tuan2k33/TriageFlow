@@ -5,7 +5,8 @@ timeout, cwd in repro/).
 
 usage: python tools/repro.py data/<owner>__<name>/repo.db [--only N [N ...]] [--rerun] [--timeout 60]
 writes repro/<number>.py: the issue link, the snippet (created once, then hand-edited), and below it as comments, rewritten
-on every run of changed code: auto (exception types compared), expected, reported, got on this numpy, the description.
+on every run of changed code: auto (exception types compared), expected (what should happen and the error reported), got on this
+numpy, the description.
 Also repro/sheet.jsonl and repro/review.md next to the db. The verdict and note columns of sheet.jsonl are kept across reruns.
 """
 import argparse, collections, hashlib, json, os, re, sqlite3, subprocess, sys, time
@@ -103,7 +104,10 @@ def expected(body, code):
 
 
 def errors(text):
-    return list(dict.fromkeys(f"{t}: {m}".strip() for t, m in EXC.findall(text)))
+    seen = {}
+    for t, m in EXC.findall(text):
+        seen.setdefault(re.sub(r"\W+$", "", f"{t}: {m}".strip()), f"{t}: {m}".strip())  # same error with or without a final "."
+    return list(seen.values())
 
 
 def compare(reported, now):
@@ -122,7 +126,7 @@ def comment(lines):
 
 
 def write_result(py, body, text, hint):
-    """Rewrite everything below the code: expected, reported, got (this run) and the description, all as comments."""
+    """Rewrite everything below the code: expected (with the reported errors), got (this run) and the description."""
     cur = py.read_text(encoding="utf-8")
     code = code_of(cur)
     lines = text.rstrip().splitlines()
@@ -134,8 +138,8 @@ def write_result(py, body, text, hint):
     exp = expected(body, code)
     py.write_text(
         f"{head}\n{code}\n\n\n{GEN}\n# auto: {compare(reported, now)}\n"
-        f"# --- expected (sentences from the description, comments in the code) ---\n{comment(exp or ['(none found)'])}\n"
-        f"# --- reported (errors in the description) ---\n{comment(reported[:3] or ['(none)'])}\n"
+        f"# --- expected (from the description and the code; 'reported:' is the error the reporter got) ---\n"
+        f"{comment(exp + [f'reported: {e}' for e in reported[:3]] or ['(none found)'])}\n"
         f"# --- got on numpy {EXPECTED} (hint: {hint}, code {digest(cur)}) ---\n{comment(lines)}\n"
         f"# --- description (verbatim) ---\n{comment(re.sub(chr(10) + '{3,}', chr(10) * 2, clean_body(body)).splitlines())}\n",
         encoding="utf-8")
@@ -187,7 +191,7 @@ def section_of(block, name):
 
 
 def write_review(out_dir, rows, con):
-    """review.md: every case that ran (ok / error) as code / expected / reported / got, the description folded, by section;
+    """review.md: every case that ran (ok / error) as code / expected / got, the description folded, by section;
     within a section the reported errors that are gone come first."""
     section = {}
     for kind, n in con.execute("select kind, number from actions where kind in (%s)" % ",".join("?" * len(KINDS)), KINDS):
@@ -197,7 +201,7 @@ def write_review(out_dir, rows, con):
     todo = sorted((r for r in rows if r["hint"] in ("ok", "error")),
                   key=lambda r: (order[section.get(r["number"], "original of a duplicate")], first(r["auto"]), r["number"]))
     out = [f"# Reproduce on numpy {EXPECTED}: {len(todo)} cases that ran\n",
-           "Compare *got* with *expected* and *reported*; put the verdict in sheet.jsonl "
+           "Compare *got* with *expected* (lines starting `reported:` are the error the reporter got); put the verdict in sheet.jsonl "
            "(still_there / gone / snippet_broken / cannot_tell). *auto* only compares exception types.\n"]
     last = None
     for r in todo:
@@ -212,7 +216,6 @@ def write_review(out_dir, rows, con):
         out.append(f"### [#{n}]({r['url']}) {r['title']}\n\n`{r['hint']}` · auto: **{r['auto']}**{pair}\n\n"
                    f"**Code**\n\n```python\n{code_of(text)}\n```\n\n"
                    f"**Expected**\n\n{bullets(section_of(gen, 'expected'))}\n\n"
-                   f"**Reported**\n\n{bullets(section_of(gen, 'reported'))}\n\n"
                    f"**Got**\n\n```\n{tail(chr(10).join(section_of(gen, 'got')))}\n```\n\n"
                    f"<details><summary>Description</summary>\n\n```\n{chr(10).join(section_of(gen, 'description'))}\n```\n"
                    f"</details>\n\n---\n")
