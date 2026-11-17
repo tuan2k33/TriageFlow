@@ -5,8 +5,8 @@ timeout, cwd in repro/).
 
 usage: python tools/repro.py data/<owner>__<name>/repo.db [--only N [N ...]] [--rerun] [--timeout 60]
 writes repro/<number>.py: the issue link, the snippet (created once, then hand-edited), and below it as comments, rewritten
-on every run of changed code: auto (exception types compared), expected (what should happen and the error reported), got on this
-numpy, the description.
+on every run of changed code: auto (exception types compared), expected (what should happen and the error reported; quoted
+by tools/llm_extract.py when repro/extract.jsonl has the issue, else found by rules), got on this numpy, the description.
 Also repro/sheet.jsonl and repro/review.md next to the db. The verdict and note columns of sheet.jsonl are kept across reruns.
 """
 import argparse, collections, hashlib, json, os, re, sqlite3, subprocess, sys, time
@@ -64,6 +64,10 @@ EXC = re.compile(r"^\s*(?:#\s*)?(?:[\w.]+\.)?(\w+(?:Error|Exception|Warning)):\s
 EXPECT = re.compile(r"\b(expect\w*|should(?:n't)?|instead|supposed to|would like|correct (?:result|output|answer)|intended)\b", re.I)
 EXPECT_CODE = re.compile(r"#.*\b(expect\w*|should|wrong|correct|instead|gives|returns|bug)\b|#\s*(?:->|==>|array\(|\[|-?\d|True|False)", re.I)
 MAX_OUT = 200  # lines of output kept in the file
+RULES = Path(__file__).with_name("issue_templates.json")  # per repo: the issue templates and which section holds what
+HEADING = re.compile(r"^#{2,4}[ \t]*(.+?)[ \t]*$", re.M)
+FILLER = re.compile(r"^\s*(_?no response_?|none|n/?a|-|\[code\])\s*$", re.I)
+MAX_EXPECTED = 25  # lines of a template's description section kept
 
 
 def header(n, title, created):
@@ -96,6 +100,38 @@ def clean_body(body):
     return re.sub(r"<!--.*?-->", "", body.replace("\r\n", "\n"), flags=re.S).strip()
 
 
+def sections(body):
+    """{heading (lower case, no colon): text}; the text before the first heading is "_preamble"."""
+    parts = HEADING.split(clean_body(body))
+    secs = {"_preamble": parts[0].strip()}
+    for h, c in zip(parts[1::2], parts[2::2]):
+        secs.setdefault(h.strip().rstrip(":").strip().lower(), c.strip())
+    return secs
+
+
+def template_of(body, rules):
+    """(the first template whose headings are all in the description, its sections) or (None, sections)."""
+    secs = sections(body)
+    return next((t for t in rules if all(h in secs for h in t["match"])), None), secs
+
+
+def take(secs, names):
+    return "\n\n".join(secs[n] for n in names if secs.get(n))
+
+
+def template_fields(t, secs):
+    """(code or None, expected lines, reported lines) read from the sections the template names."""
+    raw = take(secs, t.get("code", []))
+    code = extract(raw) if raw else None
+    if code is None and re.search(r"\bimport\b|\bnp\.", raw):
+        code = raw
+    lines = lambda text: [l.rstrip() for l in FENCE.sub(lambda m: m.group(2), text).splitlines() if l.strip() and not FILLER.match(l)]
+    rep = take(secs, t.get("reported", []))
+    reported = errors(rep) or lines(rep)[:15]
+    exp = lines(FENCE.sub("[code]", take(secs, t.get("expected", []))))
+    return code, exp[:MAX_EXPECTED] + ([f"... {len(exp) - MAX_EXPECTED} more lines in the description"] if len(exp) > MAX_EXPECTED else []), reported
+
+
 def expected(body, code):
     """What should happen, in the reporter's words: sentences of the description and comments of the snippet."""
     text = FENCE.sub(" ", clean_body(body))
@@ -125,21 +161,34 @@ def comment(lines):
     return "\n".join(("# " + l).rstrip() for l in lines)
 
 
-def write_result(py, body, text, hint):
-    """Rewrite everything below the code: expected (with the reported errors), got (this run) and the description."""
+def write_result(py, body, text, hint, ext=None, tpl=None):
+    """Rewrite everything below the code: expected (with the reported errors), got (this run) and the description.
+    Expected comes from the issue template's sections when the issue follows one, else from tools/llm_extract.py, else
+    from rules over the whole description."""
     cur = py.read_text(encoding="utf-8")
     code = code_of(cur)
     lines = text.rstrip().splitlines()
     if len(lines) > MAX_OUT:
         lines = [f"... {len(lines) - MAX_OUT} lines cut ..."] + lines[-MAX_OUT:]
+    tpl, secs = tpl if tpl else (None, None)
     reported = errors(clean_body(body))
     now = errors(text.split("--- stderr ---", 1)[-1])
     head = HEAD.match(cur).group(0) if HEAD.match(cur) else ""
-    exp = expected(body, code)
+    if tpl:
+        _, exp_lines, rep_lines = template_fields(tpl, secs)
+        reported = errors("\n".join(rep_lines)) or reported
+        names = lambda k: " + ".join(tpl.get(k, [])) or "-"
+        title = (f"expected (template '{tpl['name']}': {names('expected')}; 'reported:' is {names('reported')})")
+        exp = exp_lines + [f"reported: {r}" for r in rep_lines]
+    elif ext and ext["hash"] == hashlib.sha1(body.encode()).hexdigest()[:10]:  # tools/llm_extract.py, quotes checked
+        title = f"expected (quoted by an LLM, checked against the description; kind: {ext['kind']}; 'reported:' is what the reporter got)"
+        exp = ext["expected"] + [f"reported: {r}" for r in ext["reported"]]
+    else:
+        title = "expected (no template: guessed from the description and the code; 'reported:' is the error the reporter got)"
+        exp = expected(body, code) + [f"reported: {e}" for e in reported[:3]]
     py.write_text(
         f"{head}\n{code}\n\n\n{GEN}\n# auto: {compare(reported, now)}\n"
-        f"# --- expected (from the description and the code; 'reported:' is the error the reporter got) ---\n"
-        f"{comment(exp + [f'reported: {e}' for e in reported[:3]] or ['(none found)'])}\n"
+        f"# --- {title} ---\n{comment(exp or ['(none found)'])}\n"
         f"# --- got on numpy {EXPECTED} (hint: {hint}, code {digest(cur)}) ---\n{comment(lines)}\n"
         f"# --- description (verbatim) ---\n{comment(re.sub(chr(10) + '{3,}', chr(10) * 2, clean_body(body)).splitlines())}\n",
         encoding="utf-8")
@@ -243,6 +292,10 @@ def main():
         pairs[n].add(t)
         pairs[t].add(n)
     sheet = out_dir / "sheet.jsonl"
+    repo = con.execute("select v from meta where k = 'repo'").fetchone()[0]
+    rules = json.loads(RULES.read_text())[repo]["templates"] if RULES.exists() and repo in json.loads(RULES.read_text()) else []
+    ex = out_dir / "extract.jsonl"
+    extracts = {r["number"]: r for r in map(json.loads, ex.read_text(encoding="utf-8").splitlines())} if ex.exists() else {}
     prev = {r["number"]: r for r in map(json.loads, sheet.read_text(encoding="utf-8").splitlines())} if sheet.exists() else {}
     selected = set(a.only) if a.only else None
     if selected:
@@ -250,11 +303,18 @@ def main():
         if missing:
             print(f"not issue cases, skipped: {sorted(missing)}")
     todo = [c for c in cases if selected is None or c[0] in selected]
-    hints, made = {}, 0
+    hints, made, templates = {}, 0, {}
     for i, (n, title, body, created) in enumerate(todo, 1):
         py = out_dir / f"{n}.py"
+        tpl, secs = template_of(body, rules)
+        templates[n] = tpl["name"] if tpl else "none"
+        if tpl and tpl.get("repro") is False:
+            hints[n] = "not_a_bug"
+            continue
+        code = template_fields(tpl, secs)[0] if tpl else extract(body)
+        if py.exists() and tpl and code and code_of(py.read_text(encoding="utf-8")) == (extract(body) or "").strip() != code.strip():
+            py.write_text(header(n, title, created) + code + "\n", encoding="utf-8")  # untouched guess -> the template's code
         if not py.exists():
-            code = extract(body)
             if code is None:
                 hints[n] = "crawl_error"
                 continue
@@ -268,7 +328,7 @@ def main():
         print(f"[{i}/{len(todo)}] #{n}", flush=True)
         text, code, stderr = run(py, out_dir, a.timeout)
         hints[n] = classify(code, stderr)
-        write_result(py, body, text, hints[n])
+        write_result(py, body, text, hints[n], extracts.get(n), (tpl, secs) if tpl else None)
         print(f"    {hints[n]}", flush=True)
     rows = []
     for n, title, body, created in cases:
@@ -279,6 +339,7 @@ def main():
                 hints[n] = "crawl_error" if prev.get(n, {}).get("hint") == "crawl_error" else "not_run"
         old = prev.get(n, {})
         rows.append({"number": n, "title": title, "url": f"https://github.com/numpy/numpy/issues/{n}", "hint": hints[n],
+                     "template": templates.get(n) or (lambda t: t["name"] if t else "none")(template_of(body, rules)[0]),
                      "with": sorted(pairs.get(n, ())),
                      "auto": auto_of(out_dir / f"{n}.py") if (out_dir / f"{n}.py").exists() else "", "verdict": old.get("verdict", ""), "note": old.get("note", "")})
     current = {c[0] for c in cases}

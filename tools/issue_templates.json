@@ -1,0 +1,17 @@
+{
+  "numpy/numpy": {
+    "source": "the forms in numpy's .github/ISSUE_TEMPLATE (read 2026-11-18) and the Markdown bug template used about 2019-2021",
+    "templates": [
+      {"name": "typing", "match": ["describe the issue", "reproduce the code example", "type-checker version and settings"],
+       "code": ["reproduce the code example"], "reported": ["error message"], "expected": ["describe the issue"]},
+      {"name": "bug", "match": ["describe the issue", "reproduce the code example"],
+       "code": ["reproduce the code example"], "reported": ["error message"], "expected": ["describe the issue"]},
+      {"name": "bug (old Markdown)", "match": ["reproducing code example"],
+       "code": ["reproducing code example"], "reported": ["error message"], "expected": ["_preamble"]},
+      {"name": "post-install", "match": ["steps to reproduce", "error message"],
+       "code": ["steps to reproduce"], "reported": ["error message"], "expected": ["additional information"]},
+      {"name": "feature", "match": ["proposed new feature or change"], "repro": false},
+      {"name": "documentation", "match": ["issue with current documentation"], "repro": false}
+    ]
+  }
+}
