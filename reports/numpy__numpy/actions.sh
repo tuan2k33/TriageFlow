@@ -218,31 +218,19 @@
 # gh pr view 28608 -R numpy/numpy; gh pr view 28718 -R numpy/numpy   # 0.93
 # gh pr view 31871 -R numpy/numpy; gh pr view 33253 -R numpy/numpy   # 0.92
 
-# --- Labels to add (1392)
-# gh issue edit 4979 -R numpy/numpy --add-label 'component: numpy._core'   # 0.99
-# gh issue edit 5735 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.99
+# --- Labels to add (1433)
 # gh issue edit 7644 -R numpy/numpy --add-label '00 - Bug'   # 0.99
-# gh issue edit 9436 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.99
 # gh issue edit 9438 -R numpy/numpy --add-label '00 - Bug'   # 0.99
 # gh issue edit 9546 -R numpy/numpy --add-label '00 - Bug'   # 0.99
-# gh issue edit 11079 -R numpy/numpy --add-label 'component: numpy._core'   # 0.99
 # gh issue edit 11283 -R numpy/numpy --add-label '00 - Bug'   # 0.99
 # gh issue edit 11659 -R numpy/numpy --add-label '00 - Bug'   # 0.99
 # gh issue edit 11990 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.99
-# gh issue edit 12183 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.99
-# gh issue edit 12283 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.99
-# gh issue edit 13088 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.99
 # gh issue edit 19308 -R numpy/numpy --add-label '00 - Bug'   # 0.99
 # gh issue edit 19397 -R numpy/numpy --add-label '00 - Bug'   # 0.99
 # gh issue edit 19532 -R numpy/numpy --add-label '00 - Bug'   # 0.99
 # gh issue edit 19685 -R numpy/numpy --add-label '00 - Bug'   # 0.99
 # gh issue edit 22049 -R numpy/numpy --add-label '00 - Bug'   # 0.99
-# gh issue edit 23849 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.99
 # gh pr edit 27071 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.99
-# gh issue edit 27374 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.99
-# gh issue edit 28366 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.99
-# gh pr edit 31066 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.99
-# gh issue edit 32605 -R numpy/numpy --add-label 'component: numpy.fft'   # 0.99
 # gh issue edit 4560 -R numpy/numpy --add-label '04 - Documentation'   # 0.98
 # gh issue edit 10167 -R numpy/numpy --add-label '04 - Documentation'   # 0.98
 # gh issue edit 20733 -R numpy/numpy --add-label '04 - Documentation'   # 0.98
@@ -322,6 +310,7 @@
 # gh pr edit 33146 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.96
 # gh pr edit 33152 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.96
 # gh pr edit 33162 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.96
+# gh pr edit 27642 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.95
 # gh issue edit 4715 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.94
 # gh issue edit 4829 -R numpy/numpy --add-label '01 - Enhancement'   # 0.94
 # gh issue edit 5221 -R numpy/numpy --add-label '00 - Bug'   # 0.94
@@ -409,7 +398,6 @@
 # gh issue edit 22710 -R numpy/numpy --add-label '01 - Enhancement'   # 0.94
 # gh issue edit 22739 -R numpy/numpy --add-label '00 - Bug'   # 0.94
 # gh issue edit 22898 -R numpy/numpy --add-label '01 - Enhancement'   # 0.94
-# gh pr edit 22913 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.94
 # gh issue edit 22995 -R numpy/numpy --add-label '01 - Enhancement'   # 0.94
 # gh issue edit 23014 -R numpy/numpy --add-label '00 - Bug'   # 0.94
 # gh issue edit 23040 -R numpy/numpy --add-label '00 - Bug'   # 0.94
@@ -563,33 +551,25 @@
 # gh issue edit 13189 -R numpy/numpy --add-label '00 - Bug'   # 0.91
 # gh issue edit 16876 -R numpy/numpy --add-label '00 - Bug'   # 0.91
 # gh issue edit 18069 -R numpy/numpy --add-label '00 - Bug'   # 0.91
-# gh pr edit 20529 -R numpy/numpy --add-label 'component: numpy.polynomial'   # 0.91
 # gh issue edit 23821 -R numpy/numpy --add-label 'component: CI'   # 0.91
 # gh issue edit 26704 -R numpy/numpy --add-label '00 - Bug'   # 0.91
-# gh issue edit 27258 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.91
 # gh issue edit 28227 -R numpy/numpy --add-label 'component: CI'   # 0.91
 # gh issue edit 29524 -R numpy/numpy --add-label 'component: CI'   # 0.91
-# gh pr edit 31215 -R numpy/numpy --add-label 'component: numpy.random'   # 0.91
 # gh issue edit 33172 -R numpy/numpy --add-label 'component: CI'   # 0.91
 # gh issue edit 33299 -R numpy/numpy --add-label '00 - Bug'   # 0.91
 # gh issue edit 14412 -R numpy/numpy --add-label '00 - Bug'   # 0.90
 # gh issue edit 17752 -R numpy/numpy --add-label '00 - Bug'   # 0.90
 # gh issue edit 19162 -R numpy/numpy --add-label '00 - Bug'   # 0.90
-# gh pr edit 24446 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.90
-# gh pr edit 27642 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.90
-# gh pr edit 32787 -R numpy/numpy --add-label 'component: numpy.random'   # 0.90
-# gh pr edit 33017 -R numpy/numpy --add-label 'component: numpy._core'   # 0.90
 # gh issue edit 12283 -R numpy/numpy --add-label '00 - Bug'   # 0.89
 # gh issue edit 17305 -R numpy/numpy --add-label '00 - Bug'   # 0.89
 # gh issue edit 17554 -R numpy/numpy --add-label '00 - Bug'   # 0.89
 # gh issue edit 18586 -R numpy/numpy --add-label '00 - Bug'   # 0.89
+# gh pr edit 22913 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.89
 # gh issue edit 8627 -R numpy/numpy --add-label '00 - Bug'   # 0.88
-# gh issue edit 9921 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.88
 # gh issue edit 14225 -R numpy/numpy --add-label '00 - Bug'   # 0.88
-# gh issue edit 17305 -R numpy/numpy --add-label 'component: numpy._core'   # 0.88
-# gh pr edit 31023 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.88
 # gh issue edit 9659 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.87
 # gh issue edit 12966 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.87
+# gh issue edit 13408 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.87
 # gh issue edit 17328 -R numpy/numpy --add-label '04 - Documentation'   # 0.87
 # gh pr edit 27631 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.87
 # gh pr edit 27635 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.87
@@ -597,8 +577,7 @@
 # gh pr edit 32315 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.87
 # gh issue edit 4979 -R numpy/numpy --add-label '00 - Bug'   # 0.86
 # gh issue edit 5098 -R numpy/numpy --add-label '00 - Bug'   # 0.86
-# gh issue edit 23350 -R numpy/numpy --add-label 'component: numpy._core'   # 0.86
-# gh issue edit 33318 -R numpy/numpy --add-label 'component: numpy.random'   # 0.86
+# gh pr edit 31215 -R numpy/numpy --add-label 'component: numpy.random'   # 0.86
 # gh issue edit 6951 -R numpy/numpy --add-label '01 - Enhancement'   # 0.85
 # gh issue edit 20785 -R numpy/numpy --add-label 'component: benchmarks'   # 0.85
 # gh issue edit 29644 -R numpy/numpy --add-label 'component: benchmarks'   # 0.85
@@ -607,21 +586,10 @@
 # gh issue edit 23362 -R numpy/numpy --add-label '01 - Enhancement'   # 0.84
 # gh pr edit 26315 -R numpy/numpy --add-label '03 - Maintenance'   # 0.84
 # gh issue edit 27042 -R numpy/numpy --add-label '01 - Enhancement'   # 0.84
-# gh issue edit 6231 -R numpy/numpy --add-label 'component: numpy._core'   # 0.83
 # gh issue edit 6318 -R numpy/numpy --add-label '00 - Bug'   # 0.83
 # gh issue edit 7780 -R numpy/numpy --add-label '01 - Enhancement'   # 0.83
-# gh issue edit 9476 -R numpy/numpy --add-label 'component: numpy._core'   # 0.83
 # gh issue edit 10446 -R numpy/numpy --add-label '01 - Enhancement'   # 0.83
-# gh issue edit 13319 -R numpy/numpy --add-label 'component: numpy._core'   # 0.83
 # gh issue edit 16152 -R numpy/numpy --add-label '00 - Bug'   # 0.83
-# gh issue edit 16665 -R numpy/numpy --add-label 'component: numpy._core'   # 0.83
-# gh issue edit 22197 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.83
-# gh issue edit 22248 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.83
-# gh issue edit 24050 -R numpy/numpy --add-label 'component: numpy.testing'   # 0.83
-# gh issue edit 25677 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.83
-# gh issue edit 27600 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.83
-# gh pr edit 29746 -R numpy/numpy --add-label 'component: numpy._core'   # 0.83
-# gh pr edit 31228 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.83
 # gh issue edit 6286 -R numpy/numpy --add-label '00 - Bug'   # 0.82
 # gh issue edit 9287 -R numpy/numpy --add-label '00 - Bug'   # 0.82
 # gh issue edit 11387 -R numpy/numpy --add-label '00 - Bug'   # 0.82
@@ -638,55 +606,31 @@
 # gh issue edit 17612 -R numpy/numpy --add-label '00 - Bug'   # 0.81
 # gh issue edit 18604 -R numpy/numpy --add-label '00 - Bug'   # 0.81
 # gh issue edit 18986 -R numpy/numpy --add-label '00 - Bug'   # 0.81
-# gh issue edit 5412 -R numpy/numpy --add-label 'component: numpy._core'   # 0.80
+# gh issue edit 27600 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.81
 # gh issue edit 6316 -R numpy/numpy --add-label '00 - Bug'   # 0.80
-# gh issue edit 7615 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.80
 # gh issue edit 7784 -R numpy/numpy --add-label '00 - Bug'   # 0.80
 # gh issue edit 8361 -R numpy/numpy --add-label '00 - Bug'   # 0.80
-# gh issue edit 8855 -R numpy/numpy --add-label 'component: numpy.fft'   # 0.80
-# gh issue edit 9032 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.80
 # gh issue edit 9659 -R numpy/numpy --add-label '00 - Bug'   # 0.80
-# gh issue edit 10289 -R numpy/numpy --add-label 'component: numpy._core'   # 0.80
-# gh issue edit 10705 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.80
-# gh issue edit 12695 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.80
-# gh issue edit 13408 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.80
+# gh issue edit 10582 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.80
+# gh issue edit 12183 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.80
 # gh issue edit 14066 -R numpy/numpy --add-label '00 - Bug'   # 0.80
-# gh issue edit 15495 -R numpy/numpy --add-label 'component: numpy._core'   # 0.80
-# gh issue edit 16881 -R numpy/numpy --add-label 'component: numpy._core'   # 0.80
-# gh issue edit 17567 -R numpy/numpy --add-label 'component: numpy.polynomial'   # 0.80
-# gh issue edit 17850 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.80
-# gh issue edit 18696 -R numpy/numpy --add-label 'component: numpy._core'   # 0.80
-# gh issue edit 21631 -R numpy/numpy --add-label 'component: numpy._core'   # 0.80
-# gh issue edit 23479 -R numpy/numpy --add-label 'component: numpy._core'   # 0.80
-# gh issue edit 23781 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.80
+# gh pr edit 24446 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.80
 # gh issue edit 25548 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.80
-# gh issue edit 25647 -R numpy/numpy --add-label 'component: numpy._core'   # 0.80
-# gh issue edit 27172 -R numpy/numpy --add-label 'component: numpy.strings'   # 0.80
-# gh issue edit 27987 -R numpy/numpy --add-label 'component: numpy.fft'   # 0.80
-# gh issue edit 28642 -R numpy/numpy --add-label 'component: CI'   # 0.80
-# gh issue edit 29527 -R numpy/numpy --add-label 'component: numpy._core'   # 0.80
-# gh pr edit 31216 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.80
-# gh issue edit 31280 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.80
+# gh issue edit 27374 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.80
+# gh issue edit 28366 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.80
 # gh issue edit 31423 -R numpy/numpy --add-label '01 - Enhancement'   # 0.80
-# gh issue edit 31478 -R numpy/numpy --add-label 'component: SIMD'   # 0.80
-# gh pr edit 31496 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.80
-# gh issue edit 31590 -R numpy/numpy --add-label 'component: numpy._core'   # 0.80
-# gh pr edit 31689 -R numpy/numpy --add-label 'component: numpy._core'   # 0.80
-# gh pr edit 31984 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.80
-# gh pr edit 32340 -R numpy/numpy --add-label 'component: numpy.fft'   # 0.80
-# gh issue edit 32522 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.80
-# gh pr edit 32973 -R numpy/numpy --add-label 'component: numpy.fft'   # 0.80
+# gh issue edit 32309 -R numpy/numpy --add-label 'component: numpy.polynomial'   # 0.80
 # gh issue edit 7874 -R numpy/numpy --add-label '01 - Enhancement'   # 0.79
 # gh issue edit 12183 -R numpy/numpy --add-label '00 - Bug'   # 0.79
 # gh issue edit 14239 -R numpy/numpy --add-label '00 - Bug'   # 0.79
+# gh issue edit 15569 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.79
 # gh issue edit 17118 -R numpy/numpy --add-label '00 - Bug'   # 0.79
 # gh issue edit 19410 -R numpy/numpy --add-label '00 - Bug'   # 0.79
 # gh issue edit 31060 -R numpy/numpy --add-label '07 - Deprecation'   # 0.79
 # gh issue edit 7277 -R numpy/numpy --add-label '00 - Bug'   # 0.78
-# gh issue edit 8773 -R numpy/numpy --add-label 'component: numpy._core'   # 0.78
 # gh issue edit 10010 -R numpy/numpy --add-label '00 - Bug'   # 0.78
 # gh issue edit 11674 -R numpy/numpy --add-label '00 - Bug'   # 0.78
-# gh issue edit 15569 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.78
+# gh pr edit 28490 -R numpy/numpy --add-label 'component: SIMD'   # 0.78
 # gh issue edit 31969 -R numpy/numpy --add-label '01 - Enhancement'   # 0.78
 # gh pr edit 33183 -R numpy/numpy --add-label '00 - Bug'   # 0.78
 # gh issue edit 15140 -R numpy/numpy --add-label '00 - Bug'   # 0.77
@@ -698,16 +642,19 @@
 # gh issue edit 24736 -R numpy/numpy --add-label '04 - Documentation'   # 0.76
 # gh pr edit 33193 -R numpy/numpy --add-label '04 - Documentation'   # 0.76
 # gh issue edit 5193 -R numpy/numpy --add-label '00 - Bug'   # 0.75
-# gh issue edit 7797 -R numpy/numpy --add-label 'component: numpy._core'   # 0.75
-# gh issue edit 9443 -R numpy/numpy --add-label 'component: numpy._core'   # 0.75
 # gh issue edit 9923 -R numpy/numpy --add-label '00 - Bug'   # 0.75
 # gh issue edit 11683 -R numpy/numpy --add-label '00 - Bug'   # 0.75
 # gh issue edit 12613 -R numpy/numpy --add-label '00 - Bug'   # 0.75
+# gh issue edit 13088 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.75
 # gh issue edit 13356 -R numpy/numpy --add-label '00 - Bug'   # 0.75
 # gh issue edit 15219 -R numpy/numpy --add-label '00 - Bug'   # 0.75
 # gh issue edit 16377 -R numpy/numpy --add-label '00 - Bug'   # 0.75
-# gh pr edit 28490 -R numpy/numpy --add-label 'component: SIMD'   # 0.75
-# gh pr edit 31175 -R numpy/numpy --add-label 'component: CI'   # 0.75
+# gh issue edit 25677 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.75
+# gh pr edit 29102 -R numpy/numpy --add-label 'component: SIMD'   # 0.75
+# gh pr edit 31066 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.75
+# gh pr edit 31216 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.75
+# gh pr edit 32973 -R numpy/numpy --add-label 'component: numpy.fft'   # 0.75
+# gh pr edit 33017 -R numpy/numpy --add-label 'component: numpy._core'   # 0.75
 # gh issue edit 5894 -R numpy/numpy --add-label '00 - Bug'   # 0.74
 # gh issue edit 9631 -R numpy/numpy --add-label '00 - Bug'   # 0.74
 # gh issue edit 12444 -R numpy/numpy --add-label '00 - Bug'   # 0.74
@@ -715,13 +662,15 @@
 # gh issue edit 3659 -R numpy/numpy --add-label '00 - Bug'   # 0.73
 # gh issue edit 5069 -R numpy/numpy --add-label '00 - Bug'   # 0.73
 # gh issue edit 5150 -R numpy/numpy --add-label '00 - Bug'   # 0.73
-# gh issue edit 12309 -R numpy/numpy --add-label 'component: numpy._core'   # 0.73
+# gh issue edit 7236 -R numpy/numpy --add-label 'component: numpy.testing'   # 0.73
+# gh issue edit 12283 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.73
 # gh issue edit 13285 -R numpy/numpy --add-label '00 - Bug'   # 0.73
 # gh issue edit 15123 -R numpy/numpy --add-label '01 - Enhancement'   # 0.73
+# gh issue edit 17850 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.73
+# gh issue edit 20850 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.73
 # gh issue edit 24428 -R numpy/numpy --add-label '00 - Bug'   # 0.73
-# gh issue edit 30809 -R numpy/numpy --add-label 'component: numpy.f2py'   # 0.73
+# gh issue edit 27172 -R numpy/numpy --add-label 'component: numpy.strings'   # 0.73
 # gh pr edit 32895 -R numpy/numpy --add-label '01 - Enhancement'   # 0.73
-# gh issue edit 8513 -R numpy/numpy --add-label 'component: numpy._core'   # 0.72
 # gh issue edit 9128 -R numpy/numpy --add-label '00 - Bug'   # 0.72
 # gh issue edit 9642 -R numpy/numpy --add-label '00 - Bug'   # 0.72
 # gh issue edit 10155 -R numpy/numpy --add-label '00 - Bug'   # 0.72
@@ -736,24 +685,19 @@
 # gh issue edit 33352 -R numpy/numpy --add-label '00 - Bug'   # 0.72
 # gh issue edit 6364 -R numpy/numpy --add-label '00 - Bug'   # 0.71
 # gh issue edit 7993 -R numpy/numpy --add-label '01 - Enhancement'   # 0.71
-# gh issue edit 8306 -R numpy/numpy --add-label 'component: numpy._core'   # 0.71
-# gh issue edit 10179 -R numpy/numpy --add-label 'component: numpy._core'   # 0.71
 # gh issue edit 10574 -R numpy/numpy --add-label '00 - Bug'   # 0.71
 # gh issue edit 10581 -R numpy/numpy --add-label '00 - Bug'   # 0.71
 # gh issue edit 11680 -R numpy/numpy --add-label '00 - Bug'   # 0.71
 # gh issue edit 11990 -R numpy/numpy --add-label '00 - Bug'   # 0.71
 # gh issue edit 14716 -R numpy/numpy --add-label '00 - Bug'   # 0.71
 # gh issue edit 15488 -R numpy/numpy --add-label '00 - Bug'   # 0.71
-# gh issue edit 19852 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.71
-# gh issue edit 23523 -R numpy/numpy --add-label 'component: SIMD'   # 0.71
-# gh issue edit 25737 -R numpy/numpy --add-label 'component: build'   # 0.71
+# gh pr edit 20529 -R numpy/numpy --add-label 'component: numpy.polynomial'   # 0.71
+# gh issue edit 27258 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.71
+# gh issue edit 33318 -R numpy/numpy --add-label 'component: numpy.random'   # 0.71
 # gh issue edit 5657 -R numpy/numpy --add-label '00 - Bug'   # 0.70
-# gh issue edit 5976 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.70
 # gh issue edit 7212 -R numpy/numpy --add-label '00 - Bug'   # 0.70
 # gh issue edit 8855 -R numpy/numpy --add-label '00 - Bug'   # 0.70
 # gh issue edit 9032 -R numpy/numpy --add-label '01 - Enhancement'   # 0.70
-# gh issue edit 9509 -R numpy/numpy --add-label 'component: numpy._core'   # 0.70
-# gh issue edit 10144 -R numpy/numpy --add-label 'component: numpy._core'   # 0.70
 # gh issue edit 10288 -R numpy/numpy --add-label '00 - Bug'   # 0.70
 # gh issue edit 12735 -R numpy/numpy --add-label '00 - Bug'   # 0.70
 # gh issue edit 13232 -R numpy/numpy --add-label '00 - Bug'   # 0.70
@@ -761,86 +705,64 @@
 # gh issue edit 19623 -R numpy/numpy --add-label '00 - Bug'   # 0.70
 # gh issue edit 19891 -R numpy/numpy --add-label '04 - Documentation'   # 0.70
 # gh issue edit 25290 -R numpy/numpy --add-label '00 - Bug'   # 0.70
-# gh pr edit 25703 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.70
-# gh issue edit 29315 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.70
 # gh issue edit 32747 -R numpy/numpy --add-label '01 - Enhancement'   # 0.70
-# gh pr edit 33253 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.70
 # gh issue edit 5735 -R numpy/numpy --add-label '00 - Bug'   # 0.69
 # gh issue edit 6132 -R numpy/numpy --add-label '00 - Bug'   # 0.69
 # gh issue edit 7189 -R numpy/numpy --add-label '00 - Bug'   # 0.69
 # gh issue edit 7541 -R numpy/numpy --add-label '00 - Bug'   # 0.69
 # gh issue edit 7713 -R numpy/numpy --add-label '00 - Bug'   # 0.69
 # gh issue edit 8089 -R numpy/numpy --add-label '00 - Bug'   # 0.69
-# gh issue edit 8519 -R numpy/numpy --add-label 'component: numpy._core'   # 0.69
 # gh issue edit 13553 -R numpy/numpy --add-label '00 - Bug'   # 0.69
-# gh issue edit 17347 -R numpy/numpy --add-label 'component: build'   # 0.69
 # gh issue edit 18387 -R numpy/numpy --add-label '00 - Bug'   # 0.69
+# gh issue edit 27380 -R numpy/numpy --add-label 'component: numpy.random'   # 0.69
+# gh issue edit 30037 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.69
+# gh issue edit 30337 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.69
+# gh issue edit 32605 -R numpy/numpy --add-label 'component: numpy.fft'   # 0.69
 # gh issue edit 8513 -R numpy/numpy --add-label '01 - Enhancement'   # 0.68
+# gh issue edit 9436 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.68
 # gh issue edit 9448 -R numpy/numpy --add-label '01 - Enhancement'   # 0.68
 # gh issue edit 10289 -R numpy/numpy --add-label '00 - Bug'   # 0.68
 # gh issue edit 12540 -R numpy/numpy --add-label '04 - Documentation'   # 0.68
 # gh issue edit 13846 -R numpy/numpy --add-label '00 - Bug'   # 0.68
 # gh issue edit 15965 -R numpy/numpy --add-label '00 - Bug'   # 0.68
-# gh issue edit 2802 -R numpy/numpy --add-label 'component: numpy._core'   # 0.67
-# gh issue edit 5193 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.67
-# gh issue edit 5543 -R numpy/numpy --add-label 'component: numpy._core'   # 0.67
-# gh issue edit 5657 -R numpy/numpy --add-label 'component: numpy._core'   # 0.67
-# gh issue edit 5721 -R numpy/numpy --add-label 'component: numpy._core'   # 0.67
-# gh issue edit 7852 -R numpy/numpy --add-label 'component: numpy._core'   # 0.67
+# gh issue edit 17839 -R numpy/numpy --add-label 'component: numpy.fft'   # 0.68
+# gh issue edit 5735 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.67
+# gh issue edit 9032 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.67
 # gh issue edit 9265 -R numpy/numpy --add-label '00 - Bug'   # 0.67
-# gh issue edit 9442 -R numpy/numpy --add-label 'component: numpy._core'   # 0.67
-# gh issue edit 9465 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.67
-# gh issue edit 10989 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.67
+# gh issue edit 9921 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.67
+# gh issue edit 10705 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.67
 # gh issue edit 11308 -R numpy/numpy --add-label '00 - Bug'   # 0.67
-# gh issue edit 12208 -R numpy/numpy --add-label 'component: numpy._core'   # 0.67
-# gh issue edit 12322 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.67
-# gh issue edit 12426 -R numpy/numpy --add-label 'component: numpy._core'   # 0.67
 # gh issue edit 12701 -R numpy/numpy --add-label '00 - Bug'   # 0.67
-# gh issue edit 14103 -R numpy/numpy --add-label 'component: numpy.testing'   # 0.67
-# gh issue edit 14225 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.67
-# gh issue edit 16983 -R numpy/numpy --add-label 'component: numpy._core'   # 0.67
-# gh issue edit 17839 -R numpy/numpy --add-label 'component: numpy.fft'   # 0.67
+# gh issue edit 13470 -R numpy/numpy --add-label 'component: numpy._core'   # 0.67
+# gh issue edit 16881 -R numpy/numpy --add-label 'component: numpy._core'   # 0.67
 # gh issue edit 19382 -R numpy/numpy --add-label '01 - Enhancement'   # 0.67
-# gh issue edit 20044 -R numpy/numpy --add-label 'component: numpy._core'   # 0.67
-# gh issue edit 20351 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.67
-# gh issue edit 21933 -R numpy/numpy --add-label 'component: numpy._core'   # 0.67
-# gh issue edit 21958 -R numpy/numpy --add-label 'component: numpy._core'   # 0.67
-# gh issue edit 24397 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.67
+# gh issue edit 20705 -R numpy/numpy --add-label 'component: numpy._core'   # 0.67
+# gh issue edit 23479 -R numpy/numpy --add-label 'component: numpy._core'   # 0.67
+# gh issue edit 24841 -R numpy/numpy --add-label 'component: numpy.distutils'   # 0.67
+# gh issue edit 25647 -R numpy/numpy --add-label 'component: numpy._core'   # 0.67
 # gh issue edit 26038 -R numpy/numpy --add-label '00 - Bug'   # 0.67
-# gh issue edit 27380 -R numpy/numpy --add-label 'component: numpy.random'   # 0.67
-# gh pr edit 29102 -R numpy/numpy --add-label 'component: SIMD'   # 0.67
 # gh issue edit 29941 -R numpy/numpy --add-label '04 - Documentation'   # 0.67
-# gh issue edit 30037 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.67
-# gh issue edit 30337 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.67
-# gh pr edit 31534 -R numpy/numpy --add-label 'component: SIMD'   # 0.67
-# gh pr edit 31871 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.67
-# gh issue edit 32272 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.67
-# gh issue edit 32599 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.67
-# gh pr edit 32788 -R numpy/numpy --add-label 'component: numpy.random'   # 0.67
-# gh issue edit 33081 -R numpy/numpy --add-label 'component: numpy._core'   # 0.67
+# gh pr edit 31496 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.67
 # gh issue edit 10270 -R numpy/numpy --add-label '00 - Bug'   # 0.66
 # gh issue edit 11925 -R numpy/numpy --add-label '00 - Bug'   # 0.66
 # gh issue edit 12076 -R numpy/numpy --add-label '00 - Bug'   # 0.66
 # gh issue edit 27588 -R numpy/numpy --add-label '00 - Bug'   # 0.66
 # gh issue edit 31764 -R numpy/numpy --add-label '00 - Bug'   # 0.66
 # gh issue edit 4915 -R numpy/numpy --add-label '00 - Bug'   # 0.65
+# gh issue edit 7713 -R numpy/numpy --add-label 'component: numpy._core'   # 0.65
 # gh issue edit 9565 -R numpy/numpy --add-label '00 - Bug'   # 0.65
 # gh issue edit 12368 -R numpy/numpy --add-label '01 - Enhancement'   # 0.65
 # gh issue edit 13918 -R numpy/numpy --add-label '00 - Bug'   # 0.65
 # gh issue edit 16425 -R numpy/numpy --add-label '03 - Maintenance'   # 0.65
+# gh pr edit 33253 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.65
 # gh issue edit 5652 -R numpy/numpy --add-label '00 - Bug'   # 0.64
 # gh issue edit 6765 -R numpy/numpy --add-label '00 - Bug'   # 0.64
-# gh issue edit 10446 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.64
-# gh issue edit 12817 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.64
-# gh issue edit 17136 -R numpy/numpy --add-label 'component: numpy._core'   # 0.64
+# gh issue edit 17347 -R numpy/numpy --add-label 'component: build'   # 0.64
 # gh issue edit 18744 -R numpy/numpy --add-label '00 - Bug'   # 0.64
 # gh issue edit 24157 -R numpy/numpy --add-label '03 - Maintenance'   # 0.64
-# gh issue edit 27701 -R numpy/numpy --add-label 'component: numpy.strings'   # 0.64
 # gh issue edit 29801 -R numpy/numpy --add-label '00 - Bug'   # 0.64
-# gh issue edit 30280 -R numpy/numpy --add-label 'component: numpy._core'   # 0.64
 # gh issue edit 31485 -R numpy/numpy --add-label '17 - Task'   # 0.64
 # gh issue edit 31913 -R numpy/numpy --add-label '01 - Enhancement'   # 0.64
-# gh pr edit 32661 -R numpy/numpy --add-label 'component: numpy.testing'   # 0.64
 # gh issue edit 10700 -R numpy/numpy --add-label '00 - Bug'   # 0.63
 # gh issue edit 13190 -R numpy/numpy --add-label '00 - Bug'   # 0.63
 # gh issue edit 15978 -R numpy/numpy --add-label '00 - Bug'   # 0.63
@@ -851,198 +773,101 @@
 # gh pr edit 33323 -R numpy/numpy --add-label '01 - Enhancement'   # 0.63
 # gh issue edit 3762 -R numpy/numpy --add-label '00 - Bug'   # 0.62
 # gh issue edit 8780 -R numpy/numpy --add-label '00 - Bug'   # 0.62
-# gh issue edit 10010 -R numpy/numpy --add-label 'component: numpy._core'   # 0.62
+# gh issue edit 9252 -R numpy/numpy --add-label 'component: numpy._core'   # 0.62
+# gh issue edit 10047 -R numpy/numpy --add-label 'component: numpy.distutils'   # 0.62
 # gh issue edit 10645 -R numpy/numpy --add-label '00 - Bug'   # 0.62
+# gh issue edit 12426 -R numpy/numpy --add-label 'component: numpy._core'   # 0.62
+# gh issue edit 13319 -R numpy/numpy --add-label 'component: numpy._core'   # 0.62
 # gh issue edit 13510 -R numpy/numpy --add-label '01 - Enhancement'   # 0.62
 # gh issue edit 18112 -R numpy/numpy --add-label '00 - Bug'   # 0.62
 # gh issue edit 19473 -R numpy/numpy --add-label '00 - Bug'   # 0.62
-# gh issue edit 22059 -R numpy/numpy --add-label 'component: SIMD'   # 0.62
-# gh issue edit 28714 -R numpy/numpy --add-label 'component: SIMD'   # 0.62
-# gh issue edit 33173 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.62
+# gh issue edit 20351 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.62
+# gh issue edit 32599 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.62
+# gh issue edit 33081 -R numpy/numpy --add-label 'component: numpy._core'   # 0.62
 # gh issue edit 3437 -R numpy/numpy --add-label '00 - Bug'   # 0.61
 # gh issue edit 4966 -R numpy/numpy --add-label '00 - Bug'   # 0.61
 # gh issue edit 4983 -R numpy/numpy --add-label '00 - Bug'   # 0.61
 # gh issue edit 8460 -R numpy/numpy --add-label '00 - Bug'   # 0.61
 # gh issue edit 9474 -R numpy/numpy --add-label '00 - Bug'   # 0.61
+# gh issue edit 10436 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.61
 # gh issue edit 10937 -R numpy/numpy --add-label '01 - Enhancement'   # 0.61
 # gh issue edit 11060 -R numpy/numpy --add-label '00 - Bug'   # 0.61
 # gh issue edit 13572 -R numpy/numpy --add-label '00 - Bug'   # 0.61
 # gh issue edit 15779 -R numpy/numpy --add-label '00 - Bug'   # 0.61
 # gh issue edit 17605 -R numpy/numpy --add-label '00 - Bug'   # 0.61
 # gh issue edit 17665 -R numpy/numpy --add-label '00 - Bug'   # 0.61
+# gh pr edit 31023 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.61
 # gh issue edit 32170 -R numpy/numpy --add-label '00 - Bug'   # 0.61
-# gh issue edit 4581 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 5236 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 5669 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 5718 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 5782 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 5894 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 7236 -R numpy/numpy --add-label 'component: numpy.testing'   # 0.60
-# gh issue edit 7523 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
-# gh issue edit 7730 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 7784 -R numpy/numpy --add-label 'component: numpy.testing'   # 0.60
-# gh issue edit 7831 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 8378 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
-# gh issue edit 8502 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
 # gh issue edit 8521 -R numpy/numpy --add-label '00 - Bug'   # 0.60
-# gh issue edit 9128 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
 # gh issue edit 9397 -R numpy/numpy --add-label '01 - Enhancement'   # 0.60
-# gh issue edit 9698 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 10582 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.60
-# gh issue edit 10700 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.60
-# gh issue edit 10866 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 10937 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 11677 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 11918 -R numpy/numpy --add-label 'component: numpy.fft'   # 0.60
-# gh issue edit 11938 -R numpy/numpy --add-label 'component: numpy.einsum'   # 0.60
-# gh issue edit 12258 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
 # gh issue edit 12495 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 13166 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
-# gh issue edit 14208 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 14294 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 14478 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
 # gh issue edit 15934 -R numpy/numpy --add-label '00 - Bug'   # 0.60
-# gh issue edit 16638 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 16726 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 18279 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 18484 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
-# gh issue edit 18894 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.60
+# gh issue edit 17567 -R numpy/numpy --add-label 'component: numpy.polynomial'   # 0.60
 # gh issue edit 19267 -R numpy/numpy --add-label '00 - Bug'   # 0.60
-# gh issue edit 19464 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 19511 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 20114 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.60
-# gh issue edit 20167 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 20705 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 20850 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.60
-# gh issue edit 21280 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 21357 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
-# gh issue edit 21375 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.60
-# gh issue edit 21804 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
 # gh pr edit 21843 -R numpy/numpy --add-label '01 - Enhancement'   # 0.60
-# gh issue edit 22516 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.60
-# gh pr edit 22568 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.60
-# gh issue edit 22609 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.60
-# gh issue edit 22682 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 22870 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 23273 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.60
-# gh issue edit 23434 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
 # gh issue edit 23478 -R numpy/numpy --add-label 'component: numpy.fft'   # 0.60
-# gh issue edit 23518 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 23574 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 23671 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 24032 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
-# gh pr edit 24189 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.60
-# gh issue edit 24355 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 24368 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
-# gh issue edit 24428 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 24689 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
+# gh issue edit 23849 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
 # gh issue edit 25197 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.60
-# gh issue edit 26177 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.60
-# gh issue edit 26206 -R numpy/numpy --add-label 'component: numpy.random'   # 0.60
-# gh issue edit 26916 -R numpy/numpy --add-label 'component: numpy.random'   # 0.60
-# gh issue edit 27007 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 27212 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 27494 -R numpy/numpy --add-label 'component: numpy.testing'   # 0.60
-# gh issue edit 27528 -R numpy/numpy --add-label 'component: numpy.strings'   # 0.60
-# gh pr edit 27649 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
 # gh pr edit 27717 -R numpy/numpy --add-label 'component: numpy.fft'   # 0.60
-# gh issue edit 28318 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 28463 -R numpy/numpy --add-label 'component: CI'   # 0.60
-# gh issue edit 28636 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh pr edit 28640 -R numpy/numpy --add-label 'component: CI'   # 0.60
-# gh pr edit 28781 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
-# gh pr edit 29389 -R numpy/numpy --add-label 'component: numpy.array_api'   # 0.60
-# gh pr edit 29507 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
-# gh issue edit 29664 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.60
+# gh issue edit 27987 -R numpy/numpy --add-label 'component: numpy.fft'   # 0.60
+# gh issue edit 29315 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
 # gh issue edit 29720 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 29881 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 30038 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
-# gh issue edit 30046 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
-# gh issue edit 30109 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 30116 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
-# gh pr edit 30182 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
-# gh issue edit 30349 -R numpy/numpy --add-label 'component: numpy.einsum'   # 0.60
-# gh pr edit 30372 -R numpy/numpy --add-label 'component: SIMD'   # 0.60
-# gh pr edit 30815 -R numpy/numpy --add-label 'component: SIMD'   # 0.60
-# gh pr edit 31102 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
-# gh issue edit 31243 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.60
-# gh pr edit 31291 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.60
-# gh pr edit 31321 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 31340 -R numpy/numpy --add-label 'component: numpy.polynomial'   # 0.60
-# gh issue edit 31436 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.60
-# gh issue edit 32309 -R numpy/numpy --add-label 'component: numpy.polynomial'   # 0.60
+# gh issue edit 31279 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
 # gh issue edit 32451 -R numpy/numpy --add-label '01 - Enhancement'   # 0.60
-# gh pr edit 32504 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh pr edit 32523 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh pr edit 32526 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.60
-# gh pr edit 32777 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.60
-# gh pr edit 32790 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
-# gh pr edit 32895 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh pr edit 32916 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh pr edit 33040 -R numpy/numpy --add-label 'component: SIMD'   # 0.60
-# gh pr edit 33112 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh pr edit 33140 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
-# gh issue edit 33154 -R numpy/numpy --add-label 'component: numpy.polynomial'   # 0.60
-# gh pr edit 33174 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
-# gh pr edit 33183 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.60
-# gh pr edit 33188 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 33203 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh pr edit 33243 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh pr edit 33271 -R numpy/numpy --add-label 'component: numpy._core'   # 0.60
-# gh issue edit 33352 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.60
+# gh pr edit 32787 -R numpy/numpy --add-label 'component: numpy.random'   # 0.60
 # gh issue edit 5142 -R numpy/numpy --add-label '00 - Bug'   # 0.59
 # gh issue edit 7380 -R numpy/numpy --add-label '00 - Bug'   # 0.59
 # gh issue edit 7588 -R numpy/numpy --add-label '00 - Bug'   # 0.59
 # gh issue edit 8039 -R numpy/numpy --add-label '00 - Bug'   # 0.59
+# gh issue edit 8306 -R numpy/numpy --add-label 'component: numpy._core'   # 0.59
 # gh issue edit 9311 -R numpy/numpy --add-label '00 - Bug'   # 0.59
+# gh issue edit 9885 -R numpy/numpy --add-label 'component: numpy._core'   # 0.59
+# gh issue edit 10179 -R numpy/numpy --add-label 'component: numpy._core'   # 0.59
 # gh issue edit 12208 -R numpy/numpy --add-label '00 - Bug'   # 0.59
 # gh issue edit 12974 -R numpy/numpy --add-label '01 - Enhancement'   # 0.59
 # gh issue edit 14090 -R numpy/numpy --add-label '00 - Bug'   # 0.59
 # gh issue edit 18898 -R numpy/numpy --add-label '00 - Bug'   # 0.59
+# gh issue edit 19852 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.59
 # gh issue edit 29357 -R numpy/numpy --add-label '00 - Bug'   # 0.59
-# gh issue edit 5353 -R numpy/numpy --add-label 'component: numpy._core'   # 0.58
 # gh issue edit 7556 -R numpy/numpy --add-label '01 - Enhancement'   # 0.58
+# gh issue edit 8773 -R numpy/numpy --add-label 'component: numpy._core'   # 0.58
 # gh issue edit 9541 -R numpy/numpy --add-label '00 - Bug'   # 0.58
 # gh issue edit 9775 -R numpy/numpy --add-label '00 - Bug'   # 0.58
 # gh issue edit 12101 -R numpy/numpy --add-label '00 - Bug'   # 0.58
 # gh issue edit 16380 -R numpy/numpy --add-label '00 - Bug'   # 0.58
 # gh issue edit 16585 -R numpy/numpy --add-label '00 - Bug'   # 0.58
 # gh issue edit 18894 -R numpy/numpy --add-label '01 - Enhancement'   # 0.58
-# gh issue edit 7713 -R numpy/numpy --add-label 'component: numpy._core'   # 0.57
-# gh issue edit 8300 -R numpy/numpy --add-label 'component: numpy._core'   # 0.57
-# gh issue edit 9265 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.57
-# gh issue edit 10954 -R numpy/numpy --add-label 'component: numpy._core'   # 0.57
 # gh issue edit 11123 -R numpy/numpy --add-label '00 - Bug'   # 0.57
 # gh issue edit 11918 -R numpy/numpy --add-label '00 - Bug'   # 0.57
-# gh issue edit 13100 -R numpy/numpy --add-label 'component: numpy._core'   # 0.57
-# gh issue edit 13569 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.57
-# gh issue edit 17554 -R numpy/numpy --add-label 'component: numpy._core'   # 0.57
-# gh issue edit 20905 -R numpy/numpy --add-label 'component: numpy._core'   # 0.57
-# gh issue edit 24345 -R numpy/numpy --add-label 'component: numpy._core'   # 0.57
 # gh issue edit 26019 -R numpy/numpy --add-label '04 - Documentation'   # 0.57
-# gh pr edit 26650 -R numpy/numpy --add-label 'component: numpy._core'   # 0.57
-# gh issue edit 28310 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.57
-# gh pr edit 31261 -R numpy/numpy --add-label 'component: numpy._core'   # 0.57
 # gh pr edit 33171 -R numpy/numpy --add-label '03 - Maintenance'   # 0.57
 # gh issue edit 3817 -R numpy/numpy --add-label '01 - Enhancement'   # 0.56
+# gh issue edit 6231 -R numpy/numpy --add-label 'component: numpy._core'   # 0.56
 # gh issue edit 6854 -R numpy/numpy --add-label '00 - Bug'   # 0.56
 # gh issue edit 8003 -R numpy/numpy --add-label '00 - Bug'   # 0.56
+# gh issue edit 8509 -R numpy/numpy --add-label 'component: numpy._core'   # 0.56
 # gh issue edit 9511 -R numpy/numpy --add-label '00 - Bug'   # 0.56
 # gh issue edit 10047 -R numpy/numpy --add-label '00 - Bug'   # 0.56
 # gh issue edit 10709 -R numpy/numpy --add-label '00 - Bug'   # 0.56
+# gh issue edit 12900 -R numpy/numpy --add-label 'component: numpy._core'   # 0.56
 # gh issue edit 13319 -R numpy/numpy --add-label '00 - Bug'   # 0.56
+# gh issue edit 14225 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.56
+# gh issue edit 16665 -R numpy/numpy --add-label 'component: numpy._core'   # 0.56
 # gh issue edit 16923 -R numpy/numpy --add-label '01 - Enhancement'   # 0.56
 # gh issue edit 18484 -R numpy/numpy --add-label '00 - Bug'   # 0.56
-# gh issue edit 9397 -R numpy/numpy --add-label 'component: numpy._core'   # 0.55
+# gh issue edit 22059 -R numpy/numpy --add-label 'component: SIMD'   # 0.56
+# gh issue edit 22197 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.56
+# gh issue edit 24050 -R numpy/numpy --add-label 'component: numpy.testing'   # 0.56
+# gh issue edit 33016 -R numpy/numpy --add-label 'component: SIMD'   # 0.56
+# gh issue edit 7797 -R numpy/numpy --add-label 'component: numpy._core'   # 0.55
 # gh issue edit 9974 -R numpy/numpy --add-label '00 - Bug'   # 0.55
+# gh issue edit 10144 -R numpy/numpy --add-label 'component: numpy._core'   # 0.55
 # gh issue edit 10520 -R numpy/numpy --add-label '00 - Bug'   # 0.55
 # gh issue edit 17983 -R numpy/numpy --add-label '00 - Bug'   # 0.55
 # gh issue edit 18388 -R numpy/numpy --add-label '00 - Bug'   # 0.55
 # gh issue edit 19057 -R numpy/numpy --add-label '00 - Bug'   # 0.55
 # gh issue edit 19970 -R numpy/numpy --add-label '00 - Bug'   # 0.55
-# gh issue edit 23899 -R numpy/numpy --add-label 'component: numpy.strings'   # 0.55
-# gh issue edit 30440 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.55
-# gh pr edit 30449 -R numpy/numpy --add-label 'component: numpy._core'   # 0.55
+# gh pr edit 25703 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.55
 # gh issue edit 6231 -R numpy/numpy --add-label '01 - Enhancement'   # 0.54
 # gh issue edit 9270 -R numpy/numpy --add-label '00 - Bug'   # 0.54
 # gh issue edit 12293 -R numpy/numpy --add-label '00 - Bug'   # 0.54
@@ -1053,14 +878,40 @@
 # gh issue edit 19825 -R numpy/numpy --add-label '03 - Maintenance'   # 0.54
 # gh issue edit 21174 -R numpy/numpy --add-label '03 - Maintenance'   # 0.54
 # gh issue edit 30353 -R numpy/numpy --add-label '04 - Documentation'   # 0.54
+# gh issue edit 4979 -R numpy/numpy --add-label 'component: numpy._core'   # 0.53
+# gh issue edit 5657 -R numpy/numpy --add-label 'component: numpy._core'   # 0.53
 # gh issue edit 5671 -R numpy/numpy --add-label '00 - Bug'   # 0.53
+# gh issue edit 6282 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.53
 # gh issue edit 6555 -R numpy/numpy --add-label '00 - Bug'   # 0.53
 # gh issue edit 7829 -R numpy/numpy --add-label '00 - Bug'   # 0.53
+# gh issue edit 8627 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.53
+# gh issue edit 8855 -R numpy/numpy --add-label 'component: numpy.fft'   # 0.53
 # gh issue edit 9735 -R numpy/numpy --add-label '00 - Bug'   # 0.53
 # gh issue edit 10685 -R numpy/numpy --add-label '00 - Bug'   # 0.53
+# gh issue edit 10866 -R numpy/numpy --add-label 'component: numpy._core'   # 0.53
+# gh issue edit 11079 -R numpy/numpy --add-label 'component: numpy._core'   # 0.53
 # gh issue edit 11309 -R numpy/numpy --add-label '00 - Bug'   # 0.53
+# gh issue edit 11498 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.53
+# gh issue edit 11918 -R numpy/numpy --add-label 'component: numpy.fft'   # 0.53
+# gh issue edit 13373 -R numpy/numpy --add-label 'component: numpy._core'   # 0.53
+# gh issue edit 14294 -R numpy/numpy --add-label 'component: numpy._core'   # 0.53
 # gh issue edit 16741 -R numpy/numpy --add-label '00 - Bug'   # 0.53
 # gh issue edit 17228 -R numpy/numpy --add-label '00 - Bug'   # 0.53
+# gh issue edit 20114 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.53
+# gh issue edit 23273 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.53
+# gh issue edit 23350 -R numpy/numpy --add-label 'component: numpy._core'   # 0.53
+# gh issue edit 24032 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.53
+# gh issue edit 24339 -R numpy/numpy --add-label 'component: numpy._core'   # 0.53
+# gh issue edit 24368 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.53
+# gh issue edit 25872 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.53
+# gh issue edit 27528 -R numpy/numpy --add-label 'component: numpy.strings'   # 0.53
+# gh issue edit 28318 -R numpy/numpy --add-label 'component: numpy._core'   # 0.53
+# gh pr edit 28640 -R numpy/numpy --add-label 'component: CI'   # 0.53
+# gh issue edit 31340 -R numpy/numpy --add-label 'component: numpy.polynomial'   # 0.53
+# gh issue edit 32126 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.53
+# gh pr edit 33040 -R numpy/numpy --add-label 'component: SIMD'   # 0.53
+# gh pr edit 33115 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.53
+# gh pr edit 33345 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.53
 # gh issue edit 8097 -R numpy/numpy --add-label '00 - Bug'   # 0.52
 # gh issue edit 9225 -R numpy/numpy --add-label '00 - Bug'   # 0.52
 # gh issue edit 9637 -R numpy/numpy --add-label '00 - Bug'   # 0.52
@@ -1082,532 +933,722 @@
 # gh issue edit 31930 -R numpy/numpy --add-label '01 - Enhancement'   # 0.51
 # gh issue edit 2998 -R numpy/numpy --add-label '01 - Enhancement'   # 0.50
 # gh issue edit 4198 -R numpy/numpy --add-label '00 - Bug'   # 0.50
-# gh issue edit 4829 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 5261 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.50
+# gh issue edit 5193 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.50
+# gh issue edit 5412 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
 # gh issue edit 5721 -R numpy/numpy --add-label '00 - Bug'   # 0.50
-# gh issue edit 5867 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 5933 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 5972 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 6051 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
 # gh issue edit 6192 -R numpy/numpy --add-label '00 - Bug'   # 0.50
-# gh issue edit 6555 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
 # gh issue edit 7380 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 7449 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 8509 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 8765 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.50
 # gh issue edit 8784 -R numpy/numpy --add-label '01 - Enhancement'   # 0.50
-# gh issue edit 9252 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 9974 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 10047 -R numpy/numpy --add-label 'component: numpy.distutils'   # 0.50
-# gh issue edit 10436 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.50
-# gh issue edit 10513 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 10799 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 11270 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 11881 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
+# gh issue edit 9443 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
+# gh issue edit 9465 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.50
+# gh issue edit 9509 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
+# gh issue edit 10010 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
 # gh issue edit 12075 -R numpy/numpy --add-label '00 - Bug'   # 0.50
-# gh issue edit 12282 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.50
-# gh issue edit 12368 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 12900 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 13510 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 13768 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 14239 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.50
+# gh issue edit 14103 -R numpy/numpy --add-label 'component: numpy.testing'   # 0.50
 # gh issue edit 14837 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 15690 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 17085 -R numpy/numpy --add-label 'component: numpy.random'   # 0.50
-# gh issue edit 17704 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
+# gh issue edit 17305 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
 # gh issue edit 18028 -R numpy/numpy --add-label '01 - Enhancement'   # 0.50
-# gh issue edit 18516 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 19579 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 19755 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.50
-# gh issue edit 20226 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 20859 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.50
-# gh issue edit 21147 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh pr edit 21843 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.50
-# gh issue edit 22029 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 22471 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 23203 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 23305 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 24155 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.50
-# gh issue edit 24755 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 27577 -R numpy/numpy --add-label 'component: swig'   # 0.50
-# gh issue edit 27918 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.50
-# gh issue edit 28165 -R numpy/numpy --add-label 'component: numpy.strings'   # 0.50
-# gh issue edit 28397 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 28602 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 28639 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh pr edit 29260 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh pr edit 30205 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh pr edit 30660 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.50
-# gh issue edit 31292 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh pr edit 31979 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.50
-# gh pr edit 32239 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.50
-# gh pr edit 32499 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
-# gh issue edit 33016 -R numpy/numpy --add-label 'component: SIMD'   # 0.50
-# gh pr edit 33216 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.50
-# gh issue edit 9631 -R numpy/numpy --add-label 'component: numpy._core'   # 0.46
-# gh pr edit 30449 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.45
-# gh issue edit 32765 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.45
-# gh issue edit 5407 -R numpy/numpy --add-label 'component: numpy._core'   # 0.44
-# gh issue edit 6081 -R numpy/numpy --add-label 'component: npy_math'   # 0.44
-# gh issue edit 9987 -R numpy/numpy --add-label 'component: numpy._core'   # 0.44
-# gh issue edit 20785 -R numpy/numpy --add-label 'component: SIMD'   # 0.44
-# gh issue edit 23176 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.44
-# gh issue edit 26289 -R numpy/numpy --add-label 'component: build'   # 0.44
-# gh issue edit 28839 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.44
-# gh issue edit 30216 -R numpy/numpy --add-label 'component: CI'   # 0.44
-# gh issue edit 5842 -R numpy/numpy --add-label 'component: numpy._core'   # 0.43
-# gh issue edit 6951 -R numpy/numpy --add-label 'component: numpy._core'   # 0.43
-# gh issue edit 8581 -R numpy/numpy --add-label 'component: numpy._core'   # 0.43
-# gh issue edit 9401 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.43
-# gh issue edit 9450 -R numpy/numpy --add-label 'component: numpy._core'   # 0.43
-# gh issue edit 9885 -R numpy/numpy --add-label 'component: numpy._core'   # 0.43
-# gh issue edit 10954 -R numpy/numpy --add-label 'component: npy_math'   # 0.43
-# gh issue edit 12935 -R numpy/numpy --add-label 'component: numpy._core'   # 0.43
-# gh issue edit 13375 -R numpy/numpy --add-label 'component: numpy._core'   # 0.43
-# gh issue edit 13569 -R numpy/numpy --add-label 'component: numpy._core'   # 0.43
-# gh issue edit 14020 -R numpy/numpy --add-label 'component: numpy._core'   # 0.43
-# gh issue edit 14801 -R numpy/numpy --add-label 'component: numpy._core'   # 0.43
-# gh issue edit 16004 -R numpy/numpy --add-label 'component: numpy._core'   # 0.43
-# gh issue edit 25306 -R numpy/numpy --add-label 'component: numpy._core'   # 0.43
-# gh issue edit 26940 -R numpy/numpy --add-label 'component: SIMD'   # 0.43
-# gh issue edit 28801 -R numpy/numpy --add-label 'component: benchmarks'   # 0.43
-# gh issue edit 29229 -R numpy/numpy --add-label 'component: numpy.strings'   # 0.43
-# gh issue edit 29485 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.43
-# gh issue edit 30171 -R numpy/numpy --add-label 'component: numpy.einsum'   # 0.43
-# gh issue edit 30813 -R numpy/numpy --add-label 'component: numpy._core'   # 0.43
-# gh issue edit 31030 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.43
-# gh issue edit 31926 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.43
-# gh issue edit 33051 -R numpy/numpy --add-label 'component: numpy._core'   # 0.43
-# gh issue edit 6217 -R numpy/numpy --add-label 'component: numpy._core'   # 0.42
-# gh issue edit 8275 -R numpy/numpy --add-label 'component: numpy._core'   # 0.42
-# gh issue edit 8735 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.42
-# gh issue edit 11569 -R numpy/numpy --add-label 'component: numpy._core'   # 0.42
-# gh issue edit 13765 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.42
-# gh issue edit 4564 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 5069 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.40
-# gh issue edit 5114 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 5150 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.40
-# gh issue edit 5934 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 6282 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 6316 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 7383 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 7490 -R numpy/numpy --add-label 'component: numpy.testing'   # 0.40
-# gh issue edit 7647 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 7811 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 7969 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 7989 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 8139 -R numpy/numpy --add-label 'component: numpy.einsum'   # 0.40
-# gh issue edit 8151 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.40
-# gh issue edit 8378 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.40
-# gh issue edit 8784 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 9128 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.40
-# gh issue edit 9225 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 9438 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 9438 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.40
-# gh issue edit 9441 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 9448 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.40
-# gh issue edit 9456 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 18700 -R numpy/numpy --add-label 'component: numpy._core'   # 0.50
+# gh issue edit 21990 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.50
+# gh pr edit 32788 -R numpy/numpy --add-label 'component: numpy.random'   # 0.50
+# gh issue edit 9631 -R numpy/numpy --add-label 'component: numpy._core'   # 0.48
+# gh issue edit 4198 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 5718 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 5894 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 7615 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.47
+# gh issue edit 7647 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 8151 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 8300 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 8378 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.47
+# gh issue edit 9984 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 10289 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 10520 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 10590 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 12695 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.47
+# gh issue edit 12755 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 13166 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.47
+# gh issue edit 14018 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 17554 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 20259 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 21280 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 21631 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 21918 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 21969 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.47
+# gh pr edit 22568 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.47
+# gh issue edit 22977 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 23523 -R numpy/numpy --add-label 'component: SIMD'   # 0.47
+# gh issue edit 23671 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 24345 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 24355 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 24428 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 24926 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 27007 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 28636 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh pr edit 28781 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.47
+# gh issue edit 30038 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.47
+# gh pr edit 30144 -R numpy/numpy --add-label 'component: SIMD'   # 0.47
+# gh pr edit 31015 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.47
+# gh pr edit 31261 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh issue edit 31280 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.47
+# gh issue edit 31436 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.47
+# gh issue edit 31590 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh pr edit 31871 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.47
+# gh pr edit 32895 -R numpy/numpy --add-label 'component: numpy._core'   # 0.47
+# gh pr edit 33027 -R numpy/numpy --add-label 'component: SIMD'   # 0.47
+# gh issue edit 5721 -R numpy/numpy --add-label 'component: numpy._core'   # 0.45
+# gh pr edit 30182 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.45
+# gh pr edit 32340 -R numpy/numpy --add-label 'component: numpy.fft'   # 0.45
+# gh pr edit 33183 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.45
+# gh issue edit 5543 -R numpy/numpy --add-label 'component: numpy._core'   # 0.44
+# gh issue edit 9476 -R numpy/numpy --add-label 'component: numpy._core'   # 0.44
+# gh issue edit 9775 -R numpy/numpy --add-label 'component: numpy._core'   # 0.44
+# gh issue edit 10989 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.44
+# gh issue edit 11270 -R numpy/numpy --add-label 'component: numpy._core'   # 0.44
+# gh issue edit 12368 -R numpy/numpy --add-label 'component: numpy._core'   # 0.44
+# gh issue edit 16983 -R numpy/numpy --add-label 'component: numpy._core'   # 0.44
+# gh issue edit 18516 -R numpy/numpy --add-label 'component: numpy._core'   # 0.44
+# gh issue edit 22029 -R numpy/numpy --add-label 'component: numpy._core'   # 0.44
+# gh issue edit 22248 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.44
+# gh issue edit 22471 -R numpy/numpy --add-label 'component: numpy._core'   # 0.44
+# gh issue edit 23305 -R numpy/numpy --add-label 'component: numpy._core'   # 0.44
+# gh issue edit 23362 -R numpy/numpy --add-label 'component: SIMD'   # 0.44
+# gh issue edit 27918 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.44
+# gh issue edit 12309 -R numpy/numpy --add-label 'component: numpy._core'   # 0.43
+# gh issue edit 17136 -R numpy/numpy --add-label 'component: numpy._core'   # 0.43
+# gh issue edit 25693 -R numpy/numpy --add-label 'component: numpy.strings'   # 0.43
+# gh issue edit 27701 -R numpy/numpy --add-label 'component: numpy.strings'   # 0.43
+# gh issue edit 30280 -R numpy/numpy --add-label 'component: numpy._core'   # 0.43
+# gh pr edit 32661 -R numpy/numpy --add-label 'component: numpy.testing'   # 0.43
+# gh issue edit 32765 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.43
+# gh issue edit 8519 -R numpy/numpy --add-label 'component: numpy._core'   # 0.42
+# gh issue edit 9987 -R numpy/numpy --add-label 'component: numpy._core'   # 0.42
+# gh issue edit 5353 -R numpy/numpy --add-label 'component: numpy._core'   # 0.41
+# gh issue edit 8275 -R numpy/numpy --add-label 'component: numpy._core'   # 0.41
+# gh issue edit 11569 -R numpy/numpy --add-label 'component: numpy._core'   # 0.41
+# gh issue edit 13569 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.41
+# gh issue edit 14020 -R numpy/numpy --add-label 'component: numpy._core'   # 0.41
+# gh issue edit 14239 -R numpy/numpy --add-label 'component: numpy._core'   # 0.41
+# gh pr edit 26650 -R numpy/numpy --add-label 'component: numpy._core'   # 0.41
+# gh issue edit 28310 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.41
+# gh pr edit 31175 -R numpy/numpy --add-label 'component: SIMD'   # 0.41
+# gh pr edit 31175 -R numpy/numpy --add-label 'component: CI'   # 0.41
+# gh issue edit 4581 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 5236 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 5624 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 5782 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 7449 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 7523 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
+# gh issue edit 7811 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 7831 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 8502 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
 # gh issue edit 9526 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 9541 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 9642 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
 # gh issue edit 9644 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 9731 -R numpy/numpy --add-label 'component: build'   # 0.40
-# gh issue edit 9871 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 9907 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 9923 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 9984 -R numpy/numpy --add-label 'component: numpy.einsum'   # 0.40
-# gh issue edit 10155 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 10380 -R numpy/numpy --add-label 'component: documentation'   # 0.40
 # gh issue edit 10380 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 10467 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 10469 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
 # gh issue edit 10521 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
 # gh issue edit 10574 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 10590 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 10709 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 11060 -R numpy/numpy --add-label 'component: numpy.einsum'   # 0.40
-# gh issue edit 11214 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
+# gh issue edit 10700 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.40
+# gh issue edit 10937 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 11236 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.40
 # gh issue edit 11283 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
 # gh issue edit 11334 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 11387 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 11498 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
 # gh issue edit 11622 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 11701 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.40
-# gh issue edit 11701 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 12076 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 12258 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.40
-# gh issue edit 12293 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 12314 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.40
-# gh issue edit 12350 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.40
-# gh issue edit 12352 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 12521 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 12636 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 12715 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 12914 -R numpy/numpy --add-label 'component: numpy.fft'   # 0.40
-# gh issue edit 12961 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.40
-# gh issue edit 12997 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.40
-# gh issue edit 13285 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 13373 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 13470 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 13531 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 13555 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 13732 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 13826 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 14018 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 14317 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.40
+# gh issue edit 11677 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 12075 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 13735 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 14119 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
 # gh issue edit 14397 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 15450 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 15625 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 16299 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 15896 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
 # gh issue edit 16537 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 17324 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.40
-# gh issue edit 17573 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
+# gh issue edit 17100 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 17124 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 17471 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
 # gh issue edit 18020 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 18028 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.40
-# gh issue edit 18069 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 18020 -R numpy/numpy --add-label 'component: numpy.polynomial'   # 0.40
 # gh issue edit 18071 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 18112 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.40
-# gh issue edit 18244 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 18494 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 18669 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 18699 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 18898 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 19267 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.40
-# gh issue edit 19382 -R numpy/numpy --add-label 'component: __array_function__'   # 0.40
-# gh issue edit 19604 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 19623 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 19690 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 19704 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 19970 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 20259 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 20291 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 18519 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 18696 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 19398 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 19464 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
 # gh issue edit 20566 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 20684 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
 # gh issue edit 20755 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 20761 -R numpy/numpy --add-label 'component: numpy.distutils'   # 0.40
-# gh issue edit 20802 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 20802 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.40
-# gh issue edit 20923 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
 # gh issue edit 20995 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 21012 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 21014 -R numpy/numpy --add-label 'component: build'   # 0.40
-# gh issue edit 21065 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.40
-# gh issue edit 21091 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 21092 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 21220 -R numpy/numpy --add-label 'component: numpy.testing'   # 0.40
-# gh issue edit 21339 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.40
-# gh issue edit 21603 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.40
-# gh issue edit 21655 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 21603 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
 # gh issue edit 21780 -R numpy/numpy --add-label 'component: numpy.polynomial'   # 0.40
-# gh pr edit 21781 -R numpy/numpy --add-label 'component: numpy.polynomial'   # 0.40
-# gh issue edit 21787 -R numpy/numpy --add-label 'component: numpy.einsum'   # 0.40
 # gh issue edit 21791 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh pr edit 21801 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 21918 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 21969 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.40
-# gh issue edit 22133 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 21804 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
+# gh issue edit 22018 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
 # gh pr edit 22176 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 22188 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 22380 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.40
-# gh issue edit 22497 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 22610 -R numpy/numpy --add-label 'component: build'   # 0.40
-# gh issue edit 22651 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.40
-# gh issue edit 22734 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.40
-# gh issue edit 22860 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 22977 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
 # gh issue edit 22995 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 23014 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 23062 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 23107 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
 # gh issue edit 23146 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 23146 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.40
-# gh issue edit 23187 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 23349 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 23398 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.40
-# gh issue edit 23434 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 23540 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.40
-# gh issue edit 23576 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 23622 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 23625 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 23807 -R numpy/numpy --add-label 'component: numpy.random'   # 0.40
-# gh issue edit 23807 -R numpy/numpy --add-label 'component: build'   # 0.40
-# gh issue edit 23816 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.40
-# gh issue edit 23973 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 24194 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 24251 -R numpy/numpy --add-label 'component: CI'   # 0.40
-# gh issue edit 24251 -R numpy/numpy --add-label 'component: build'   # 0.40
-# gh issue edit 24339 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 24530 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 23330 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 23431 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 23518 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 23781 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.40
+# gh pr edit 24189 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.40
+# gh issue edit 24336 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
 # gh issue edit 24565 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 24736 -R numpy/numpy --add-label 'component: build'   # 0.40
-# gh issue edit 24836 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 24841 -R numpy/numpy --add-label 'component: numpy.distutils'   # 0.40
-# gh issue edit 24926 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh pr edit 24944 -R numpy/numpy --add-label 'component: build'   # 0.40
-# gh issue edit 24963 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.40
-# gh issue edit 25391 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.40
-# gh issue edit 25766 -R numpy/numpy --add-label 'component: numpy.array_api'   # 0.40
-# gh issue edit 25823 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 25846 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 25872 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.40
-# gh issue edit 26216 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 26484 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh pr edit 26508 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.40
-# gh issue edit 26522 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 26818 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh pr edit 26966 -R numpy/numpy --add-label 'component: SIMD'   # 0.40
-# gh issue edit 27038 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.40
-# gh issue edit 27204 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.40
+# gh issue edit 24689 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
+# gh issue edit 25053 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
+# gh issue edit 26206 -R numpy/numpy --add-label 'component: numpy.random'   # 0.40
+# gh issue edit 26220 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
+# gh issue edit 27042 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 27212 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
 # gh issue edit 27382 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh pr edit 27398 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
 # gh issue edit 27409 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 27422 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 27435 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 27822 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 27870 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.40
-# gh issue edit 27937 -R numpy/numpy --add-label 'component: numpy.f2py'   # 0.40
 # gh issue edit 27966 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 27968 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 28098 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 28099 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.40
-# gh issue edit 28104 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 28225 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 28247 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh pr edit 28476 -R numpy/numpy --add-label 'component: CI'   # 0.40
-# gh issue edit 28655 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 28655 -R numpy/numpy --add-label 'component: numpy.matrixlib'   # 0.40
+# gh issue edit 28272 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 28463 -R numpy/numpy --add-label 'component: CI'   # 0.40
+# gh issue edit 28642 -R numpy/numpy --add-label 'component: CI'   # 0.40
 # gh pr edit 28722 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
 # gh issue edit 28730 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 28795 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 28909 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 28920 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 28946 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 28973 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 29152 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 29193 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.40
-# gh issue edit 29201 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.40
-# gh issue edit 29262 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh pr edit 29294 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 29299 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.40
-# gh issue edit 29393 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.40
-# gh pr edit 29597 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.40
-# gh issue edit 29698 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 29720 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.40
-# gh issue edit 29824 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh pr edit 29946 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh pr edit 30117 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh pr edit 30144 -R numpy/numpy --add-label 'component: SIMD'   # 0.40
-# gh issue edit 30249 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 29709 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
 # gh pr edit 30376 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 30651 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 30699 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.40
-# gh issue edit 30768 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.40
-# gh pr edit 30828 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh pr edit 30859 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
 # gh pr edit 30880 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 30959 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh pr edit 31015 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.40
-# gh issue edit 31060 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh pr edit 31080 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.40
-# gh issue edit 31087 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.40
-# gh pr edit 31247 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.40
-# gh issue edit 31279 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh pr edit 31333 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 31409 -R numpy/numpy --add-label 'component: numpy.distutils'   # 0.40
+# gh pr edit 31032 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 31478 -R numpy/numpy --add-label 'component: SIMD'   # 0.40
 # gh pr edit 31493 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
 # gh pr edit 31506 -R numpy/numpy --add-label 'component: SIMD'   # 0.40
-# gh pr edit 31575 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 31579 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.40
-# gh pr edit 31639 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.40
-# gh issue edit 31866 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh pr edit 31895 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh pr edit 31940 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 32126 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.40
-# gh pr edit 32157 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 32159 -R numpy/numpy --add-label 'component: SIMD'   # 0.40
-# gh issue edit 32170 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 31593 -R numpy/numpy --add-label 'component: SIMD'   # 0.40
+# gh pr edit 31984 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
 # gh pr edit 32184 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 32461 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 32461 -R numpy/numpy --add-label 'component: numpy.f2py'   # 0.40
-# gh pr edit 32523 -R numpy/numpy --add-label 'component: __array_function__'   # 0.40
-# gh issue edit 32603 -R numpy/numpy --add-label 'component: SIMD'   # 0.40
-# gh pr edit 32768 -R numpy/numpy --add-label 'component: build'   # 0.40
+# gh issue edit 32187 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
+# gh pr edit 32500 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
+# gh issue edit 32522 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.40
+# gh pr edit 32526 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.40
 # gh issue edit 32865 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh pr edit 32873 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 32970 -R numpy/numpy --add-label 'component: SIMD'   # 0.40
-# gh pr edit 33027 -R numpy/numpy --add-label 'component: SIMD'   # 0.40
-# gh pr edit 33115 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.40
-# gh pr edit 33204 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 33208 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.40
-# gh pr edit 33254 -R numpy/numpy --add-label 'component: SIMD'   # 0.40
-# gh pr edit 33269 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 33319 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh issue edit 33321 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh pr edit 33323 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh issue edit 33324 -R numpy/numpy --add-label 'component: numpy.einsum'   # 0.40
-# gh pr edit 33330 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh pr edit 33331 -R numpy/numpy --add-label 'component: numpy.random'   # 0.40
-# gh pr edit 33342 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
-# gh pr edit 33342 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
-# gh pr edit 33354 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.40
-# gh issue edit 7967 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
-# gh issue edit 9516 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.38
-# gh issue edit 10405 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.38
-# gh issue edit 11308 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
-# gh issue edit 14412 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
-# gh issue edit 16945 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
-# gh issue edit 16945 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.38
-# gh pr edit 19550 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
-# gh issue edit 27785 -R numpy/numpy --add-label 'component: numpy.random'   # 0.38
-# gh issue edit 33336 -R numpy/numpy --add-label 'component: CI'   # 0.38
-# gh issue edit 5933 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.36
-# gh issue edit 9397 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.36
-# gh issue edit 17012 -R numpy/numpy --add-label 'component: numpy._core'   # 0.36
-# gh issue edit 18700 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.36
-# gh issue edit 18700 -R numpy/numpy --add-label 'component: numpy._core'   # 0.36
-# gh issue edit 5142 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 5652 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 6083 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 6083 -R numpy/numpy --add-label 'component: npy_math'   # 0.33
-# gh issue edit 6471 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.33
-# gh issue edit 7380 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.33
-# gh issue edit 7644 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.33
-# gh issue edit 7993 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.33
-# gh issue edit 8039 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 9052 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 9637 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 10047 -R numpy/numpy --add-label 'component: build'   # 0.33
-# gh issue edit 10496 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 10579 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 10645 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 11092 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.33
-# gh issue edit 11680 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 11686 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 11925 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 11940 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 12101 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 12368 -R numpy/numpy --add-label 'component: benchmarks'   # 0.33
-# gh issue edit 12613 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 12778 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 12900 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.33
-# gh issue edit 13189 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 13201 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 13248 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 13733 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 14837 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.33
-# gh issue edit 15965 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 17023 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 17667 -R numpy/numpy --add-label 'component: numpy.f2py'   # 0.33
-# gh issue edit 18198 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 18388 -R numpy/numpy --add-label 'component: numpy.random'   # 0.33
-# gh issue edit 18391 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.33
-# gh issue edit 18832 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 18986 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.33
-# gh issue edit 19146 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.33
-# gh issue edit 19861 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.33
-# gh issue edit 19861 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.33
-# gh issue edit 20514 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 20596 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 21539 -R numpy/numpy --add-label 'component: numpy.testing'   # 0.33
-# gh issue edit 21539 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.33
-# gh issue edit 21941 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 21990 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.33
-# gh issue edit 22318 -R numpy/numpy --add-label 'component: CI'   # 0.33
-# gh pr edit 23119 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.33
-# gh issue edit 23362 -R numpy/numpy --add-label 'component: SIMD'   # 0.33
-# gh issue edit 23379 -R numpy/numpy --add-label 'component: build'   # 0.33
-# gh issue edit 23582 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 23993 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.33
-# gh issue edit 24145 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 24145 -R numpy/numpy --add-label 'component: numpy.einsum'   # 0.33
-# gh issue edit 24897 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.33
-# gh issue edit 24898 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.33
-# gh issue edit 24900 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.33
-# gh issue edit 25304 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 25363 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 25375 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 25580 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.33
-# gh issue edit 25787 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.33
-# gh issue edit 26096 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.33
-# gh issue edit 26336 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 26620 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 26893 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.33
-# gh pr edit 28196 -R numpy/numpy --add-label 'component: NEP'   # 0.33
-# gh issue edit 28260 -R numpy/numpy --add-label 'component: SIMD'   # 0.33
-# gh issue edit 28428 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.33
-# gh issue edit 28704 -R numpy/numpy --add-label 'component: build'   # 0.33
-# gh issue edit 29458 -R numpy/numpy --add-label 'component: SIMD'   # 0.33
-# gh issue edit 29464 -R numpy/numpy --add-label 'component: CI'   # 0.33
-# gh issue edit 29524 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 30216 -R numpy/numpy --add-label 'component: distribution'   # 0.33
-# gh pr edit 31534 -R numpy/numpy --add-label 'component: NEP'   # 0.33
-# gh pr edit 31559 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.33
-# gh pr edit 31979 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.33
-# gh pr edit 32026 -R numpy/numpy --add-label 'component: numpy.random'   # 0.33
-# gh issue edit 32148 -R numpy/numpy --add-label 'component: numpy.distutils'   # 0.33
-# gh pr edit 32732 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh pr edit 33202 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh pr edit 33337 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
-# gh issue edit 11622 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.30
-# gh issue edit 7265 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.29
-# gh issue edit 8581 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.29
-# gh issue edit 8786 -R numpy/numpy --add-label 'component: numpy._core'   # 0.29
-# gh issue edit 8786 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.29
-# gh issue edit 9044 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.29
-# gh issue edit 9044 -R numpy/numpy --add-label 'component: numpy._core'   # 0.29
-# gh issue edit 10374 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.29
-# gh issue edit 10956 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.29
-# gh issue edit 14020 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.29
-# gh issue edit 16933 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.29
+# gh pr edit 33112 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh pr edit 33140 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
+# gh pr edit 33174 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.40
+# gh pr edit 33188 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh pr edit 33243 -R numpy/numpy --add-label 'component: numpy._core'   # 0.40
+# gh issue edit 8513 -R numpy/numpy --add-label 'component: numpy._core'   # 0.39
+# gh pr edit 30660 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.39
+# gh issue edit 2802 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
+# gh issue edit 5142 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
+# gh issue edit 5933 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
+# gh issue edit 6555 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
+# gh issue edit 7356 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.38
+# gh issue edit 7852 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
+# gh issue edit 8765 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.38
+# gh issue edit 9397 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.38
+# gh issue edit 9397 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
+# gh issue edit 11686 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
+# gh issue edit 11881 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
+# gh issue edit 11940 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
+# gh issue edit 12208 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
+# gh issue edit 12900 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.38
+# gh issue edit 13510 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
+# gh issue edit 15690 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
+# gh issue edit 17704 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
+# gh issue edit 20044 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
+# gh issue edit 20596 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
+# gh issue edit 21933 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
+# gh issue edit 23203 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
+# gh issue edit 28639 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
+# gh issue edit 29528 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
+# gh pr edit 29746 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
+# gh pr edit 30205 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
+# gh pr edit 30449 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
+# gh issue edit 30809 -R numpy/numpy --add-label 'component: numpy.f2py'   # 0.38
+# gh pr edit 31228 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.38
+# gh pr edit 31534 -R numpy/numpy --add-label 'component: SIMD'   # 0.38
+# gh pr edit 33216 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.38
+# gh pr edit 33337 -R numpy/numpy --add-label 'component: numpy._core'   # 0.38
+# gh issue edit 23176 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.37
+# gh issue edit 26289 -R numpy/numpy --add-label 'component: build'   # 0.37
+# gh issue edit 5842 -R numpy/numpy --add-label 'component: numpy._core'   # 0.35
+# gh issue edit 5976 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.35
+# gh issue edit 8581 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.35
+# gh issue edit 9401 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.35
+# gh issue edit 10954 -R numpy/numpy --add-label 'component: numpy._core'   # 0.35
+# gh issue edit 13100 -R numpy/numpy --add-label 'component: numpy._core'   # 0.35
+# gh issue edit 23523 -R numpy/numpy --add-label 'component: numpy._core'   # 0.35
+# gh issue edit 25306 -R numpy/numpy --add-label 'component: numpy._core'   # 0.35
+# gh issue edit 25737 -R numpy/numpy --add-label 'component: build'   # 0.35
+# gh issue edit 28602 -R numpy/numpy --add-label 'component: numpy._core'   # 0.35
+# gh issue edit 31030 -R numpy/numpy --add-label 'component: numpy._core'   # 0.35
+# gh issue edit 31926 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.35
+# gh pr edit 32790 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.35
+# gh issue edit 33051 -R numpy/numpy --add-label 'component: numpy._core'   # 0.35
+# gh issue edit 6217 -R numpy/numpy --add-label 'component: numpy._core'   # 0.34
+# gh issue edit 8735 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.34
+# gh issue edit 5261 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.33
+# gh issue edit 5669 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 5934 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 6051 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 6286 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 7556 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 7730 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 7784 -R numpy/numpy --add-label 'component: numpy.testing'   # 0.33
+# gh issue edit 7967 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 7989 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 8726 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 8758 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.33
+# gh issue edit 9225 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 9441 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 9698 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 9871 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.33
+# gh issue edit 9923 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 9984 -R numpy/numpy --add-label 'component: numpy.einsum'   # 0.33
+# gh issue edit 10155 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.33
+# gh issue edit 10446 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.33
+# gh issue edit 11308 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 11387 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 11701 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.33
+# gh issue edit 11723 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 11938 -R numpy/numpy --add-label 'component: numpy.einsum'   # 0.33
+# gh issue edit 12076 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 12258 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 12293 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.33
+# gh issue edit 12314 -R numpy/numpy --add-label 'component: numpy.testing'   # 0.33
+# gh issue edit 12761 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 13307 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 13338 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 13731 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 15495 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 15605 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 15737 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 15798 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 16299 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 16876 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 17202 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.33
+# gh issue edit 17324 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.33
+# gh issue edit 17573 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.33
+# gh issue edit 17593 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.33
+# gh issue edit 18028 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 18279 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 18279 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.33
+# gh issue edit 18484 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.33
+# gh issue edit 18669 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 18894 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.33
+# gh issue edit 19623 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.33
+# gh issue edit 20022 -R numpy/numpy --add-label 'component: numpy.testing'   # 0.33
+# gh issue edit 20451 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.33
+# gh issue edit 20684 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 20733 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 20802 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 20802 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.33
+# gh issue edit 20923 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 20951 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 21065 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 21091 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.33
+# gh issue edit 21220 -R numpy/numpy --add-label 'component: numpy.testing'   # 0.33
+# gh issue edit 21357 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.33
+# gh issue edit 21375 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.33
+# gh issue edit 21758 -R numpy/numpy --add-label 'component: CI'   # 0.33
+# gh issue edit 22133 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 22188 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 22516 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.33
+# gh issue edit 22755 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 23062 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 23146 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.33
+# gh issue edit 23187 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 23434 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 23576 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 23622 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 23625 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 23754 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 23807 -R numpy/numpy --add-label 'component: build'   # 0.33
+# gh issue edit 24989 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 25290 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 25805 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 26177 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.33
+# gh issue edit 26818 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 26861 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.33
+# gh issue edit 27494 -R numpy/numpy --add-label 'component: numpy.testing'   # 0.33
+# gh issue edit 27760 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 27937 -R numpy/numpy --add-label 'component: numpy.f2py'   # 0.33
+# gh issue edit 28018 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh pr edit 28096 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 28099 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.33
+# gh issue edit 28153 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.33
+# gh issue edit 28394 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 28598 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.33
+# gh issue edit 28651 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.33
+# gh issue edit 28714 -R numpy/numpy --add-label 'component: SIMD'   # 0.33
+# gh issue edit 29299 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.33
+# gh issue edit 29527 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 29769 -R numpy/numpy --add-label 'component: numpy.random'   # 0.33
+# gh issue edit 30109 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh pr edit 30292 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh pr edit 30372 -R numpy/numpy --add-label 'component: SIMD'   # 0.33
+# gh issue edit 30574 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh pr edit 30815 -R numpy/numpy --add-label 'component: SIMD'   # 0.33
+# gh pr edit 30859 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 30959 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.33
+# gh issue edit 31086 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.33
+# gh issue edit 31243 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.33
+# gh pr edit 31291 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.33
+# gh pr edit 31321 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh pr edit 31333 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh pr edit 31495 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh pr edit 31558 -R numpy/numpy --add-label 'component: CI'   # 0.33
+# gh issue edit 31866 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh pr edit 31998 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh pr edit 32157 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 32159 -R numpy/numpy --add-label 'component: SIMD'   # 0.33
+# gh pr edit 32395 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh pr edit 32504 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh pr edit 32523 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh pr edit 32529 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh pr edit 32777 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.33
+# gh pr edit 32873 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.33
+# gh issue edit 32970 -R numpy/numpy --add-label 'component: SIMD'   # 0.33
+# gh pr edit 33086 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 33154 -R numpy/numpy --add-label 'component: numpy.polynomial'   # 0.33
+# gh pr edit 33195 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh pr edit 33204 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 33208 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.33
+# gh pr edit 33254 -R numpy/numpy --add-label 'component: SIMD'   # 0.33
+# gh pr edit 33271 -R numpy/numpy --add-label 'component: numpy._core'   # 0.33
+# gh issue edit 5407 -R numpy/numpy --add-label 'component: numpy._core'   # 0.32
+# gh issue edit 11092 -R numpy/numpy --add-label 'component: numpy._core'   # 0.32
+# gh issue edit 12817 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.32
+# gh issue edit 18700 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.32
+# gh issue edit 28839 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.32
+# gh issue edit 30216 -R numpy/numpy --add-label 'component: CI'   # 0.32
+# gh issue edit 4224 -R numpy/numpy --add-label 'component: numpy._core'   # 0.31
+# gh issue edit 6083 -R numpy/numpy --add-label 'component: numpy._core'   # 0.31
+# gh issue edit 6471 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.31
+# gh issue edit 9442 -R numpy/numpy --add-label 'component: numpy._core'   # 0.31
+# gh issue edit 10513 -R numpy/numpy --add-label 'component: numpy._core'   # 0.31
+# gh issue edit 10645 -R numpy/numpy --add-label 'component: numpy._core'   # 0.31
+# gh issue edit 10799 -R numpy/numpy --add-label 'component: numpy._core'   # 0.31
+# gh issue edit 11680 -R numpy/numpy --add-label 'component: numpy._core'   # 0.31
+# gh issue edit 12101 -R numpy/numpy --add-label 'component: numpy._core'   # 0.31
+# gh issue edit 12282 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.31
+# gh issue edit 12322 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.31
+# gh issue edit 12368 -R numpy/numpy --add-label 'component: benchmarks'   # 0.31
+# gh issue edit 12613 -R numpy/numpy --add-label 'component: numpy._core'   # 0.31
+# gh issue edit 13189 -R numpy/numpy --add-label 'component: numpy._core'   # 0.31
+# gh issue edit 17085 -R numpy/numpy --add-label 'component: numpy.random'   # 0.31
+# gh issue edit 19579 -R numpy/numpy --add-label 'component: numpy._core'   # 0.31
+# gh issue edit 20514 -R numpy/numpy --add-label 'component: numpy._core'   # 0.31
+# gh issue edit 20859 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.31
+# gh issue edit 21147 -R numpy/numpy --add-label 'component: numpy._core'   # 0.31
+# gh issue edit 21539 -R numpy/numpy --add-label 'component: numpy.testing'   # 0.31
+# gh issue edit 21941 -R numpy/numpy --add-label 'component: numpy._core'   # 0.31
+# gh issue edit 21958 -R numpy/numpy --add-label 'component: numpy._core'   # 0.31
+# gh issue edit 24397 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.31
+# gh issue edit 24900 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.31
+# gh issue edit 27577 -R numpy/numpy --add-label 'component: swig'   # 0.31
+# gh issue edit 28165 -R numpy/numpy --add-label 'component: numpy.strings'   # 0.31
+# gh pr edit 28196 -R numpy/numpy --add-label 'component: numpy.strings'   # 0.31
+# gh issue edit 29458 -R numpy/numpy --add-label 'component: SIMD'   # 0.31
+# gh pr edit 31559 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.31
+# gh pr edit 31979 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.31
+# gh issue edit 32272 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.31
+# gh pr edit 32732 -R numpy/numpy --add-label 'component: numpy._core'   # 0.31
+# gh issue edit 14478 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.30
+# gh issue edit 22609 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.30
+# gh issue edit 24155 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.30
+# gh pr edit 29507 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.30
+# gh pr edit 32499 -R numpy/numpy --add-label 'component: numpy._core'   # 0.30
+# gh pr edit 32916 -R numpy/numpy --add-label 'component: numpy._core'   # 0.30
+# gh issue edit 7265 -R numpy/numpy --add-label 'component: numpy._core'   # 0.29
+# gh issue edit 8513 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.29
+# gh issue edit 9265 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.29
+# gh issue edit 10446 -R numpy/numpy --add-label 'component: numpy._core'   # 0.29
+# gh issue edit 10956 -R numpy/numpy --add-label 'component: numpy._core'   # 0.29
+# gh issue edit 14801 -R numpy/numpy --add-label 'component: numpy._core'   # 0.29
 # gh issue edit 17744 -R numpy/numpy --add-label 'component: numpy._core'   # 0.29
-# gh issue edit 17744 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.29
-# gh issue edit 19113 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.29
 # gh issue edit 19113 -R numpy/numpy --add-label 'component: numpy._core'   # 0.29
-# gh issue edit 22904 -R numpy/numpy --add-label 'component: SIMD'   # 0.29
-# gh pr edit 24467 -R numpy/numpy --add-label 'component: numpy.polynomial'   # 0.29
-# gh issue edit 25733 -R numpy/numpy --add-label 'component: numpy._core'   # 0.29
-# gh issue edit 28829 -R numpy/numpy --add-label 'component: numpy.random'   # 0.29
+# gh issue edit 20905 -R numpy/numpy --add-label 'component: numpy._core'   # 0.29
+# gh issue edit 23899 -R numpy/numpy --add-label 'component: numpy.strings'   # 0.29
+# gh issue edit 26940 -R numpy/numpy --add-label 'component: SIMD'   # 0.29
+# gh issue edit 29229 -R numpy/numpy --add-label 'component: numpy.strings'   # 0.29
 # gh issue edit 29229 -R numpy/numpy --add-label 'component: numpy._core'   # 0.29
-# gh issue edit 30492 -R numpy/numpy --add-label 'component: SIMD'   # 0.29
-# gh issue edit 31030 -R numpy/numpy --add-label 'component: numpy._core'   # 0.29
-# gh issue edit 31259 -R numpy/numpy --add-label 'component: numpy._core'   # 0.29
+# gh issue edit 30171 -R numpy/numpy --add-label 'component: numpy.einsum'   # 0.29
+# gh issue edit 30440 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.29
+# gh issue edit 30813 -R numpy/numpy --add-label 'component: numpy._core'   # 0.29
 # gh issue edit 32071 -R numpy/numpy --add-label 'component: numpy._core'   # 0.29
-# gh issue edit 32482 -R numpy/numpy --add-label 'component: npy_math'   # 0.29
-# gh pr edit 32622 -R numpy/numpy --add-label 'component: numpy._core'   # 0.29
-# gh issue edit 8513 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.28
-# gh issue edit 25693 -R numpy/numpy --add-label 'component: numpy.strings'   # 0.27
-# gh issue edit 25693 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
-# gh issue edit 32765 -R numpy/numpy --add-label 'component: numpy.strings'   # 0.27
-# gh issue edit 5261 -R numpy/numpy --add-label 'component: numpy.polynomial'   # 0.25
-# gh issue edit 7967 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.25
-# gh issue edit 8518 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.25
-# gh issue edit 8518 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
-# gh issue edit 10405 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
-# gh issue edit 11308 -R numpy/numpy --add-label 'component: numpy.einsum'   # 0.25
-# gh issue edit 12481 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
-# gh issue edit 13105 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
-# gh issue edit 15605 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.25
-# gh issue edit 27785 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.25
-# gh issue edit 5407 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.22
-# gh issue edit 6081 -R numpy/numpy --add-label 'component: build'   # 0.22
-# gh issue edit 8773 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.22
-# gh issue edit 9987 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.22
-# gh issue edit 11092 -R numpy/numpy --add-label 'component: numpy._core'   # 0.22
-# gh issue edit 22318 -R numpy/numpy --add-label 'component: distribution'   # 0.22
-# gh issue edit 23176 -R numpy/numpy --add-label 'component: benchmarks'   # 0.22
-# gh issue edit 27032 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.22
-# gh issue edit 28839 -R numpy/numpy --add-label 'component: numpy._core'   # 0.22
-# gh issue edit 9631 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.21
-# gh pr edit 24189 -R numpy/numpy --add-label 'component: numpy._core'   # 0.20
-# gh pr edit 25703 -R numpy/numpy --add-label 'component: numpy._core'   # 0.20
-# gh issue edit 28602 -R numpy/numpy --add-label 'component: numpy.testing'   # 0.20
+# gh issue edit 10405 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.28
+# gh issue edit 13765 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.28
+# gh issue edit 13765 -R numpy/numpy --add-label 'component: numpy._core'   # 0.28
+# gh issue edit 14412 -R numpy/numpy --add-label 'component: numpy._core'   # 0.28
+# gh issue edit 16945 -R numpy/numpy --add-label 'component: numpy._core'   # 0.28
+# gh pr edit 19550 -R numpy/numpy --add-label 'component: numpy._core'   # 0.28
+# gh issue edit 24478 -R numpy/numpy --add-label 'component: numpy._core'   # 0.28
+# gh pr edit 30449 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.28
+# gh issue edit 31292 -R numpy/numpy --add-label 'component: numpy._core'   # 0.28
+# gh issue edit 33173 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.28
+# gh issue edit 3437 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.27
+# gh issue edit 4564 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 6296 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 7383 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh issue edit 7383 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 7490 -R numpy/numpy --add-label 'component: numpy.testing'   # 0.27
+# gh issue edit 7811 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh issue edit 7969 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 8139 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 8361 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 8378 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh issue edit 9128 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 9438 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 9456 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 9541 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 9546 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh issue edit 9565 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh issue edit 9642 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 9659 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 9731 -R numpy/numpy --add-label 'component: build'   # 0.27
+# gh issue edit 9907 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 10288 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 10468 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 10469 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 10581 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh issue edit 10605 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 10818 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 12305 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 12314 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.27
+# gh issue edit 12444 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 12521 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh issue edit 12540 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 12735 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.27
+# gh issue edit 12735 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.27
+# gh issue edit 12914 -R numpy/numpy --add-label 'component: numpy.fft'   # 0.27
+# gh issue edit 12946 -R numpy/numpy --add-label 'component: documentation'   # 0.27
+# gh issue edit 12961 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 13527 -R numpy/numpy --add-label 'component: CI'   # 0.27
+# gh issue edit 13826 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh issue edit 13846 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 14208 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 14317 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 15450 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 16638 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 16985 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 17134 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 18087 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.27
+# gh issue edit 18244 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh issue edit 18494 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 18632 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 18672 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 18894 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 18898 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh issue edit 19183 -R numpy/numpy --add-label 'component: numpy.testing'   # 0.27
+# gh issue edit 19247 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 19267 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.27
+# gh issue edit 19382 -R numpy/numpy --add-label 'component: __array_function__'   # 0.27
+# gh issue edit 19397 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 19511 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 19604 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh issue edit 19685 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 19690 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 19970 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh issue edit 20028 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh issue edit 20167 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 20962 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 20978 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 21012 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 21014 -R numpy/numpy --add-label 'component: build'   # 0.27
+# gh issue edit 21219 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 21375 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.27
+# gh issue edit 21435 -R numpy/numpy --add-label 'component: numpy.random'   # 0.27
+# gh issue edit 21476 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh issue edit 21603 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.27
+# gh issue edit 21655 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 21787 -R numpy/numpy --add-label 'component: numpy.einsum'   # 0.27
+# gh issue edit 21787 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh pr edit 21801 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 22497 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 22682 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 22682 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.27
+# gh issue edit 22734 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.27
+# gh issue edit 22734 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 22860 -R numpy/numpy --add-label 'component: numpy.einsum'   # 0.27
+# gh issue edit 22860 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 22898 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 22995 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.27
+# gh issue edit 23014 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 23107 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 23180 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.27
+# gh issue edit 23398 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh issue edit 23574 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 23807 -R numpy/numpy --add-label 'component: numpy.random'   # 0.27
+# gh issue edit 23816 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.27
+# gh issue edit 23934 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 23973 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 24221 -R numpy/numpy --add-label 'component: build'   # 0.27
+# gh issue edit 24251 -R numpy/numpy --add-label 'component: CI'   # 0.27
+# gh issue edit 24530 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 24632 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh issue edit 24774 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh pr edit 24944 -R numpy/numpy --add-label 'component: build'   # 0.27
+# gh issue edit 24976 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 25235 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 25391 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 25623 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 25835 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 26206 -R numpy/numpy --add-label 'component: __array_function__'   # 0.27
+# gh issue edit 26226 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 26484 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 26612 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.27
+# gh issue edit 26621 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 26886 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh pr edit 26966 -R numpy/numpy --add-label 'component: SIMD'   # 0.27
+# gh issue edit 27250 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh pr edit 27398 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 27509 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 27540 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh pr edit 27631 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh pr edit 27649 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 27968 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 28037 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh pr edit 28096 -R numpy/numpy --add-label 'component: __array_function__'   # 0.27
+# gh issue edit 28225 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh issue edit 28472 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh pr edit 28476 -R numpy/numpy --add-label 'component: CI'   # 0.27
+# gh issue edit 28549 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh pr edit 28554 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh issue edit 28655 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh pr edit 28802 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh pr edit 28875 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 28909 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 28946 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 29262 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh pr edit 29294 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh issue edit 29474 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 29639 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh pr edit 29661 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 29664 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.27
+# gh issue edit 29765 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 29881 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh pr edit 29946 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh issue edit 30046 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh pr edit 30117 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh issue edit 30178 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh pr edit 30305 -R numpy/numpy --add-label 'component: SIMD'   # 0.27
+# gh issue edit 30349 -R numpy/numpy --add-label 'component: numpy.einsum'   # 0.27
+# gh issue edit 30349 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh pr edit 30361 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 30699 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.27
+# gh issue edit 30768 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 30777 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh pr edit 30815 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh pr edit 31077 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh pr edit 31176 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 31301 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.27
+# gh pr edit 31333 -R numpy/numpy --add-label 'component: SIMD'   # 0.27
+# gh pr edit 31575 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.27
+# gh pr edit 31595 -R numpy/numpy --add-label 'component: SIMD'   # 0.27
+# gh pr edit 31689 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 31794 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh pr edit 31796 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh pr edit 31899 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.27
+# gh pr edit 31940 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh pr edit 32163 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.27
+# gh pr edit 32199 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.27
+# gh pr edit 32218 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.27
+# gh pr edit 32364 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.27
+# gh issue edit 32394 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh pr edit 32597 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.27
+# gh pr edit 32672 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh pr edit 33075 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 33203 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 33208 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh pr edit 33269 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 33276 -R numpy/numpy --add-label 'component: __array_function__'   # 0.27
+# gh issue edit 33286 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 33319 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh pr edit 33326 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.27
+# gh pr edit 33342 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh pr edit 33342 -R numpy/numpy --add-label 'component: __array_function__'   # 0.27
+# gh pr edit 33348 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh issue edit 33352 -R numpy/numpy --add-label 'component: numpy._core'   # 0.27
+# gh pr edit 33354 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.27
+# gh issue edit 5933 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.26
+# gh issue edit 8773 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.26
+# gh issue edit 12817 -R numpy/numpy --add-label 'component: numpy._core'   # 0.26
+# gh issue edit 30216 -R numpy/numpy --add-label 'component: distribution'   # 0.26
+# gh issue edit 5867 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 5972 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 7356 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 7993 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.25
+# gh issue edit 8039 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 9052 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 9283 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 9637 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 10496 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 10579 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 11622 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.25
+# gh issue edit 11925 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 12322 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 12336 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 13201 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 13768 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 14239 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.25
+# gh issue edit 15965 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 19755 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.25
+# gh issue edit 20226 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh pr edit 21843 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.25
+# gh issue edit 21990 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.25
+# gh issue edit 22042 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 22471 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.25
+# gh pr edit 23119 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 23582 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 23582 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.25
+# gh issue edit 23975 -R numpy/numpy --add-label 'component: numpy.f2py'   # 0.25
+# gh issue edit 23993 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 24145 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh pr edit 24189 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 24548 -R numpy/numpy --add-label 'component: CI'   # 0.25
+# gh issue edit 24755 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 24897 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.25
+# gh issue edit 24897 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 24898 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.25
+# gh issue edit 24898 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 25363 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 25787 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.25
+# gh issue edit 26336 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 26620 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 26893 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.25
+# gh issue edit 28704 -R numpy/numpy --add-label 'component: build'   # 0.25
+# gh issue edit 28704 -R numpy/numpy --add-label 'component: SIMD'   # 0.25
+# gh pr edit 29260 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 30684 -R numpy/numpy --add-label 'component: build'   # 0.25
+# gh issue edit 31423 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh pr edit 31559 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh issue edit 32219 -R numpy/numpy --add-label 'component: numpy._core'   # 0.25
+# gh pr edit 32239 -R numpy/numpy --add-label 'component: numpy.datetime64'   # 0.25
+# gh pr edit 33202 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.25
+# gh issue edit 6951 -R numpy/numpy --add-label 'component: numpy.linalg'   # 0.24
+# gh issue edit 7265 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.24
+# gh issue edit 8786 -R numpy/numpy --add-label 'component: numpy._core'   # 0.24
+# gh issue edit 9450 -R numpy/numpy --add-label 'component: numpy._core'   # 0.24
+# gh issue edit 10954 -R numpy/numpy --add-label 'component: npy_math'   # 0.24
+# gh issue edit 12309 -R numpy/numpy --add-label 'component: numpy.f2py'   # 0.24
+# gh issue edit 12935 -R numpy/numpy --add-label 'component: numpy._core'   # 0.24
+# gh issue edit 13569 -R numpy/numpy --add-label 'component: numpy._core'   # 0.24
+# gh issue edit 16004 -R numpy/numpy --add-label 'component: numpy._core'   # 0.24
+# gh issue edit 17012 -R numpy/numpy --add-label 'component: numpy._core'   # 0.24
+# gh issue edit 23899 -R numpy/numpy --add-label 'component: numpy._core'   # 0.24
+# gh issue edit 28801 -R numpy/numpy --add-label 'component: benchmarks'   # 0.24
+# gh issue edit 30171 -R numpy/numpy --add-label 'component: numpy._core'   # 0.24
+# gh issue edit 31030 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.24
+# gh issue edit 32482 -R numpy/numpy --add-label 'component: numpy._core'   # 0.24
+# gh issue edit 32482 -R numpy/numpy --add-label 'component: npy_math'   # 0.24
+# gh pr edit 32622 -R numpy/numpy --add-label 'component: numpy._core'   # 0.24
+# gh issue edit 5353 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.23
+# gh issue edit 13105 -R numpy/numpy --add-label 'component: numpy._core'   # 0.23
+# gh pr edit 32525 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.23
+# gh issue edit 8518 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.22
+# gh issue edit 8518 -R numpy/numpy --add-label 'component: numpy._core'   # 0.22
+# gh issue edit 10405 -R numpy/numpy --add-label 'component: numpy._core'   # 0.22
+# gh issue edit 12481 -R numpy/numpy --add-label 'component: numpy._core'   # 0.22
+# gh issue edit 16945 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.22
+# gh issue edit 24548 -R numpy/numpy --add-label 'component: numpy._core'   # 0.22
+# gh issue edit 27785 -R numpy/numpy --add-label 'component: numpy.random'   # 0.22
+# gh issue edit 27785 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.22
+# gh issue edit 33336 -R numpy/numpy --add-label 'component: CI'   # 0.22
+# gh issue edit 5407 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.21
+# gh issue edit 6081 -R numpy/numpy --add-label 'component: npy_math'   # 0.21
+# gh issue edit 11092 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.21
+# gh issue edit 20785 -R numpy/numpy --add-label 'component: SIMD'   # 0.21
+# gh issue edit 22318 -R numpy/numpy --add-label 'component: CI'   # 0.21
+# gh issue edit 22318 -R numpy/numpy --add-label 'component: distribution'   # 0.21
+# gh issue edit 27533 -R numpy/numpy --add-label 'component: numpy._core'   # 0.21
+# gh issue edit 28839 -R numpy/numpy --add-label 'component: numpy._core'   # 0.21
 # gh pr edit 32499 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.20
-# gh issue edit 10446 -R numpy/numpy --add-label 'component: numpy._core'   # 0.18
-# gh issue edit 23899 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.18
-# gh issue edit 30809 -R numpy/numpy --add-label 'component: numpy._core'   # 0.18
-# gh issue edit 5353 -R numpy/numpy --add-label 'component: numpy.dtype'   # 0.17
-# gh issue edit 5721 -R numpy/numpy --add-label 'component: swig'   # 0.17
-# gh issue edit 13105 -R numpy/numpy --add-label 'component: numpy.ufunc'   # 0.17
-# gh issue edit 13105 -R numpy/numpy --add-label 'component: numpy.ma'   # 0.17
-# gh issue edit 17012 -R numpy/numpy --add-label 'component: numpy.lib'   # 0.17
-# gh issue edit 33172 -R numpy/numpy --add-label 'component: numpy._core'   # 0.15
+# gh issue edit 30440 -R numpy/numpy --add-label 'component: numpy._core'   # 0.19
+# gh issue edit 30809 -R numpy/numpy --add-label 'component: numpy._core'   # 0.19
+# gh issue edit 33172 -R numpy/numpy --add-label 'component: numpy._core'   # 0.17

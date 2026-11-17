@@ -61,7 +61,9 @@ function passAll(d,skip){const k=keysOf(d),by={};for(const c of chosen){const g=
  for(const g in by){if(!by[g].some(c=>c===NONE?!lsOf(d).length:k.includes(c)))return false}return true}
 const kindOk=d=>d.k==='pr'?showP.checked:showI.checked;
 const short=l=>l==='(none)'?l:l.replace(/^component:\s*/,'').replace(/^numpy\./,'').replace(/^\d+ - /,'');
-const axOf=(d,g)=>{const r=lsOf(d).filter(l=>grp(l)===g);return r.length?r:['(none)']};
+// a repo without type or component labels gets pseudo labels: last activity for rows, the content category for columns
+const real=g=>g==='type'?D.ax.type:D.ax.component;
+const axOf=(d,g)=>{if(!real(g))return[g==='type'?AGE[ageOf(d)]:D.names[d.c]];const r=lsOf(d).filter(l=>grp(l)===g);return r.length?r:['(none)']};
 const inCell=d=>!cellF||axOf(d,'type').includes(cellF[0])&&axOf(d,'component').includes(cellF[1]);
 const base=d=>kindOk(d)&&passAll(d,null)&&(!term||d.t.toLowerCase().includes(term)||d.s.toLowerCase().includes(term));
 const visible=d=>base(d)&&inCell(d);
@@ -70,11 +72,11 @@ function esc(t){return t.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const tags=d=>d.ls.map(l=>`<span class="tag">${esc(l)}</span>`).join('')+d.sg.map(([l,p,src])=>`<span class="tag sug" title="suggested: ${src==='vote'?p+' votes':'kNN score '+p}">${esc(l)} ?</span>`).join('');
 function matrix(){const vis=items.filter(base),M={},T={},C={};mx.classList.add('on');
  for(const d of vis){const ts=axOf(d,'type'),cs=axOf(d,'component'),st=['age:3','age:5'].includes(ageOf(d));
-  const sg=(ts[0]!=='(none)'&&!d.ls.some(l=>grp(l)==='type'))||(cs[0]!=='(none)'&&!d.ls.some(l=>grp(l)==='component'));
+  const sg=(real('type')&&ts[0]!=='(none)'&&!d.ls.some(l=>grp(l)==='type'))||(real('component')&&cs[0]!=='(none)'&&!d.ls.some(l=>grp(l)==='component'));
   for(const a of ts)for(const b of cs){const m=M[a+'\u0001'+b]=M[a+'\u0001'+b]||{n:0,s:0,g:0};m.n++;m.s+=st;m.g+=sg;T[a]=(T[a]||0)+1;C[b]=(C[b]||0)+1}}
- const ord=o=>Object.keys(o).sort((a,b)=>(a==='(none)')-(b==='(none)')||o[b]-o[a]),R=ord(T),K=ord(C),mx_=Math.max(1,...Object.values(M).map(m=>m.n));
+ const ord=o=>Object.keys(o).sort((a,b)=>(a==='(none)')-(b==='(none)')||o[b]-o[a]),R=real('type')?ord(T):Object.values(AGE).filter(a=>T[a]),K=ord(C),mx_=Math.max(1,...Object.values(M).map(m=>m.n));
  count.textContent=vis.length+' / '+items.length;matrix.R=R;matrix.K=K;
- rows.innerHTML=`<div class="meta">Open items by type (rows) and component (columns), with the filters on the left. Size = number of items; color = share quiet for 3+ years (pale: active, dark: forgotten); dashed = some items are here only through a suggested label (toggle “suggested”). An item with two labels counts in both cells. Click a cell to list its items.</div>
+ rows.innerHTML=`<div class="meta">Open items by ${D.ax.type?'type':'last activity (the repo has no type labels)'} (rows) and ${D.ax.component?'component':'content category (the repo has no component labels)'} (columns), with the filters on the left. Size = number of items; color = share quiet for 3+ years (pale: active, dark: forgotten); dashed = some items are here only through a suggested label (toggle “suggested”). An item with two labels counts in both cells. Click a cell to list its items.</div>
  <table class="mx"><thead><tr><th></th>${K.map(k=>`<th title="${esc(k)}">${esc(short(k))}</th>`).join('')}<th class="tot">all</th></tr></thead><tbody>${R.map((r,i)=>`<tr><th title="${esc(r)}">${esc(short(r))}</th>${K.map((k,j)=>{const m=M[r+'\u0001'+k];if(!m)return'<td></td>';
   const w=Math.round(18+20*Math.sqrt(m.n/mx_)),s=m.s/m.n;return`<td data-r="${i}" data-k="${j}" title="${esc(short(r))} × ${esc(short(k))}: ${m.n} open, ${Math.round(s*100)}% quiet 3+ years${m.g?', '+m.g+' via suggested labels':''}"><div class="bub${m.g?' sg':''}" style="width:${w}px;height:${w}px;background:rgba(217,130,43,${(0.12+0.85*s).toFixed(2)})">${m.n}</div></td>`}).join('')}<td class="tot">${T[r]}</td></tr>`).join('')}
  <tr><th class="tot">all</th>${K.map(k=>`<td class="tot">${C[k]}</td>`).join('')}<td class="tot">${vis.length}</td></tr></tbody></table>`}
@@ -198,7 +200,9 @@ def main(path):
         for key, src in (("ps", ps), ("du", du), ("zb", zb), ("cp", cp), ("si", si), ("sg", sg)):
             if n in src:
                 it[key] = src[n]
-    data = dict(items=items, names=names, frag=frag, over=over, type=TYPE, now=max((it["up"] for it in items), default=""), repo=f"https://github.com/{repo}")
+    import re
+    ax = dict(type=any(re.match(TYPE, l) for it in items for l in it["l"]), component=any(l.startswith("component:") for it in items for l in it["l"]))
+    data = dict(items=items, names=names, frag=frag, over=over, type=TYPE, ax=ax, now=max((it["up"] for it in items), default=""), repo=f"https://github.com/{repo}")
     html = PAGE.replace("__REPO__", repo).replace("__DATA__", json.dumps(data, ensure_ascii=False).replace("</", "<\\/"))
     out = Path(path).with_name("browse.html")
     out.write_text(html, encoding="utf-8")

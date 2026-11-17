@@ -13,10 +13,10 @@ A tool that analyses, organises and cleans up a GitHub repository from the **met
 ---
 
 ## 2. Pipeline
-1. **Input:** a GitHub repo link (`python run.py <link>`, or paste it in the local web view `web.py`).
+1. **Input:** a GitHub repo link (`python run.py <link>`, or paste it in the local web view `web.py`). The end-to-end flow stops at the report; label suggestions (`--labels`) and the LLM recheck are optional steps.
 2. **Crawl & storage** ✅ One crawl stores every issue/PR (open and closed), every conversation comment (inline PR review comments are off by default), labels and states (`state_reason`, `merged`) in SQLite. Links GitHub itself records come from GraphQL: which PR closes which issue (abandoned PRs included), which issue a maintainer marked as a duplicate of which, which issue is a sub-issue of which. Reruns only fetch what changed.
 3. **Vectorize & links** ✅ One embedding per item (open and closed) from its title, description and an extractive digest of its comments. Hard links, and semantic links (two items in each other's top 5).
-4. **Analysis:** categories made once, new items assigned to existing ones ✅; label suggestions ✅; the PR status of each issue from its links ✅; duplicates, zombies, competing PRs, staleness ✅.
+4. **Analysis:** categories made once (k = sqrt(open items), 8-60: the embedding has no natural cluster count, so k is a reading choice), new items assigned to existing ones ✅; label suggestions ✅; the PR status of each issue from its links ✅; duplicates, zombies, competing PRs, staleness ✅.
 5. **Output & action:** a one-file HTML browser (filters, list of open items, details with a timeline, a type × component matrix) ✅; an overview, a Markdown report and a `gh` script to review ✅.
 6. **Recheck (outside the pipeline):** `tools/llm_judge.py` has a free LLM read both items of each proposal; rows it doubts are reread by hand (`manual.jsonl`) ✅.
 
@@ -42,8 +42,8 @@ When an issue/PR is selected, show everything connected to it:
 Only **labels the repo already uses** are suggested, to issues/PRs that lack them. No new labels.
 * ✅ **Title rules:** a prefix such as `BUG:` / `ENH:` → type, a component's name in the title (`f2py`, `np.ma`) → component. Learned from labeled items, kept only if right ≥ 85% on ≥ 20 items. numpy: prefixes cover 72% of items at 96%.
 * ✅ **History:** kNN over the 10 nearest labeled items for the type (closed items included, so tens of thousands to learn from). Title rule first, then kNN: 93% coverage at 93% on held-out items (kNN alone 79% / 88%).
-* ✅ **Components by vote:** each of the 5 most similar labeled items votes for its components, linked items add votes (official links weigh most); every component with ≥ 2 votes is suggested, possibly more than one. Finds the real label for 73% of items that have one; by hand ~88% of suggested components are related (exact match 0.50 is a lower bound since real labels are often missing). Never `component: Other`, never for bot PRs, no `component: documentation` on Documentation items.
-* ✅ **Scope:** every open item missing a type or a component (numpy: 1613 items, 503 type and 889 component suggestions), not only unlabeled ones.
+* ✅ **Components by vote:** each of the K most similar labeled items votes for its components, linked items add votes (official links weigh most); every component with ≥ m votes is suggested, possibly more than one. K and m are swept per repo (most found at exact-match precision ≥ 0.5; numpy: 15 and 4). Finds the real label for 72% of items that have one; by hand ~88% of suggested components are related (exact match 0.50 is a lower bound since real labels are often missing). Never `component: Other`, never for bot PRs, no `component: documentation` on Documentation items.
+* ✅ **Scope:** every open item missing a type or a component (numpy: 1613 items, 503 type and 930 component suggestions), not only unlabeled ones.
 * ✅ **Two axes:** type (Bug, Enhancement, Documentation...) and component (`component: ...`). **No** process labels (Close?, Needs decision, triaged...): those are the maintainers' judgement.
 * ✅ **Suggestions stay apart from real labels** (own table, shown dashed), never overwrite them.
 * ✅ **Bulk apply:** `report.py` writes a `gh issue edit --add-label` line per suggestion, to review and run.
@@ -55,7 +55,7 @@ Only **labels the repo already uses** are suggested, to issues/PRs that lack the
 ### 3.5. Triage health dashboard ✅
 * ✅ **Fragmentation index:** distinct problems vs open issues, shown in the page corner (numpy: *1917 open issues ≈ 1802 problems*, from GitHub-marked and likely duplicates).
 * ✅ **Hot spots:** categories with the most comments on open items, and the most discussed items, in the overview (click the repo name).
-* ✅ **Type × component matrix:** open items by type (rows) and component (columns); size = count, color = share quiet for 3+ years; click a cell to list its items.
+* ✅ **Type × component matrix:** open items by type (rows) and component (columns), or by last activity and content category in a repo without such labels; size = count, color = share quiet for 3+ years; click a cell to list its items.
 * ✅ **Quick wins:** proposals sorted by the algorithm's confidence in the overview and in `report.md` (numpy: 195 items with a quick action besides labels, e.g. 9 open issues already marked as duplicates, 9 with a merged closing PR).
 
 ---

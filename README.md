@@ -3,17 +3,18 @@
 Crawl all issues and PRs of a GitHub repo (open and closed, with conversation comments, content only, no code) into SQLite, then sort them into categories, suggest labels from the repo's existing ones, find duplicates, stale and already-fixed issues and competing PRs, and write a report of proposed actions. Everything from the crawl to the report is local data analysis and classic machine learning (a small embedding model, KMeans, kNN votes, rules learned from titles); no LLM makes any proposal. An LLM is used only afterwards, to recheck the report's rows (see below).
 
 ```bash
-python run.py https://github.com/numpy/numpy   # everything below in one go -> data/numpy__numpy/{repo.db, browse.html, report.md, actions.sh}
+python run.py https://github.com/numpy/numpy   # crawl -> analyze -> report -> browse page, in one go: data/numpy__numpy/{repo.db, browse.html, report.md, actions.sh}
+python run.py numpy/numpy --labels             # the same plus label suggestions (optional step)
 python web.py                                   # local web view at http://127.0.0.1:8000: paste a link, then Browse / Report / Actions / Database per repo
 ```
 
-The steps `run.py` runs, each rerunnable on its own:
+The steps, each rerunnable on its own (`suggest.py` only with `--labels`):
 
 ```bash
 R=data/numpy__numpy/repo.db
 python triageflow.py numpy/numpy       # all issues/PRs + comments + GitHub's own links: PR closes issue, duplicate of, sub-issue (GitHub API; token from `gh auth token`); reruns sync only what changed
 python analyze.py $R                   # embed new or changed threads (bge-small, fp16; title+description averaged with an extractive digest of the comments); categories once (--init to redo); semantic links; PR status of open issues; duplicate candidates
-python suggest.py $R                   # labels for open items that lack them: rules learned from titles (BUG:, f2py), then kNN over the 10 nearest labeled items (type) and votes of the 5 nearest and linked items (components); any repo
+python suggest.py $R                   # optional: labels for open items that lack them: rules learned from titles (BUG:, f2py), then kNN (type) and votes of the nearest and linked items (components); neighbors and minimum votes are swept per repo
 python report.py $R                    # proposals with the algorithm's confidence -> report.md + actions.sh (gh commands, all commented out)
 python build_html.py $R                # -> data/numpy__numpy/browse.html: filters, list of open items, details with a timeline
 datasette $R                           # browse / SQL / full-text search

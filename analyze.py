@@ -25,7 +25,7 @@ from transformers import AutoModel, AutoTokenizer
 import digest
 
 MODEL = "BAAI/bge-small-en-v1.5"
-OPEN_PER_CATEGORY = 45
+CATEGORY_RANGE = (8, 60)  # k = sqrt(open items), clipped
 ZOMBIE_SIM = 0.88  # issue and merged PR nearest to each other: on closed numpy issues with a known closer, the PR is one of them 87% of the time
 DUP_SIM = 0.92  # hand-graded on numpy (24 pairs, description + maintainer comments read): >= 0.92 ~79% same problem, 0.91-0.92 only ~29%
 
@@ -263,12 +263,9 @@ def name_categories(db, members):
 def init(db, k):
     nums, states, E = load_emb(db)
     n = len(nums)
-    # as many categories as the repo's numbered triage labels in use on open items ("00 - Bug" ... numpy: 36),
-    # the granularity its maintainers chose; repos without such labels: about 45 open items per category (tqdm: 685 -> 15).
-    numbered = {l for (ls,) in db.execute("select labels from items where state = 'open'")
-                for l in json.loads(ls or "[]") if re.match(r"^\d+ - ", l)}
-    k = k or (len(numbered) if len(numbered) >= 8 else
-              int(np.clip(round(sum(s == "open" for s in states) / OPEN_PER_CATEGORY), 8, 80)))
+    # the embedding has no natural number of clusters (numpy: silhouette ~0.05 and seed agreement ARI 0.4-0.65 for any k
+    # from 8 to 150), so k is a reading choice: about sqrt(open items), bigger repos get more groups (numpy 47, tqdm 21)
+    k = k or int(np.clip(round(np.sqrt(sum(s == "open" for s in states))), *CATEGORY_RANGE))
     k = min(k, n)
     print(f"init: {k} categories over {n} items", flush=True)
     z = PCA(n_components=min(50, n - 1), random_state=0).fit_transform(E)
@@ -314,7 +311,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("db")
     ap.add_argument("--init", action="store_true", help="rebuild the categories from scratch")
-    ap.add_argument("--k", type=int, default=0, help="number of categories at init (default: numbered labels on open items, else open items / 45)")
+    ap.add_argument("--k", type=int, default=0, help="number of categories at init (default: sqrt(open items), 8-60)")
     a = ap.parse_args()
     db = sqlite3.connect(a.db, timeout=120)
     db.execute("create table if not exists emb(number integer primary key, vec blob, hash text)")

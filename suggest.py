@@ -7,8 +7,9 @@ any other repo: every label is a candidate, by the same vote count as components
 
 
 type:       kNN vote over embeddings of already-labeled items (open + closed).
-component:  vote count: each of the 5 most similar labeled items gives one vote to each of its components, linked
-            items add theirs (GitHub's closing links weigh most); every component with >= 2 votes is suggested.
+component:  vote count: each of the K most similar labeled items gives one vote to each of its components, linked
+            items add theirs (GitHub's closing links weigh most); every component with >= m votes is suggested. K and m are
+            swept per repo: the pair that finds most with exact-match precision >= TARGET_PRECISION.
             Measured on a balanced held-out sample (items with and without a component).
 Written to table `suggested` (score: kNN score, vote count, or a title rule's hit rate; share: votes / possible votes);
 nothing touches the real labels.
@@ -20,7 +21,9 @@ import numpy as np
 
 AXES = {"type": r"^(0[0-7]|17|23|33) - ", "component": r"^component:"}  # type regex fits numpy's numbered scheme
 K = 10  # numpy, at confidence >= 0.5: K=3 0.85 coverage / 0.84 precision, 5 0.82/0.86, 10 0.79/0.88, 15+ no better
-KC, MIN_VOTES = 5, 2  # component vote; numpy: finds 73%, 36% of items without a component get one. KC=7 m=3 or KC=10 m=3 lie on the same curve
+KC_GRID, M_GRID = (3, 5, 7, 10, 15), (1, 2, 3, 4, 5)  # component vote: neighbors x minimum votes, swept per repo
+TARGET_PRECISION = 0.5  # the sweep keeps the (neighbors, votes) pair that finds the most with exact-match precision >= this
+# (exact match is a lower bound: on numpy, 5 neighbors / 2 votes measured 0.49 exact and ~88% related by hand; the user chose 0.5)
 VAGUE = re.compile(r"(?i):\s*other$")  # "component: Other" says nothing; never suggested
 MIN_LABEL_PRECISION, MIN_LABEL_TRIES = 0.5, 10  # other repos: a label is suggested only if the hidden-label test got it right this often
 TITLE_PRECISION, TITLE_TRIES = 0.85, 20  # a title prefix ("BUG:") or a component named in the title is used only if it carries that label this often
@@ -78,8 +81,8 @@ def link_votes(db, nums, truth_c):
     return acc
 
 
-def component_votes(E, truth_c, has_label, queries, links):
-    """{query index: {label: votes}}: one vote from each of the KC most similar labeled items carrying the label
+def component_votes(E, truth_c, has_label, queries, links, kc):
+    """{query index: {label: votes}}: one vote from each of the kc most similar labeled items carrying the label
     (an item never votes for itself), plus the votes of linked items."""
     pop = np.where(has_label)[0]
     P = E[pop]
@@ -89,7 +92,7 @@ def component_votes(E, truth_c, has_label, queries, links):
         S = E[q] @ P.T
         for r, i in enumerate(q):
             S[r, pop == i] = -9
-            v = collections.Counter(l for j in np.argpartition(-S[r], KC)[:KC] for l in truth_c[pop[j]])
+            v = collections.Counter(l for j in np.argpartition(-S[r], kc)[:kc] for l in truth_c[pop[j]])
             for l, w in links.get(i, {}).items():
                 v[l] += w
             out[i] = dict(v)
@@ -107,21 +110,30 @@ def generic(db, a, rows, nums, E, labels, is_open):
     lab_idx = [i for i in range(n) if has_label[i]]
     ev = rnd.sample(lab_idx, min(3000, len(lab_idx)))
     targets = [i for i in range(n) if is_open[i] and not (a.unlabeled_only and labels[i])]
-    cv = component_votes(E, truth, has_label, sorted(set(ev) | set(targets)), lv)
-    # per label, the fewest votes at which the hidden-label test is right often enough; labels that never get there are dropped
-    need = {}
     print(f"{n} items ({sum(is_open)} open, {len(lab_idx)} labeled); {len(used)} labels in use; hidden-label test on {len(ev)} items:")
+
+    def thresholds(cv, kc):
+        """per label, the fewest votes at which the hidden-label test is right often enough; labels that never get there are dropped"""
+        need, hits_at = {}, {}
+        for l in sorted(used):
+            for m in range(2, 2 * kc + 1):
+                hits = [l in truth[i] for i in ev if cv[i].get(l, 0) >= m]
+                if len(hits) < MIN_LABEL_TRIES:
+                    break
+                if np.mean(hits) >= MIN_LABEL_PRECISION:
+                    need[l], hits_at[l] = m, hits
+                    break
+        return need, hits_at, sum(sum(h) for h in hits_at.values())
+
+    tried = {kc: thresholds(component_votes(E, truth, has_label, ev, lv, kc), kc) for kc in KC_GRID}
+    for kc, (need, _, right) in tried.items():
+        print(f"  {kc:2d} neighbors: {len(need)} labels kept, {right} right suggestions")
+    KC = max(KC_GRID, key=lambda kc: tried[kc][2])
+    need, hits_at, _ = tried[KC]
+    print(f"  -> {KC} neighbors")
     for l in sorted(used):
-        for m in range(MIN_VOTES, 2 * KC + 1):
-            hits = [l in truth[i] for i in ev if cv[i].get(l, 0) >= m]
-            if len(hits) < MIN_LABEL_TRIES:
-                break
-            if np.mean(hits) >= MIN_LABEL_PRECISION:
-                need[l] = m
-                print(f"  keep  from {m} votes: {np.mean(hits):.2f} right of {len(hits):4d} suggestions  {l}")
-                break
-        if l not in need:
-            print(f"  drop  {l}")
+        print(f"  keep  from {need[l]} votes: {np.mean(hits_at[l]):.2f} right of {len(hits_at[l]):4d} suggestions  {l}" if l in need else f"  drop  {l}")
+    cv = component_votes(E, truth, has_label, sorted(set(ev) | set(targets)), lv, KC)
     calib = []
     for lo, hi in ((2, 3), (3, 4), (4, 99)):
         b = [l in truth[i] for i in ev for l, v in cv[i].items() if l in need and v >= need[l] and lo <= v < hi]
@@ -134,7 +146,7 @@ def generic(db, a, rows, nums, E, labels, is_open):
     bots = {r[0] for r in db.execute("select number from items where author like '%[bot]' or author like 'dependabot%'")}
     db.execute("drop table if exists suggested")
     db.execute("create table suggested(number integer, axis text, label text, score real, source text, share real)")
-    db.execute("insert or replace into meta values('calibration', ?)", (json.dumps({"label": calib}),))
+    db.execute("insert or replace into meta values('calibration', ?)", (json.dumps({"label": calib, "vote": {"neighbors": KC}}),))
     for i in targets:
         if nums[i] not in bots:
             for l, v in cv[i].items():
@@ -224,30 +236,36 @@ def main():
 
     # component: vote count, measured on the balanced sample; tag precision rescaled to the real share of items with a component
     lv = link_votes(db, nums, truth["component"])
-    cv = component_votes(E, truth["component"], has_label, sorted(set(bal) | set(targets)), lv)
     bp, bn = [i for i in bal if truth["component"][i]], [i for i in bal if not ax_all["component"][i]]
-    print(f"component vote over {KC} neighbors + links, balanced sample {len(bp)} with / {len(bn)} without;"
-          f" {base_rate:.0%} of labeled items have one (exact match: a lower bound, missing labels count as wrong):")
-    for m in (2, 3, 4):
-        sug = {i: {l for l, v in cv[i].items() if v >= m} for i in bal}
-        right = np.mean([len(sug[i] & truth["component"][i]) for i in bp])
-        tags_p, tags_n = np.mean([len(sug[i]) for i in bp]), np.mean([len(sug[i]) for i in bn])
-        prec = right * base_rate / max(1e-9, tags_p * base_rate + tags_n * (1 - base_rate))
-        print(f"  {'->' if m == MIN_VOTES else '  '} >={m} votes: finds {np.mean([bool(sug[i] & truth['component'][i]) for i in bp]):.2f}"
-              f"  none {np.mean([not sug[i] for i in bp]):.2f}  items without one get one {np.mean([bool(sug[i]) for i in bn]):.2f}"
-              f"  tag precision {prec:.2f}")
+    print(f"component vote, balanced sample {len(bp)} with / {len(bn)} without; {base_rate:.0%} of labeled items have one "
+          f"(exact match: a lower bound, missing labels count as wrong); keep the pair that finds most at precision >= {TARGET_PRECISION}:")
+    grid = []
+    for kc in KC_GRID:
+        cb = component_votes(E, truth["component"], has_label, sorted(bal), lv, kc)
+        for m in M_GRID:
+            sug = {i: {l for l, v in cb[i].items() if v >= m} for i in bal}
+            right = np.mean([len(sug[i] & truth["component"][i]) for i in bp])
+            tags_p, tags_n = np.mean([len(sug[i]) for i in bp]), np.mean([len(sug[i]) for i in bn])
+            prec = right * base_rate / max(1e-9, tags_p * base_rate + tags_n * (1 - base_rate))
+            grid.append((kc, m, float(np.mean([bool(sug[i] & truth["component"][i]) for i in bp])), float(prec), float(np.mean([bool(sug[i]) for i in bn]))))
+    ok = [g for g in grid if g[3] >= TARGET_PRECISION]
+    KC, MIN_VOTES = max(ok, key=lambda g: (g[2], g[3]))[:2] if ok else max(grid, key=lambda g: g[3])[:2]
+    for kc, m, finds, prec, neg in grid:
+        print(f"  {'->' if (kc, m) == (KC, MIN_VOTES) else '  '} {kc:2d} neighbors, >= {m} votes: finds {finds:.2f}  items without one get one {neg:.2f}  tag precision {prec:.2f}")
+    cv = component_votes(E, truth["component"], has_label, sorted(set(bal) | set(targets)), lv, KC)
     # how often a suggestion with this score was right when the label was hidden: shown next to each label suggestion
     best = [(i, top(i)) for i in e]
     calib = {"type": [], "component": []}
     for lo, hi in ((0.5, 0.6), (0.6, 0.7), (0.7, 0.8), (0.8, 1.01)):
         b = [l in truth["type"][i] for i, (l, p) in best if l is not None and lo <= p < hi]
         calib["type"].append([lo, round(float(np.mean(b)), 2) if b else None])
-    for lo, hi in ((2, 3), (3, 4), (4, 99)):
+    for lo, hi in ((MIN_VOTES, MIN_VOTES + 1), (MIN_VOTES + 1, MIN_VOTES + 2), (MIN_VOTES + 2, 99)):
         tags = [(l in truth["component"][i], bool(truth["component"][i])) for i in bal for l, v in cv[i].items() if lo <= v < hi]
         right, wrong_p = sum(r for r, _ in tags) / len(bp), sum(not r and p for r, p in tags) / len(bp)
         on_neg = sum(not p for _, p in tags) / len(bn)
         calib["component"].append([lo, round(right * base_rate / max(1e-9, (right + wrong_p) * base_rate + on_neg * (1 - base_rate)), 2)])
     calib["title"] = {pre: p for pre, (_, p) in tt.items()} | {c: p for c, (_, p) in tc.items()}
+    calib["vote"] = {"neighbors": KC, "min_votes": MIN_VOTES}
     print("component named in the title, kept: " + ", ".join(f"{c.split(':', 1)[1].strip()} {p:.2f}" for c, (_, p) in sorted(tc.items())))
     print("calibration (exact match):", calib)
     bots = {r[0] for r in db.execute("select number from items where author like '%[bot]' or author like 'dependabot%'")}
