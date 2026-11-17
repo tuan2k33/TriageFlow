@@ -36,6 +36,8 @@ python -m pytest tests -q    # offline: a synthetic repo with planted cases thro
 
 Of the 2251 open items, the report proposes a quick action for 228 (219 issues, 9 PRs), not counting label suggestions. Nothing here changes GitHub: every command in `actions.sh` is commented out.
 
+`reports/opencv__opencv/` holds the same three outputs for opencv/opencv (crawled 2026-11-17), made with no setting changed for that repo: its label axes and thresholds were found from its own data. Of the 2951 open items the report proposes a quick action for 237 (225 issues, 12 PRs). It has not been rechecked yet, so its Check column is empty.
+
 ## AI Disclosure
 
 - **Idea and flow:** mine. I designed what to crawl, how to compare items and what to propose, and Claude (Claude Code, Anthropic) implemented it.

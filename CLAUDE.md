@@ -71,7 +71,7 @@ Things that only show up across several files:
 - **A duplicate of a closed issue is not a close proposal:** `report.py` makes it `check_recurrence` (the command is only `gh issue view`), because the old bug may have come back. Only when the original is still open is closing the newer one proposed.
 - **Suggestions never touch real labels** or GitHub: they live in their own table and the HTML page shows them dashed. Keep it that way.
 - **GitHub API:** the `GitHub` class in `triageflow.py` calls REST/GraphQL with `urllib`: sleeps near the rate limit, retries on 5xx and network errors, pages by the `Link` header. `stream()` sorts by `updated` ascending and stores the last `updated_at`, so a cut-off run resumes where it stopped; the first page's ETag is stored with the `since` it used, so a sync with nothing new gets a 304 (free).
-- **Published output:** the repo is public at github.com/tuan2k33/TriageFlow (branch `master`). `reports/numpy__numpy/` holds copies of numpy's `report.md`, `browse.html`, `actions.sh`, `judge.jsonl`, `manual.jsonl` (no `repo.db`: 370 MB); after regenerating, copy them there again.
+- **Published output:** the repo is public at github.com/tuan2k33/TriageFlow (branch `master`). `reports/numpy__numpy/` holds copies of numpy's `report.md`, `browse.html`, `actions.sh`, `judge.jsonl`, `manual.jsonl` (no `repo.db`: 370 MB); after regenerating, copy them there again. `reports/opencv__opencv/` has `report.md`, `browse.html`, `actions.sh` (not rechecked).
 
 ## Notes
 
