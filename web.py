@@ -21,6 +21,7 @@ nav{display:flex;gap:4px;align-items:center;padding:6px 12px;background:var(--pa
 nav a{padding:4px 12px;border-radius:6px;color:var(--mute);text-decoration:none}nav a.on{background:var(--bg);color:var(--ink);font-weight:600}nav b{margin-right:12px}
 main{padding:16px 20px;overflow:auto;flex:1}iframe{border:0;flex:1;width:100%}
 table{border-collapse:collapse;margin:8px 0 20px}td,th{border:1px solid var(--line);padding:3px 8px;text-align:left;vertical-align:top;max-width:620px;overflow-wrap:break-word}th{background:var(--panel)}
+table.rep{table-layout:fixed;width:100%}table.rep td,table.rep th{max-width:none}table.rep th:nth-child(1){width:34%}table.rep th:nth-child(2){width:33%}
 a{color:inherit}pre{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;overflow:auto}
 input[type=text],textarea{width:min(720px,100%);padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);font:inherit}
 button{padding:6px 14px;border:1px solid var(--line);border-radius:6px;background:var(--ink);color:var(--bg);font:inherit;cursor:pointer}.mute{color:var(--mute)}
@@ -37,15 +38,15 @@ def page(title, body, repo=None, on=None, raw=False):
 
 
 def md_to_html(md):
-    """Enough Markdown for report.md: headings, paragraphs, tables, [text](url) links."""
-    link = lambda t: re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2" target="_blank">\1</a>', html.escape(t))
+    """Enough Markdown for report.md: headings, paragraphs, tables, [text](url) links, **bold**."""
+    link = lambda t: re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2" target="_blank">\1</a>', html.escape(t)))
     out, table = [], False
     for line in md.split("\n"):
         if line.startswith("|"):
             cells = [c.strip() for c in line.strip("|").split("|")]
             if set("".join(cells)) <= set("-: "):
                 continue
-            out.append(("<table>" if not table else "") + "<tr>" + "".join(f"<{'td' if table else 'th'}>{link(c)}</{'td' if table else 'th'}>" for c in cells) + "</tr>")
+            out.append(("<table class=rep>" if not table else "") + "<tr>" + "".join(f"<{'td' if table else 'th'}>{link(c)}</{'td' if table else 'th'}>" for c in cells) + "</tr>")
             table = True
             continue
         if table:

@@ -1,37 +1,36 @@
 """Turn the analysis into one list of proposed actions, a Markdown report to review, and a shell script of `gh`
 commands (every line commented out: nothing runs until a person enables it).
 
-Confidence is a number from 0 to 1 per row, never a percentage made up from a sample. 1.00 only when the proposal is
-certainly right: a maintainer marked the duplicate on GitHub. Everything an algorithm decides is at most 0.99: a
-GitHub link (0.99: the link is a fact, the issue being done is not), a title rule (its measured hit rate), otherwise
-the row's own signal (cosine similarity, kNN score, share of votes). If judge.jsonl (tools/llm_judge.py) is next to
-the db, its verdicts are shown in an extra column. Each section states what its number is and the evidence for that kind
-of proposal with raw counts (hand-graded samples are numpy's; other repos borrow them and say so).
+The report opens with three definitions. Confidence (in brackets after each proposal) is the algorithm's score for
+that row, 0-1: 1.00 only when certainly right (a maintainer marked the duplicate on GitHub); anything an algorithm
+decides is at most 0.99 (a GitHub link, a title rule's hit rate, cosine similarity, kNN score, share of votes).
+Tech used (one line per section) says how that section's proposals are found. Check shows what people and the LLM
+said about the row: manual.jsonl (a person's reading, shown first) and judge.jsonl (tools/llm_judge.py), both next to
+the db and both optional.
 
 usage: python report.py data/<owner>__<name>/repo.db   ->  report.md, actions.sh next to the db; table `actions`
 """
 import collections, json, shlex, sqlite3, sys
 from pathlib import Path
 
-GRADED_ON = "numpy/numpy"
 SOFT_MAX = 0.99  # a similarity or vote share never shows as 1.00
-RULES = {  # action kind: (evidence, graded by hand on GRADED_ON, what the confidence number is, title)
-    "close_duplicate_marked": ("a maintainer marked it as a duplicate on GitHub", False, "1.00 = recorded on GitHub",
+EMB = "bge-small-en embeddings (title + description, averaged with an extractive MMR digest of the comments)"
+RULES = {  # action kind: (tech used, title)
+    "close_duplicate_marked": ("GitHub GraphQL `MarkedAsDuplicateEvent`: a maintainer's own action (confidence 1.00)",
                                "Open issues already marked as duplicates"),
-    "close_fixed_linked": ("by hand about 10 of 14 were done, the rest track larger work", True, "0.99 = GitHub links a merged PR that closes it",
-                           "Open issues whose closing PR is merged"),
-    "close_duplicate_likely": ("similarity >= 0.92; by hand 9.5 of 12 such pairs were the same problem (0.91-0.92: 3.5 of 12)", True,
-                               "cosine similarity of the two issues", "Likely duplicates of an older open issue"),
-    "check_recurrence": ("same test as above; whether the old problem came back or was never fixed is for a person to judge", True,
-                         "cosine similarity of the two issues", "Open issues very similar to an older closed one (came back, or a duplicate of something settled?)"),
-    "close_fixed_similar": ("issue and a later merged PR are each other's nearest, no link; by hand 10 of 20 fixed, 6 partly, 4 only related", True,
-                            "cosine similarity of the issue and the PR", "Open issues that a later merged PR seems to fix"),
-    "review_competing": ("similar pairs are not graded", False, "0.99 = both PRs link the same issue, otherwise their cosine similarity",
-                         "Open PRs after the same thing"),
-    "add_label": ("hidden-label test on this repo, exact match, so a lower bound (real labels are often missing); by hand on numpy ~88% of "
-                  "component and ~77% of type suggestions were related", False,
-                  "from the title (prefix such as BUG:, or the component's name): that rule's hit rate; type: kNN score, the weighted share of the "
-                  "10 nearest labeled items carrying it; component: share of the votes (5 nearest labeled items plus linked items)", "Labels to add"),
+    "close_fixed_linked": ("GitHub GraphQL `closingIssuesReferences` and \"fixes #N\" in the PR's description, PR merged (confidence 0.99: "
+                           "the link is a fact, the issue being done is not; reverted PRs are not detected)", "Open issues whose closing PR is merged"),
+    "close_duplicate_likely": (f"{EMB}; cosine similarity >= 0.92 between two open issues; the older one is kept (confidence = similarity)",
+                               "Likely duplicates of an older open issue"),
+    "check_recurrence": (f"{EMB}; cosine similarity >= 0.92 to an older closed issue (confidence = similarity)",
+                         "Open issues very similar to an older closed one (came back, or a duplicate of something settled?)"),
+    "close_fixed_similar": (f"{EMB}; the issue and a later merged PR are each other's nearest neighbor, similarity >= 0.88, "
+                            "no closing link (confidence = similarity)", "Open issues that a later merged PR seems to fix"),
+    "review_competing": ("GitHub closing links to the same issue (confidence 0.99), or "
+                         f"{EMB} with similarity >= 0.92 between open PRs of different authors (confidence = similarity)", "Open PRs after the same thing"),
+    "add_label": ("title rules learned from labeled items (prefix such as BUG:/ENH:, a component's name; kept only if >= 85% right; "
+                  "confidence = the rule's hit rate); type: kNN over the 10 nearest labeled items (confidence = weighted share carrying the label); "
+                  "component: votes of the 5 nearest labeled items plus linked items (confidence = share of the votes)", "Labels to add"),
 }
 
 
@@ -90,7 +89,11 @@ def main(path):
     db.commit()
 
     jf = Path(path).parent / "judge.jsonl"
-    judge = {(r["kind"], r["number"], r["target"]): (r["verdict"], r["reason"]) for r in map(json.loads, jf.read_text().splitlines())} if jf.exists() else {}
+    jrows = [json.loads(l) for l in jf.read_text().splitlines()] if jf.exists() else []
+    judge = {(r["kind"], r["number"], r["target"]): (r["verdict"], r["reason"]) for r in jrows}
+    jmodel = jrows[0]["model"] if jrows else None
+    mf = Path(path).parent / "manual.jsonl"
+    manual = {(r["kind"], r["number"], r["target"]): (r["verdict"], r["note"]) for r in map(json.loads, mf.read_text().splitlines())} if mf.exists() else {}
     by = collections.defaultdict(list)
     for a in acts:
         by[a[0]].append(a)
@@ -98,33 +101,35 @@ def main(path):
     extra = db.execute("select count(*) from dup_master d join items i on i.number = d.number where d.master != d.number and i.state = 'open'").fetchone()[0]
     md = [f"# Triage report: {repo}", "",
           f"{len(is_open)} open items ({issues} issues, about {issues - extra} distinct problems). Proposals only: nothing here changes GitHub.",
-          "Confidence 0-1, in brackets after each proposal: 1.00 only when certainly right (a maintainer marked it on GitHub); anything "
-          "an algorithm decides is at most 0.99 (a GitHub link, a title rule's hit rate, similarity, kNN score, share of votes). "
-          "Each section says which. Rows are sorted by it.", ""]
+          "", "- **Confidence** (in brackets after each proposal): the algorithm's score for that row, 0-1. 1.00 only when certainly right "
+          "(a maintainer marked it on GitHub); anything an algorithm or ML model decides is at most 0.99. Rows are sorted by it.",
+          "- **Tech used** (under each section title): how that section's proposals are found.",
+          f"- **Check**: manual check (a person read both items) and LLM check ({jmodel or 'no LLM run yet'} read both threads). "
+          "Neither is part of the algorithm.", ""]
     sh = ["#!/bin/sh", f"# Proposed actions for {repo}. Review report.md, then remove the leading '# ' from the lines you agree with.", ""]
-    for kind, (how, graded, means, title) in RULES.items():
+    for kind, (tech, title) in RULES.items():
         rows = sorted(by[kind], key=lambda a: (-a[3], a[1]))
         if not rows:
             continue
-        borrowed = f" Graded on {GRADED_ON} only; not checked on this repo." if graded and repo != GRADED_ON else ""
         test = ""
         if kind == "add_label":
             def span(bins, i):
                 lo, hi = bins[i][0], bins[i + 1][0] if i + 1 < len(bins) else None
                 return f"{lo:g}+" if hi is None else f"{lo:g}" if hi - lo == 1 else f"{lo:g}-{hi:g}"
-            test = " This repo: " + "; ".join(f"{ax} {span(bins, i)}{' votes' if ax != 'type' else ''}: {p:.0%} matched"
+            test = " Hidden-label test on this repo (exact match, a lower bound): " + "; ".join(f"{ax} {span(bins, i)}{' votes' if ax != 'type' else ''}: {p:.0%} matched"
                                               for ax, bins in cal.items() if isinstance(bins, list) for i, (lo, p) in enumerate(bins) if p is not None) + "."
             if cal.get("title"):
                 test += " Title rules: " + ", ".join(f"{k.split(':', 1)[-1].strip()} {p:.0%}" for k, p in sorted(cal["title"].items())) + "."
-        checked = any((kind, a[1], a[2]) in judge for a in rows)
-        md += [f"## {title} ({len(rows)})", "", f"Confidence: {means}.", "", f"Evidence: {how}.{test}{borrowed}", "",
-               "| Item | Proposal (confidence) |" + (" LLM check |" if checked else ""), "|---|---|" + ("---|" if checked else "")]
+        checked = True  # same three columns in every section, so the fixed widths line up
+        md += [f"## {title} ({len(rows)})", "", f"Tech used: {tech}.{test}", "",
+               "| Item | Proposal (confidence) |" + (" Check |" if checked else ""), "|---|---|" + ("---|" if checked else "")]
         sh += [f"# --- {title} ({len(rows)})"]
         for _, n, target, conf, reason, cmd in rows:
             cells = [f"[#{n}](https://github.com/{repo}/issues/{n}) {info[n][2]}", f"{reason} ({conf:.2f})"]
             if checked:
-                v = judge.get((kind, n, target))
-                cells.append(f"**{v[0]}**: {v[1]}" if v else "")
+                key = (kind, n, target)
+                cells.append(" ".join(([f"Manual: **{manual[key][0]}**, {manual[key][1]}."] if key in manual else [])
+                                      + ([f"LLM: **{judge[key][0]}**, {judge[key][1]}"] if key in judge else [])))
             md.append("| " + " | ".join(c.replace("|", "/").replace("\n", " ") for c in cells) + " |")
             sh.append(f"# {cmd}   # {conf:.2f}")
         md.append("")

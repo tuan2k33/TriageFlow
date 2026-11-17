@@ -15,14 +15,14 @@ PER_ITEM = 7000  # characters of description + comments per item
 QUESTIONS = {  # kind: (question, allowed verdicts); A is the row's item, B its target
     "close_fixed_linked": ("A is an open issue, B a merged PR that GitHub links as closing it. Does B fully fix what A asks for?",
                            ["fixed", "partly", "not_fixed", "unclear"]),
-    "close_duplicate_likely": ("A and B are two open issues. Are they the same problem (a duplicate), only related, or different?",
-                               ["same", "related", "different"]),
-    "check_recurrence": ("A is an open issue, B an older closed one. Are they the same problem (a duplicate or the old bug back), only related, or different?",
-                         ["same", "related", "different"]),
-    "close_fixed_similar": ("A is an open issue, B a later merged PR with no link to it. Does B fix A fully, partly, or is it only related or unrelated?",
+    "close_duplicate_likely": ("A and B are two open issues. Are they the same problem (a duplicate), related (same function or area, a different problem), or unrelated (nothing in common)?",
+                               ["same", "related", "unrelated"]),
+    "check_recurrence": ("A is an open issue, B an older closed one. Are they the same problem (a duplicate or the old bug back), related (same function or area, a different problem), or unrelated (nothing in common)?",
+                         ["same", "related", "unrelated"]),
+    "close_fixed_similar": ("A is an open issue, B a later merged PR with no link to it. Does B fix A fully, partly, is it only related (same function or area), or unrelated (nothing in common)?",
                             ["fixed", "partly", "related", "unrelated"]),
-    "review_competing": ("A and B are two open PRs. Do they make the same change (only one should be merged), overlap in part, or are they independent?",
-                         ["same", "overlap", "independent"]),
+    "review_competing": ("A and B are two open PRs. Do they make the same change (only one should be merged), overlap in part, are they related (same area, e.g. one series or sibling fixes), or unrelated?",
+                         ["same", "overlap", "related", "unrelated"]),
 }
 
 
