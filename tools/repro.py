@@ -4,9 +4,9 @@ pipeline. The snippets come from the internet and are run only as isolated subpr
 timeout, cwd in repro/).
 
 usage: python tools/repro.py data/<owner>__<name>/repo.db [--only N [N ...]] [--rerun] [--timeout 60]
-writes repro/<number>.py (description as comments, the snippet, and the last run's output as comments at the bottom;
-created once, then hand-edited: only the output block is rewritten, and only when the code changed), repro/sheet.jsonl
-and repro/review.md next to the db. The verdict and note columns of sheet.jsonl are kept across reruns.
+writes repro/<number>.py: the issue link, the snippet (created once, then hand-edited), and below it as comments, rewritten
+on every run of changed code: auto (exception types compared), expected, reported, got on this numpy, the description.
+Also repro/sheet.jsonl and repro/review.md next to the db. The verdict and note columns of sheet.jsonl are kept across reruns.
 """
 import argparse, collections, hashlib, json, os, re, sqlite3, subprocess, sys, time
 from pathlib import Path
@@ -54,14 +54,91 @@ def extract(body):
     return code
 
 
-MARK = "# --- snippet ---"
+MARK = "# --- snippet ---"  # layout of the first version (description on top); converted on the next run
+GEN = "# ======== generated below: rewritten on every run, edit only the code above ========"
+STAMP = re.compile(r"^# --- got on numpy \S+ \(hint: (\w+), code (\w+)\) ---$", re.M)
+AUTO = re.compile(r"^# auto: (.*)$", re.M)
+HEAD = re.compile(r"\A# https://\S+\n#.*\n# created_at:.*\n")
+EXC = re.compile(r"^\s*(?:#\s*)?(?:[\w.]+\.)?(\w+(?:Error|Exception|Warning)):\s*(.*)$", re.M)
+EXPECT = re.compile(r"\b(expect\w*|should(?:n't)?|instead|supposed to|would like|correct (?:result|output|answer)|intended)\b", re.I)
+EXPECT_CODE = re.compile(r"#.*\b(expect\w*|should|wrong|correct|instead|gives|returns|bug)\b|#\s*(?:->|==>|array\(|\[|-?\d|True|False)", re.I)
+MAX_OUT = 200  # lines of output kept in the file
 
 
-def header(n, title, created, body):
-    desc = re.sub(r"<!--.*?-->", "", body.replace("\r\n", "\n"), flags=re.S).strip()
-    desc = "\n".join(("# " + l).rstrip() for l in re.sub(r"\n{3,}", "\n\n", desc).splitlines())
-    return (f"# https://github.com/numpy/numpy/issues/{n}\n# {title.replace(chr(10), ' ')}\n# created_at: {created}\n#\n"
-            f"# Description:\n{desc}\n\n{MARK}\n")
+def header(n, title, created):
+    return f"# https://github.com/numpy/numpy/issues/{n}\n# {title.replace(chr(10), ' ')}\n# created_at: {created}\n\n"
+
+
+def code_of(text):
+    head = text.split("\n" + GEN, 1)[0]
+    if MARK in head:
+        head = head.split(MARK + "\n", 1)[1].split("\n# --- output on numpy", 1)[0]
+    return HEAD.sub("", head).strip()
+
+
+def digest(text):
+    return hashlib.sha1(code_of(text).encode()).hexdigest()[:10]
+
+
+def stamp(py):
+    """(hint, code hash) of the last run written into the file, or None."""
+    m = STAMP.search(py.read_text(encoding="utf-8"))
+    return m.groups() if m else None
+
+
+def auto_of(py):
+    m = AUTO.search(py.read_text(encoding="utf-8"))
+    return m.group(1) if m else ""
+
+
+def clean_body(body):
+    return re.sub(r"<!--.*?-->", "", body.replace("\r\n", "\n"), flags=re.S).strip()
+
+
+def expected(body, code):
+    """What should happen, in the reporter's words: sentences of the description and comments of the snippet."""
+    text = FENCE.sub(" ", clean_body(body))
+    said = [s.strip() for s in re.split(r"(?<=[.!?])\s+|\n", text) if EXPECT.search(s) and 10 < len(s.strip()) < 300]
+    return list(dict.fromkeys(said))[:6] + [l.strip() for l in code.splitlines() if EXPECT_CODE.search(l)][:10]
+
+
+def errors(text):
+    return list(dict.fromkeys(f"{t}: {m}".strip() for t, m in EXC.findall(text)))
+
+
+def compare(reported, now):
+    if not reported:
+        return "no error in the description to compare with"
+    kind = lambda e: e.split(":", 1)[0]
+    if not now:
+        return "reported error gone"
+    if kind(now[-1]) in {kind(e) for e in reported}:
+        return "same error as reported"
+    return f"different error ({kind(now[-1])}; reported {kind(reported[-1])})"
+
+
+def comment(lines):
+    return "\n".join(("# " + l).rstrip() for l in lines)
+
+
+def write_result(py, body, text, hint):
+    """Rewrite everything below the code: expected, reported, got (this run) and the description, all as comments."""
+    cur = py.read_text(encoding="utf-8")
+    code = code_of(cur)
+    lines = text.rstrip().splitlines()
+    if len(lines) > MAX_OUT:
+        lines = [f"... {len(lines) - MAX_OUT} lines cut ..."] + lines[-MAX_OUT:]
+    reported = errors(clean_body(body))
+    now = errors(text.split("--- stderr ---", 1)[-1])
+    head = HEAD.match(cur).group(0) if HEAD.match(cur) else ""
+    exp = expected(body, code)
+    py.write_text(
+        f"{head}\n{code}\n\n\n{GEN}\n# auto: {compare(reported, now)}\n"
+        f"# --- expected (sentences from the description, comments in the code) ---\n{comment(exp or ['(none found)'])}\n"
+        f"# --- reported (errors in the description) ---\n{comment(reported[:3] or ['(none)'])}\n"
+        f"# --- got on numpy {EXPECTED} (hint: {hint}, code {digest(cur)}) ---\n{comment(lines)}\n"
+        f"# --- description (verbatim) ---\n{comment(re.sub(chr(10) + '{3,}', chr(10) * 2, clean_body(body)).splitlines())}\n",
+        encoding="utf-8")
 
 
 def run(py, cwd, timeout):
@@ -90,42 +167,6 @@ def classify(code, stderr):
     return "error"
 
 
-OUT = "# --- output on numpy"
-STAMP = re.compile(r"^# --- output on numpy \S+ \(hint: (\w+), code (\w+)\) ---$", re.M)
-MAX_OUT = 200  # lines of output kept in the file
-
-
-def parts(text):
-    """(the file without its output block, the output block or '')."""
-    i = text.find("\n" + OUT)
-    return (text, "") if i < 0 else (text[:i + 1], text[i + 1:])
-
-
-def code_of(text):
-    head = parts(text)[0]
-    return (head.split(MARK + "\n", 1)[1] if MARK in head else re.sub(r"\A(#.*\n){1,3}", "", head)).strip()
-
-
-def digest(text):
-    return hashlib.sha1(code_of(text).encode()).hexdigest()[:10]
-
-
-def stamp(py):
-    """(hint, code hash) of the last run written into the file, or None."""
-    m = STAMP.search(py.read_text(encoding="utf-8"))
-    return m.groups() if m else None
-
-
-def write_output(py, text, hint):
-    """Replace the output block at the bottom of the .py with this run, as comments (the code above is left alone)."""
-    cur = py.read_text(encoding="utf-8")
-    lines = text.rstrip().splitlines()
-    if len(lines) > MAX_OUT:
-        lines = [f"... {len(lines) - MAX_OUT} lines cut ..."] + lines[-MAX_OUT:]
-    block = f"{OUT} {EXPECTED} (hint: {hint}, code {digest(cur)}) ---\n" + "\n".join(("# " + l).rstrip() for l in lines)
-    py.write_text(parts(cur)[0].rstrip("\n") + "\n\n\n" + block + "\n", encoding="utf-8")
-
-
 def check_interpreter():
     r = subprocess.run([str(PYTHON), "-c", "import numpy; print(numpy.__version__)"], capture_output=True, text=True)
     v = r.stdout.strip()
@@ -135,43 +176,46 @@ def check_interpreter():
               file=sys.stderr)
 
 
-def prose(body, limit=1500):
-    """The description without code, HTML comments and the version block: what the reporter expected and saw."""
-    t = re.sub(r"<!--.*?-->", "", body.replace("\r\n", "\n"), flags=re.S)
-    t = FENCE.sub(lambda m: "[code]" if m.group(1).strip().lower() in PY_TAGS or not m.group(1).strip() else m.group(0), t)
-    t = re.sub(r"\n{3,}", "\n\n", t).strip()
-    return t if len(t) <= limit else t[:limit].rsplit(" ", 1)[0] + " …"
-
-
 def tail(text, lines=40):
     ls = text.rstrip().splitlines()
     return "\n".join(ls if len(ls) <= lines else ["…"] + ls[-lines:])
 
 
-def write_review(out_dir, rows, bodies, con):
-    """review.md: for every case that ran (ok / error), the description beside the snippet and its output, by section."""
+def section_of(block, name):
+    m = re.search(rf"^# --- {name}.*---\n((?:#.*\n)*?)(?=# ---|\Z)", block, re.M)
+    return [l[2:] for l in m.group(1).splitlines()] if m else []
+
+
+def write_review(out_dir, rows, con):
+    """review.md: every case that ran (ok / error) as code / expected / reported / got, the description folded, by section;
+    within a section the reported errors that are gone come first."""
     section = {}
     for kind, n in con.execute("select kind, number from actions where kind in (%s)" % ",".join("?" * len(KINDS)), KINDS):
         section.setdefault(n, kind)
     order = {k: i for i, k in enumerate(KINDS + ("original of a duplicate",))}
-    todo = sorted((r for r in rows if r["hint"] in ("ok", "error") and r["number"] in bodies),
-                  key=lambda r: (order[section.get(r["number"], "original of a duplicate")], r["hint"], r["number"]))
+    first = lambda a: 0 if a == "reported error gone" else 1 if a.startswith("different") else 2 if a.startswith("same") else 3
+    todo = sorted((r for r in rows if r["hint"] in ("ok", "error")),
+                  key=lambda r: (order[section.get(r["number"], "original of a duplicate")], first(r["auto"]), r["number"]))
     out = [f"# Reproduce on numpy {EXPECTED}: {len(todo)} cases that ran\n",
-           "Compare the output with what the description says should and should not happen; put the verdict in sheet.jsonl "
-           "(still_there / gone / snippet_broken / cannot_tell).\n"]
+           "Compare *got* with *expected* and *reported*; put the verdict in sheet.jsonl "
+           "(still_there / gone / snippet_broken / cannot_tell). *auto* only compares exception types.\n"]
     last = None
     for r in todo:
         n, sec = r["number"], section.get(r["number"], "original of a duplicate")
         if sec != last:
             out.append(f"\n## {sec}\n")
             last = sec
-        pair = f" · pair with {', '.join(f'#{w}' for w in r['with'])}" if r["with"] else ""
         text = (out_dir / f"{n}.py").read_text(encoding="utf-8")
-        code = code_of(text)
-        res = "\n".join(l[2:] for l in parts(text)[1].splitlines()[1:])
-        out.append(f"### [#{n}]({r['url']}) {r['title']}\n\n`{r['hint']}`{pair}\n\n**Description**\n\n"
-                   + "\n".join("> " + l for l in prose(bodies[n]).splitlines())
-                   + f"\n\n**Snippet**\n\n```python\n{code}\n```\n\n**Output**\n\n```\n{tail(res)}\n```\n\n---\n")
+        gen = text.split("\n" + GEN, 1)[-1]
+        pair = f" · pair with {', '.join(f'#{w}' for w in r['with'])}" if r["with"] else ""
+        bullets = lambda ls: "\n".join(f"- {l}" for l in ls) or "- (none)"
+        out.append(f"### [#{n}]({r['url']}) {r['title']}\n\n`{r['hint']}` · auto: **{r['auto']}**{pair}\n\n"
+                   f"**Code**\n\n```python\n{code_of(text)}\n```\n\n"
+                   f"**Expected**\n\n{bullets(section_of(gen, 'expected'))}\n\n"
+                   f"**Reported**\n\n{bullets(section_of(gen, 'reported'))}\n\n"
+                   f"**Got**\n\n```\n{tail(chr(10).join(section_of(gen, 'got')))}\n```\n\n"
+                   f"<details><summary>Description</summary>\n\n```\n{chr(10).join(section_of(gen, 'description'))}\n```\n"
+                   f"</details>\n\n---\n")
     (out_dir / "review.md").write_text("\n".join(out), encoding="utf-8")
 
 
@@ -212,7 +256,7 @@ def main():
                 hints[n] = "crawl_error"
                 continue
             with open(py, "x", encoding="utf-8") as f:
-                f.write(header(n, title, created, body) + code + "\n")
+                f.write(header(n, title, created) + code + "\n")
             made += 1
         last = stamp(py)
         if not a.rerun and last and last[1] == digest(py.read_text(encoding="utf-8")):
@@ -221,7 +265,7 @@ def main():
         print(f"[{i}/{len(todo)}] #{n}", flush=True)
         text, code, stderr = run(py, out_dir, a.timeout)
         hints[n] = classify(code, stderr)
-        write_output(py, text, hints[n])
+        write_result(py, body, text, hints[n])
         print(f"    {hints[n]}", flush=True)
     rows = []
     for n, title, body, created in cases:
@@ -232,13 +276,14 @@ def main():
                 hints[n] = "crawl_error" if prev.get(n, {}).get("hint") == "crawl_error" else "not_run"
         old = prev.get(n, {})
         rows.append({"number": n, "title": title, "url": f"https://github.com/numpy/numpy/issues/{n}", "hint": hints[n],
-                     "with": sorted(pairs.get(n, ())), "verdict": old.get("verdict", ""), "note": old.get("note", "")})
+                     "with": sorted(pairs.get(n, ())),
+                     "auto": auto_of(out_dir / f"{n}.py") if (out_dir / f"{n}.py").exists() else "", "verdict": old.get("verdict", ""), "note": old.get("note", "")})
     current = {c[0] for c in cases}
     rows += [r for n, r in prev.items() if n not in current]
     tmp = sheet.with_suffix(".tmp")
     tmp.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
     tmp.replace(sheet)
-    write_review(out_dir, rows, {c[0]: c[2] for c in cases}, con)
+    write_review(out_dir, rows, con)
     print(f"created {made} .py files; sheet {sheet}; review {out_dir / 'review.md'}")
     for hint, count in collections.Counter(r["hint"] for r in rows if r["number"] in current).most_common():
         print(f"{hint:15} {count}")
