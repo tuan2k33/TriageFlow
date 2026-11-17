@@ -28,7 +28,7 @@ MODEL = "BAAI/bge-small-en-v1.5"
 EMB_VERSION = "v3: template lines removed"  # part of every item's hash: changing it re-embeds everything once
 CATEGORY_RANGE = (8, 60)  # k = sqrt(open items), clipped
 ZOMBIE_SIM = 0.88  # issue and merged PR nearest to each other: on closed numpy issues with a known closer, the PR is one of them 87% of the time
-DUP_SIM = 0.92  # hand-graded on numpy (24 pairs, description + maintainer comments read): >= 0.92 ~79% same problem, 0.91-0.92 only ~29%
+DUP_SIM = 0.918  # hand-graded on numpy: >= 0.92 ~79% the same problem, 0.91-0.92 ~29%; lowered from 0.92 when template lines were left out of the embedding (similarities fell ~0.002): 0.918 gives the same pair count as before, and the LLM-confirmed duplicates that had dropped to 0.918-0.919 come back
 
 
 def encoder():
