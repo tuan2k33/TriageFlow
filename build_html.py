@@ -158,8 +158,8 @@ def main(path):
                 cp.setdefault(me, []).append([other, f"both close #{issue}" if issue else f"{s:.0%} similar, different authors", info[other][2]])
     over = {}
     if has("actions"):
-        for kind, n, level, signal, reason in db.execute("select kind, number, level, signal, reason from actions where kind != 'add_label' order by score desc, number"):
-            over.setdefault(kind, []).append([n, f"{level} · {signal}", reason])
+        for kind, n, conf, reason in db.execute("select kind, number, confidence, reason from actions where kind != 'add_label' order by confidence desc, number"):
+            over.setdefault(kind, []).append([n, f"{conf:.2f}", reason])
     sg = {}
     if has("suggested"):
         for n, lab, sc, src in db.execute("select number, label, score, source from suggested order by axis desc, score desc"):

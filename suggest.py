@@ -10,7 +10,8 @@ type:       kNN vote over embeddings of already-labeled items (open + closed).
 component:  vote count: each of the 5 most similar labeled items gives one vote to each of its components, linked
             items add theirs (GitHub's closing links weigh most); every component with >= 2 votes is suggested.
             Measured on a balanced held-out sample (items with and without a component).
-Written to table `suggested`; nothing touches the real labels.
+Written to table `suggested` (score: kNN score, vote count, or a title rule's hit rate; share: votes / possible votes);
+nothing touches the real labels.
 
 usage: python suggest.py data/<owner>__<name>/repo.db [--unlabeled-only] [--eval-only]
 """
@@ -131,14 +132,14 @@ def generic(db, a, rows, nums, E, labels, is_open):
     if a.eval_only:
         return
     bots = {r[0] for r in db.execute("select number from items where author like '%[bot]' or author like 'dependabot%'")}
-    db.execute("create table if not exists suggested(number integer, axis text, label text, score real, source text)")
-    db.execute("delete from suggested")
+    db.execute("drop table if exists suggested")
+    db.execute("create table suggested(number integer, axis text, label text, score real, source text, share real)")
     db.execute("insert or replace into meta values('calibration', ?)", (json.dumps({"label": calib}),))
     for i in targets:
         if nums[i] not in bots:
             for l, v in cv[i].items():
                 if l in need and v >= need[l] and l not in labels[i]:
-                    db.execute("insert into suggested values(?,?,?,?,'vote')", (nums[i], "label", l, float(v)))
+                    db.execute("insert into suggested values(?,?,?,?,'vote',?)", (nums[i], "label", l, float(v), v / (KC + sum(lv[i].values()))))
     db.commit()
     print(db.execute("select label, count(*) from suggested group by 1 order by 2 desc").fetchall())
 
@@ -253,28 +254,28 @@ def main():
     print(f"targets: {len(targets)} open items")
 
     if not a.eval_only:
-        db.execute("create table if not exists suggested(number integer, axis text, label text, score real, source text)")
-        db.execute("delete from suggested")
+        db.execute("drop table if exists suggested")
+        db.execute("create table suggested(number integer, axis text, label text, score real, source text, share real)")
         db.execute("insert or replace into meta values('calibration', ?)", (json.dumps(calib),))
         for i in targets:
             l, p = top(i)
             typ = set(ax_all["type"][i])
             pre = prefix(titles[i])
             if not typ and pre in tt:  # the author's own "BUG:" beats the neighbors (numpy: kNN right 25% where they disagree)
-                db.execute("insert into suggested values(?,?,?,?,'title')", (nums[i], "type", tt[pre][0], tt[pre][1]))
+                db.execute("insert into suggested values(?,?,?,?,'title',null)", (nums[i], "type", tt[pre][0], tt[pre][1]))
                 typ.add(tt[pre][0])
             elif l is not None and p >= 0.5 and not typ:
-                db.execute("insert into suggested values(?,?,?,?,'knn')", (nums[i], "type", l, float(p)))
+                db.execute("insert into suggested values(?,?,?,?,'knn',null)", (nums[i], "type", l, float(p)))
                 typ.add(l)
             if ax_all["component"][i] or nums[i] in bots:
                 continue
             named = {c: q for c, (rx, q) in tc.items() if rx.search(titles[i])}
             for c, q in named.items():
-                db.execute("insert into suggested values(?,?,?,?,'title')", (nums[i], "component", c, q))
+                db.execute("insert into suggested values(?,?,?,?,'title',null)", (nums[i], "component", c, q))
             for l, v in cv[i].items():
                 if v < MIN_VOTES or l in named or ("documentation" in l.lower() and any("documentation" in t.lower() for t in typ)):
                     continue  # too few votes, already named in the title, or says the same thing as the type label
-                db.execute("insert into suggested values(?,?,?,?,'vote')", (nums[i], "component", l, float(v)))
+                db.execute("insert into suggested values(?,?,?,?,'vote',?)", (nums[i], "component", l, float(v), v / (KC + sum(lv[i].values()))))
         db.commit()
 
     db.commit()

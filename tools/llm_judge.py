@@ -67,7 +67,7 @@ def main():
         return summary(out)
     db = sqlite3.connect(f"file:{a.db}?mode=ro", uri=True)
     done = {(r["kind"], r["number"], r["target"]) for r in map(json.loads, out.read_text().splitlines())} if out.exists() else set()
-    todo = [r for r in db.execute("select kind, number, target, signal, reason from actions where kind in (%s) order by kind, score desc"
+    todo = [r for r in db.execute("select kind, number, target, confidence, reason from actions where kind in (%s) order by kind, confidence desc"
                                   % ",".join("?" * len(QUESTIONS)), list(QUESTIONS)) if tuple(r[:3]) not in done]
     print(f"{len(todo)} rows to judge with {a.model}", flush=True)
     for i, (kind, n, m, signal, reason) in enumerate(todo[:a.limit or None]):
