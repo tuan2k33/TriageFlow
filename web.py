@@ -42,6 +42,9 @@ def md_to_html(md):
     link = lambda t: re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2" target="_blank">\1</a>', html.escape(t)))
     out, table = [], False
     for line in md.split("\n"):
+        if line.startswith("<"):  # report.py writes its tables as HTML (fixed column widths); it is our own file
+            out.append(line)
+            continue
         if line.startswith("|"):
             cells = [c.strip() for c in line.strip("|").split("|")]
             if set("".join(cells)) <= set("-: "):
@@ -53,6 +56,9 @@ def md_to_html(md):
             out.append("</table>")
             table = False
         m = re.match(r"(#+) (.*)", line)
+        if not m and re.match(r"(- |\d+\. )", line):
+            out.append(f"<p style='margin:2px 0 2px 16px'>{link(line)}</p>")
+            continue
         out.append(f"<h{len(m.group(1))}>{link(m.group(2))}</h{len(m.group(1))}>" if m else f"<p>{link(line)}</p>" if line.strip() else "")
     return "\n".join(out) + ("</table>" if table else "")
 

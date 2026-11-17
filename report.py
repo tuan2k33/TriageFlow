@@ -1,7 +1,8 @@
 """Turn the analysis into one list of proposed actions, a Markdown report to review, and a shell script of `gh`
 commands (every line commented out: nothing runs until a person enables it).
 
-The report opens with three definitions. Confidence (in brackets after each proposal) is the algorithm's score for
+The report opens with how it is made, how to read it and the tech used per section; each section is then only a
+table (HTML, so the column widths stay fixed in VS Code, on GitHub and in web.py). Confidence (in brackets) is the algorithm's score for
 that row, 0-1: 1.00 only when certainly right (a maintainer marked the duplicate on GitHub); anything an algorithm
 decides is at most 0.99 (a GitHub link, a title rule's hit rate, cosine similarity, kNN score, share of votes).
 Tech used (one line per section) says how that section's proposals are found. Check shows what people and the LLM
@@ -10,7 +11,7 @@ the db and both optional.
 
 usage: python report.py data/<owner>__<name>/repo.db   ->  report.md, actions.sh next to the db; table `actions`
 """
-import collections, json, shlex, sqlite3, sys
+import collections, html, json, shlex, sqlite3, sys
 from pathlib import Path
 
 SOFT_MAX = 0.99  # a similarity or vote share never shows as 1.00
@@ -99,40 +100,54 @@ def main(path):
         by[a[0]].append(a)
     issues = sum(1 for n in is_open if info[n][0] == "issue")
     extra = db.execute("select count(*) from dup_master d join items i on i.number = d.number where d.master != d.number and i.state = 'open'").fetchone()[0]
+    def label_test():
+        def span(bins, i):
+            lo, hi = bins[i][0], bins[i + 1][0] if i + 1 < len(bins) else None
+            return f"{lo:g}+" if hi is None else f"{lo:g}" if hi - lo == 1 else f"{lo:g}-{hi:g}"
+        s = "; ".join(f"{ax} {span(bins, i)}{' votes' if ax != 'type' else ''}: {p:.0%}"
+                      for ax, bins in cal.items() if isinstance(bins, list) for i, (lo, p) in enumerate(bins) if p is not None)
+        if cal.get("title"):
+            s += "; title rules: " + ", ".join(f"{k.split(':', 1)[-1].strip()} {p:.0%}" for k, p in sorted(cal["title"].items()))
+        return f" Hidden-label test on this repo (share that matched the real label, a lower bound): {s}." if s else ""
+
     md = [f"# Triage report: {repo}", "",
-          f"{len(is_open)} open items ({issues} issues, about {issues - extra} distinct problems). Proposals only: nothing here changes GitHub.",
-          "", "- **Confidence** (in brackets after each proposal): the algorithm's score for that row, 0-1. 1.00 only when certainly right "
+          f"{len(is_open)} open items ({issues} issues, about {issues - extra} distinct problems). Proposals only: nothing here changes GitHub.", "",
+          "## How this report is made", "",
+          "1. **Crawl.** Every issue and PR of the repository, open and closed, is copied with its comments into a local database, "
+          "together with the links GitHub itself keeps (which PR closes which issue, which issue a maintainer marked as a duplicate). Code is never read.",
+          "2. **Read.** Each item becomes one vector from its title, its description and a short digest of its comments, made by a small "
+          "local language-embedding model. Items about the same thing end up close to each other.",
+          "3. **Compare.** Pairs that are very close are proposed as duplicates, as an old bug coming back, or as an issue and the PR that "
+          "fixed it without saying so. GitHub's own links are used as they are.",
+          "4. **Label.** A missing label comes from the title (\"BUG:\", \"f2py\") or from the labels of the most similar labeled items.",
+          "5. **Score and check.** Each proposal gets the algorithm's score; a person and an LLM may read some rows afterwards.", "",
+          "## How to read it", "",
+          "- **Confidence** (in brackets after each proposal): the algorithm's score for that row, 0-1. 1.00 only when certainly right "
           "(a maintainer marked it on GitHub); anything an algorithm or ML model decides is at most 0.99. Rows are sorted by it.",
-          "- **Tech used** (under each section title): how that section's proposals are found.",
           f"- **Check**: manual check (a person read both items) and LLM check ({jmodel or 'no LLM run yet'} read both threads). "
-          "Neither is part of the algorithm.", ""]
+          "Neither is part of the algorithm.", "", "## Tech used", ""]
+    md += [f"- **{title}**: {tech}." + (label_test() if kind == "add_label" else "") for kind, (tech, title) in RULES.items() if by[kind]]
+    md.append("")
     sh = ["#!/bin/sh", f"# Proposed actions for {repo}. Review report.md, then remove the leading '# ' from the lines you agree with.", ""]
+    e = html.escape
     for kind, (tech, title) in RULES.items():
         rows = sorted(by[kind], key=lambda a: (-a[3], a[1]))
         if not rows:
             continue
-        test = ""
-        if kind == "add_label":
-            def span(bins, i):
-                lo, hi = bins[i][0], bins[i + 1][0] if i + 1 < len(bins) else None
-                return f"{lo:g}+" if hi is None else f"{lo:g}" if hi - lo == 1 else f"{lo:g}-{hi:g}"
-            test = " Hidden-label test on this repo (exact match, a lower bound): " + "; ".join(f"{ax} {span(bins, i)}{' votes' if ax != 'type' else ''}: {p:.0%} matched"
-                                              for ax, bins in cal.items() if isinstance(bins, list) for i, (lo, p) in enumerate(bins) if p is not None) + "."
-            if cal.get("title"):
-                test += " Title rules: " + ", ".join(f"{k.split(':', 1)[-1].strip()} {p:.0%}" for k, p in sorted(cal["title"].items())) + "."
-        checked = True  # same three columns in every section, so the fixed widths line up
-        md += [f"## {title} ({len(rows)})", "", f"Tech used: {tech}.{test}", "",
-               "| Item | Proposal (confidence) |" + (" Check |" if checked else ""), "|---|---|" + ("---|" if checked else "")]
+        md += [f"## {title} ({len(rows)})", "",
+               '<table class="rep" style="table-layout:fixed;width:100%"><colgroup><col width="34%" style="width:34%">'
+               '<col width="33%" style="width:33%"><col width="33%" style="width:33%"></colgroup>',
+               "<tr><th>Item</th><th>Proposal (confidence)</th><th>Check</th></tr>"]
         sh += [f"# --- {title} ({len(rows)})"]
         for _, n, target, conf, reason, cmd in rows:
-            cells = [f"[#{n}](https://github.com/{repo}/issues/{n}) {info[n][2]}", f"{reason} ({conf:.2f})"]
-            if checked:
-                key = (kind, n, target)
-                cells.append(" ".join(([f"Manual: **{manual[key][0]}**, {manual[key][1]}."] if key in manual else [])
-                                      + ([f"LLM: **{judge[key][0]}**, {judge[key][1]}"] if key in judge else [])))
-            md.append("| " + " | ".join(c.replace("|", "/").replace("\n", " ") for c in cells) + " |")
+            key = (kind, n, target)
+            check = ("checked by maintainer" if kind == "close_duplicate_marked" else
+                     " ".join(([f"Manual: <b>{e(manual[key][0])}</b>, {e(manual[key][1])}."] if key in manual else [])
+                              + ([f"LLM: <b>{e(judge[key][0])}</b>, {e(judge[key][1])}"] if key in judge else [])))
+            md.append(f'<tr><td><a href="https://github.com/{repo}/issues/{n}">#{n}</a> {e(info[n][2])}</td>'
+                      f"<td>{e(reason)} ({conf:.2f})</td><td>{check}</td></tr>")
             sh.append(f"# {cmd}   # {conf:.2f}")
-        md.append("")
+        md += ["</table>", ""]
         sh.append("")
     out = Path(path).parent
     (out / "report.md").write_text("\n".join(md), encoding="utf-8")

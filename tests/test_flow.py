@@ -86,7 +86,7 @@ def test_flow():
         assert all(line.startswith("#") or not line for line in (out / "actions.sh").read_text().split("\n"))  # nothing runs by itself
         assert "Triage report: acme/demo" in (out / "report.md").read_text()
         assert "acme/demo" in (out / "browse.html").read_text()
-        assert "<table class=rep>" in web.md_to_html((out / "report.md").read_text())
+        assert '<table class="rep"' in web.md_to_html((out / "report.md").read_text())
 
 
 def test_text_links():
