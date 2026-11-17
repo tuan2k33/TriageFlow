@@ -1,0 +1,15 @@
+{"kind": "check_recurrence", "number": 19472, "target": 12738, "verdict": "related", "note": "same function, linalg.eigh on large matrices; silent wrong result vs convergence error", "by": "manual"}
+{"kind": "check_recurrence", "number": 28371, "target": 18748, "verdict": "related", "note": "both ImportError when importing numpy; different causes", "by": "manual"}
+{"kind": "check_recurrence", "number": 27985, "target": 19552, "verdict": "related", "note": "both np.arange giving wrong results; big integers vs decimal steps", "by": "manual"}
+{"kind": "check_recurrence", "number": 20514, "target": 7355, "verdict": "related", "note": "both float rounding; the round algorithm vs how the value prints", "by": "manual"}
+{"kind": "check_recurrence", "number": 16499, "target": 10118, "verdict": "related", "note": "both np.pad casting the constant to the wrong dtype", "by": "manual"}
+{"kind": "close_duplicate_likely", "number": 33219, "target": 21944, "verdict": "related", "note": "both masked-array comparisons; wrong result vs wrong dtype", "by": "manual"}
+{"kind": "close_fixed_similar", "number": 23014, "target": 27504, "verdict": "related", "note": "both ndarray.__array_function__ dispatch; subclasses vs like=", "by": "manual"}
+{"kind": "close_fixed_similar", "number": 7588, "target": 7823, "verdict": "related", "note": "both masked arrays with scalar inputs", "by": "manual"}
+{"kind": "close_fixed_similar", "number": 8987, "target": 9961, "verdict": "related", "note": "both overflow warnings; integers vs floats", "by": "manual"}
+{"kind": "close_fixed_similar", "number": 15846, "target": 32673, "verdict": "related", "note": "both doctest documentation; +SKIP in rst vs removed CLI options", "by": "manual"}
+{"kind": "close_fixed_similar", "number": 26761, "target": 33213, "verdict": "related", "note": "both integer casting overflow; Python int vs string to int", "by": "manual"}
+{"kind": "close_fixed_similar", "number": 29477, "target": 31848, "verdict": "related", "note": "both np.unwrap; the gufunc rewrite may fix the unsigned case", "by": "manual"}
+{"kind": "close_fixed_similar", "number": 21990, "target": 23652, "verdict": "related", "note": "both recfunctions.structured_to_unstructured; object fields vs returning views", "by": "manual"}
+{"kind": "review_competing", "number": 28608, "target": 28718, "verdict": "related", "note": "one series converting unary loops to Highway, merged in order, not competing", "by": "manual"}
+{"kind": "review_competing", "number": 31871, "target": 33253, "verdict": "related", "note": "sibling fixes with the same root cause (NEP 50 weak scalars lost in masked arrays)", "by": "manual"}

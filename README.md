@@ -1,6 +1,6 @@
 # TriageFlow
 
-Crawl all issues and PRs of a GitHub repo (open and closed, with conversation comments, content only, no code) into SQLite, then sort them into categories, suggest labels from the repo's existing ones find duplicates, stale and already-fixed issues and competing PRs, and write a report of proposed actions. Everything after the crawl is local data analysis and classic machine learning (a small embedding model, KMeans, kNN votes); no LLM anywhere.
+Crawl all issues and PRs of a GitHub repo (open and closed, with conversation comments, content only, no code) into SQLite, then sort them into categories, suggest labels from the repo's existing ones, find duplicates, stale and already-fixed issues and competing PRs, and write a report of proposed actions. Everything from the crawl to the report is local data analysis and classic machine learning (a small embedding model, KMeans, kNN votes, rules learned from titles); no LLM makes any proposal. An LLM is used only afterwards, to recheck the report's rows (see below).
 
 ```bash
 python run.py https://github.com/numpy/numpy   # everything below in one go -> data/numpy__numpy/{repo.db, browse.html, report.md, actions.sh}
@@ -14,7 +14,7 @@ R=data/numpy__numpy/repo.db
 python triageflow.py numpy/numpy       # all issues/PRs + comments + GitHub's own links: PR closes issue, duplicate of, sub-issue (GitHub API; token from `gh auth token`); reruns sync only what changed
 python analyze.py $R                   # embed new or changed threads (bge-small, fp16; title+description averaged with an extractive digest of the comments); categories once (--init to redo); semantic links; PR status of open issues; duplicate candidates
 python suggest.py $R                   # labels for open items that lack them, by kNN over the 10 nearest labeled items (type) and votes of the 5 nearest and linked items (components) (any repo)
-python report.py $R                    # proposals with a level and their evidence -> report.md + actions.sh (gh commands, all commented out)
+python report.py $R                    # proposals with the algorithm's confidence -> report.md + actions.sh (gh commands, all commented out)
 python build_html.py $R                # -> data/numpy__numpy/browse.html: filters, list of open items, details with a timeline
 datasette $R                           # browse / SQL / full-text search
 ```
@@ -29,6 +29,14 @@ Tables: `items` (all states), `comments`, `links` (closes_official / closes / me
 python -m pytest tests -q    # offline: a synthetic repo with planted cases through the whole analysis
 ```
 
+## Reports
+
+`reports/numpy__numpy/` holds the output for numpy/numpy (crawled 2026-11-16): `report.md` (the proposals; open it on GitHub or in any Markdown viewer), `browse.html` (download and open locally: filters, a type x component matrix, details per item), `actions.sh` (the matching `gh` commands, all commented out), `judge.jsonl` (the LLM recheck) and `manual.jsonl` (rows rechecked by hand). The SQLite database is not included (370 MB); `python run.py numpy/numpy` rebuilds it.
+
+Of the 2251 open items, the report proposes a quick action for 195 (187 issues, 8 PRs), not counting label suggestions. Nothing here changes GitHub: every command in `actions.sh` is commented out.
+
 ## AI Disclosure
 
-Written with the help of Claude Code (Anthropic).
+- The code was written with the help of Claude Code (Anthropic).
+- The proposals in the report come from the algorithm above, not from an LLM.
+- `tools/llm_judge.py` asked a free model on OpenRouter (`nvidia/nemotron-3-ultra-550b-a55b:free`) to read both items of each non-label proposal and say whether it holds; its verdicts are the Check column. Rows it called unrelated were reread by hand (`manual.jsonl`).
