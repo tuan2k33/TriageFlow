@@ -135,8 +135,8 @@ def main(path):
         if not rows:
             continue
         md += [f"## {title} ({len(rows)})", "",
-               '<table class="rep" style="table-layout:fixed;width:100%"><colgroup><col width="34%" style="width:34%">'
-               '<col width="33%" style="width:33%"><col width="33%" style="width:33%"></colgroup>',
+               '<table class="rep" style="table-layout:fixed;width:100%"><colgroup><col width="30%" style="width:30%">'
+               '<col width="20%" style="width:20%"><col width="50%" style="width:50%"></colgroup>',
                "<tr><th>Item</th><th>Proposal (confidence)</th><th>Check</th></tr>"]
         sh += [f"# --- {title} ({len(rows)})"]
         for _, n, target, conf, reason, cmd in rows:
