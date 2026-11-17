@@ -1,7 +1,7 @@
 """Turn the analysis into one list of proposed actions, a Markdown report to review, and a shell script of `gh`
 commands (every line commented out: nothing runs until a person enables it).
 
-The report opens with how it is made, how to read it and the tech used per section; each section is then only a
+The report opens with how it is made and the tech used per section; each section is then only a
 table (HTML, so the column widths stay fixed in VS Code, on GitHub and in web.py). Confidence (in brackets) is the algorithm's score for
 that row, 0-1: 1.00 only when certainly right (a maintainer marked the duplicate on GitHub); anything an algorithm
 decides is at most 0.99 (a GitHub link, a title rule's hit rate, cosine similarity, kNN score, share of votes).
@@ -11,28 +11,35 @@ the db and both optional.
 
 usage: python report.py data/<owner>__<name>/repo.db   ->  report.md, actions.sh next to the db; table `actions`
 """
-import collections, html, json, shlex, sqlite3, sys
+import collections, hashlib, html, json, shlex, shutil, sqlite3, sys, time
 from pathlib import Path
 
 SOFT_MAX = 0.99  # a similarity or vote share never shows as 1.00
 EMB = "bge-small-en embeddings (title + description, averaged with an extractive MMR digest of the comments)"
-RULES = {  # action kind: (tech used, title)
-    "close_duplicate_marked": ("GitHub GraphQL `MarkedAsDuplicateEvent`: a maintainer's own action (confidence 1.00)",
-                               "Open issues already marked as duplicates"),
-    "close_fixed_linked": ("GitHub GraphQL `closingIssuesReferences` and \"fixes #N\" in the PR's description, PR merged (confidence 0.99: "
-                           "the link is a fact, the issue being done is not; reverted PRs are not detected)", "Open issues whose closing PR is merged"),
-    "close_duplicate_likely": (f"{EMB}; cosine similarity >= 0.92 between two open issues; the older one is kept (confidence = similarity)",
-                               "Likely duplicates of an older open issue"),
-    "check_recurrence": (f"{EMB}; cosine similarity >= 0.92 to an older closed issue (confidence = similarity)",
+RULES = {  # action kind: (tech used, title); wording as the user edited it in report.md (2026-11-17)
+    "close_duplicate_marked": ("GitHub GraphQL `MarkedAsDuplicateEvent`: a maintainer's own action", "Open issues already marked as duplicates"),
+    "close_fixed_linked": ("GitHub GraphQL `closingIssuesReferences` and \"fixes #N\" in the PR's description, PR merged (high confidence means "
+                           "the link is most likely true, neither the issue nor the PR is done)", "Open issues whose closing PR is merged"),
+    "close_duplicate_likely": (f"{EMB}; high similarity between two open issues (confidence = similarity)", "Likely duplicates of an older open issue"),
+    "check_recurrence": (f"{EMB}; high similarity to an older closed issue (confidence = similarity)",
                          "Open issues very similar to an older closed one (came back, or a duplicate of something settled?)"),
-    "close_fixed_similar": (f"{EMB}; the issue and a later merged PR are each other's nearest neighbor, similarity >= 0.88, "
-                            "no closing link (confidence = similarity)", "Open issues that a later merged PR seems to fix"),
-    "review_competing": ("GitHub closing links to the same issue (confidence 0.99), or "
-                         f"{EMB} with similarity >= 0.92 between open PRs of different authors (confidence = similarity)", "Open PRs after the same thing"),
-    "add_label": ("title rules learned from labeled items (prefix such as BUG:/ENH:, a component's name; kept only if >= 85% right; "
-                  "confidence = the rule's hit rate); type: kNN over the 10 nearest labeled items (confidence = weighted share carrying the label); "
-                  "component: votes of the 5 nearest labeled items plus linked items (confidence = share of the votes)", "Labels to add"),
+    "close_fixed_similar": (f"{EMB}; the issue and a later merged PR are each other's nearest neighbor, high similarity, no closing link "
+                            "(confidence = similarity)", "Open issues that a later merged PR seems to fix"),
+    "review_competing": (f"GitHub closing links to the same issue, or {EMB} with high similarity between open PRs of different authors "
+                         "(confidence = similarity)", "Open PRs after the same thing"),
+    "add_label": ("title rules learned from labeled items (prefix such as BUG:/ENH:, a component's name; confidence = the rule's hit rate); "
+                  "type: kNN over the nearest labeled items (confidence = weighted share carrying the label); component: votes of the nearest "
+                  "labeled items plus linked items (confidence = share of the votes)", "Labels to add"),
 }
+
+
+def keep_edits(f):
+    """report.md is regenerated on every run; if a person edited it since the last run, keep their copy next to it first."""
+    sha = f.with_name(f".{f.name}.sha1")
+    if f.exists() and (not sha.exists() or hashlib.sha1(f.read_bytes()).hexdigest() != sha.read_text().strip()):
+        backup = f.with_name(f"{f.name}.edited-{time.strftime('%Y%m%d-%H%M%S')}")
+        shutil.copy2(f, backup)
+        print(f"report.md was edited by hand since the last run: kept as {backup.name}")
 
 
 def main(path):
@@ -92,7 +99,6 @@ def main(path):
     jf = Path(path).parent / "judge.jsonl"
     jrows = [json.loads(l) for l in jf.read_text().splitlines()] if jf.exists() else []
     judge = {(r["kind"], r["number"], r["target"]): (r["verdict"], r["reason"]) for r in jrows}
-    jmodel = jrows[0]["model"] if jrows else None
     mf = Path(path).parent / "manual.jsonl"
     manual = {(r["kind"], r["number"], r["target"]): (r["verdict"], r["note"]) for r in map(json.loads, mf.read_text().splitlines())} if mf.exists() else {}
     by = collections.defaultdict(list)
@@ -100,34 +106,18 @@ def main(path):
         by[a[0]].append(a)
     issues = sum(1 for n in is_open if info[n][0] == "issue")
     extra = db.execute("select count(*) from dup_master d join items i on i.number = d.number where d.master != d.number and i.state = 'open'").fetchone()[0]
-    def label_test():
-        def span(bins, i):
-            lo, hi = bins[i][0], bins[i + 1][0] if i + 1 < len(bins) else None
-            return f"{lo:g}+" if hi is None else f"{lo:g}" if hi - lo == 1 else f"{lo:g}-{hi:g}"
-        s = "; ".join(f"{ax} {span(bins, i)}{' votes' if ax != 'type' else ''}: {p:.0%}"
-                      for ax, bins in cal.items() if isinstance(bins, list) for i, (lo, p) in enumerate(bins) if p is not None)
-        if cal.get("title"):
-            s += "; title rules: " + ", ".join(f"{k.split(':', 1)[-1].strip()} {p:.0%}" for k, p in sorted(cal["title"].items()))
-        return f" Hidden-label test on this repo (share that matched the real label, a lower bound): {s}." if s else ""
-
     md = [f"# Triage report: {repo}", "",
           f"{len(is_open)} open items ({issues} issues, about {issues - extra} distinct problems). Proposals only: nothing here changes GitHub.", "",
           "## How this report is made", "",
-          "1. **Crawl.** Every issue and PR of the repository, open and closed, is copied with its comments into a local database, "
+          "1. **Crawl repo.** Every issue and PR of the repository, open and closed, is copied with its comments into a local database, "
           "together with the links GitHub itself keeps (which PR closes which issue, which issue a maintainer marked as a duplicate). Code is never read.",
-          "2. **Read.** Each item becomes one vector from its title, its description and a short digest of its comments, made by a small "
+          "2. **Read and trim.** Each item becomes one vector from its title, its description and a short digest of its comments, made by a small "
           "local language-embedding model. Items about the same thing end up close to each other.",
-          "3. **Compare.** Pairs that are very close are proposed as duplicates, as an old bug coming back, or as an issue and the PR that "
+          "3. **Compare and group.** Pairs that are very close are proposed as duplicates, as an old bug coming back, or as an issue and the PR that "
           "fixed it without saying so. GitHub's own links are used as they are.",
-          "4. **Label.** A missing label comes from the title (\"BUG:\", \"f2py\") or from the labels of the most similar labeled items.",
-          "5. **Score and check.** Each proposal gets the algorithm's score; a person and an LLM may read some rows afterwards.", "",
-          "## How to read it", "",
-          "- **Confidence** (in brackets after each proposal): the algorithm's score for that row, 0-1. 1.00 only when certainly right "
-          "(a maintainer marked it on GitHub); anything an algorithm or ML model decides is at most 0.99. Rows are sorted by it.",
-          f"- **Check**: manual check (a person read both items) and LLM check ({jmodel or 'no LLM run yet'} read both threads). "
-          "Neither is part of the algorithm.",
-          "- Each section below is folded: click its title to show or hide its table.", "", "## Tech used", ""]
-    md += [f"- **{title}**: {tech}." + (label_test() if kind == "add_label" else "") for kind, (tech, title) in RULES.items() if by[kind]]
+          "4. **Suggest label.** A missing label comes from the title (\"BUG:\", \"f2py\") or from the labels of the most similar labeled items.",
+          "5. **Score and check.** Each proposal gets the algorithm's score; person and LLM recheck afterwards.", "", "## Tech used", ""]
+    md += [f"- **{title}**: {tech}." for kind, (tech, title) in RULES.items() if by[kind]]
     md.append("")
     sh = ["#!/bin/sh", f"# Proposed actions for {repo}. Review report.md, then remove the leading '# ' from the lines you agree with.", ""]
     e = html.escape
@@ -143,15 +133,17 @@ def main(path):
         for _, n, target, conf, reason, cmd in rows:
             key = (kind, n, target)
             check = ("checked by maintainer" if kind == "close_duplicate_marked" else
-                     " ".join(([f"Manual: <b>{e(manual[key][0])}</b>, {e(manual[key][1])}."] if key in manual else [])
-                              + ([f"LLM: <b>{e(judge[key][0])}</b>, {e(judge[key][1])}"] if key in judge else [])))
+                     " ".join(([f"<b>{e(manual[key][0])}</b>, {e(manual[key][1])}."] if key in manual else [])
+                              + ([f"<b>{e(judge[key][0])}</b>, {e(judge[key][1])}"] if key in judge else [])))
             md.append(f'<tr><td><a href="https://github.com/{repo}/issues/{n}">#{n}</a> {e(info[n][2])}</td>'
                       f"<td>{e(reason)} ({conf:.2f})</td><td>{check}</td></tr>")
             sh.append(f"# {cmd}   # {conf:.2f}")
         md += ["</table></details>", ""]
         sh.append("")
     out = Path(path).parent
+    keep_edits(out / "report.md")
     (out / "report.md").write_text("\n".join(md), encoding="utf-8")
+    (out / ".report.md.sha1").write_text(hashlib.sha1((out / "report.md").read_bytes()).hexdigest())
     (out / "actions.sh").write_text("\n".join(sh), encoding="utf-8")
     print(f"{len(acts)} proposals: " + ", ".join(f"{len(v)} {k}" for k, v in by.items()))
     print(f"{out / 'report.md'}\n{out / 'actions.sh'}")
