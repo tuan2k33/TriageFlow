@@ -4,10 +4,11 @@ pipeline. The snippets come from the internet and are run only as isolated subpr
 timeout, cwd in repro/).
 
 usage: python tools/repro.py data/<owner>__<name>/repo.db [--only N [N ...]] [--rerun] [--timeout 60]
-writes repro/<number>.py (created once, then hand-edited, never overwritten), repro/<number>.out and repro/sheet.jsonl
-next to the db. The verdict and note columns of sheet.jsonl are kept across reruns.
+writes repro/<number>.py (description as comments, the snippet, and the last run's output as comments at the bottom;
+created once, then hand-edited: only the output block is rewritten, and only when the code changed), repro/sheet.jsonl
+and repro/review.md next to the db. The verdict and note columns of sheet.jsonl are kept across reruns.
 """
-import argparse, collections, json, os, re, sqlite3, subprocess, sys, time
+import argparse, collections, hashlib, json, os, re, sqlite3, subprocess, sys, time
 from pathlib import Path
 
 PYTHON = Path(os.path.expanduser("~/.dev/venv/bin/python"))
@@ -89,12 +90,40 @@ def classify(code, stderr):
     return "error"
 
 
-def hint_from_out(path):
-    text = path.read_text(encoding="utf-8", errors="replace")
-    exit_pos = text.rfind("\n--- exit ---\n")
-    err_pos = text.rfind("\n--- stderr ---\n", 0, exit_pos)
-    code = re.match(r"exit: (\S+)", text[exit_pos + len("\n--- exit ---\n"):]).group(1)
-    return classify(code, text[err_pos:exit_pos])
+OUT = "# --- output on numpy"
+STAMP = re.compile(r"^# --- output on numpy \S+ \(hint: (\w+), code (\w+)\) ---$", re.M)
+MAX_OUT = 200  # lines of output kept in the file
+
+
+def parts(text):
+    """(the file without its output block, the output block or '')."""
+    i = text.find("\n" + OUT)
+    return (text, "") if i < 0 else (text[:i + 1], text[i + 1:])
+
+
+def code_of(text):
+    head = parts(text)[0]
+    return (head.split(MARK + "\n", 1)[1] if MARK in head else re.sub(r"\A(#.*\n){1,3}", "", head)).strip()
+
+
+def digest(text):
+    return hashlib.sha1(code_of(text).encode()).hexdigest()[:10]
+
+
+def stamp(py):
+    """(hint, code hash) of the last run written into the file, or None."""
+    m = STAMP.search(py.read_text(encoding="utf-8"))
+    return m.groups() if m else None
+
+
+def write_output(py, text, hint):
+    """Replace the output block at the bottom of the .py with this run, as comments (the code above is left alone)."""
+    cur = py.read_text(encoding="utf-8")
+    lines = text.rstrip().splitlines()
+    if len(lines) > MAX_OUT:
+        lines = [f"... {len(lines) - MAX_OUT} lines cut ..."] + lines[-MAX_OUT:]
+    block = f"{OUT} {EXPECTED} (hint: {hint}, code {digest(cur)}) ---\n" + "\n".join(("# " + l).rstrip() for l in lines)
+    py.write_text(parts(cur)[0].rstrip("\n") + "\n\n\n" + block + "\n", encoding="utf-8")
 
 
 def check_interpreter():
@@ -137,9 +166,9 @@ def write_review(out_dir, rows, bodies, con):
             out.append(f"\n## {sec}\n")
             last = sec
         pair = f" · pair with {', '.join(f'#{w}' for w in r['with'])}" if r["with"] else ""
-        code = (out_dir / f"{n}.py").read_text(encoding="utf-8")
-        code = (code.split(MARK + "\n", 1)[1] if MARK in code else re.sub(r"\A(#.*\n){1,3}", "", code)).strip()
-        res = (out_dir / f"{n}.out").read_text(encoding="utf-8", errors="replace")
+        text = (out_dir / f"{n}.py").read_text(encoding="utf-8")
+        code = code_of(text)
+        res = "\n".join(l[2:] for l in parts(text)[1].splitlines()[1:])
         out.append(f"### [#{n}]({r['url']}) {r['title']}\n\n`{r['hint']}`{pair}\n\n**Description**\n\n"
                    + "\n".join("> " + l for l in prose(bodies[n]).splitlines())
                    + f"\n\n**Snippet**\n\n```python\n{code}\n```\n\n**Output**\n\n```\n{tail(res)}\n```\n\n---\n")
@@ -176,7 +205,7 @@ def main():
     todo = [c for c in cases if selected is None or c[0] in selected]
     hints, made = {}, 0
     for i, (n, title, body, created) in enumerate(todo, 1):
-        py, outf = out_dir / f"{n}.py", out_dir / f"{n}.out"
+        py = out_dir / f"{n}.py"
         if not py.exists():
             code = extract(body)
             if code is None:
@@ -185,21 +214,20 @@ def main():
             with open(py, "x", encoding="utf-8") as f:
                 f.write(header(n, title, created, body) + code + "\n")
             made += 1
-        if not a.rerun and outf.exists() and outf.stat().st_mtime > py.stat().st_mtime:
-            hints[n] = hint_from_out(outf)
+        last = stamp(py)
+        if not a.rerun and last and last[1] == digest(py.read_text(encoding="utf-8")):
+            hints[n] = last[0]
             continue
         print(f"[{i}/{len(todo)}] #{n}", flush=True)
         text, code, stderr = run(py, out_dir, a.timeout)
-        outf.write_text(text, encoding="utf-8")
         hints[n] = classify(code, stderr)
+        write_output(py, text, hints[n])
         print(f"    {hints[n]}", flush=True)
     rows = []
     for n, title, body, created in cases:
         if n not in hints:
-            if (out_dir / f"{n}.out").exists():
-                hints[n] = hint_from_out(out_dir / f"{n}.out")
-            elif (out_dir / f"{n}.py").exists():
-                hints[n] = "not_run"
+            if (out_dir / f"{n}.py").exists():
+                hints[n] = (stamp(out_dir / f"{n}.py") or ("not_run",))[0]
             else:
                 hints[n] = "crawl_error" if prev.get(n, {}).get("hint") == "crawl_error" else "not_run"
         old = prev.get(n, {})
