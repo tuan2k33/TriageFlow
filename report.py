@@ -35,7 +35,7 @@ MEANS = {  # what the confidence number of each kind is
     "check_recurrence": "cosine similarity of the two issues (0-1)",
     "close_fixed_similar": "cosine similarity of the issue and the PR (0-1)",
     "review_competing": "1.00 = both PRs link the same issue, otherwise their cosine similarity",
-    "add_label": "type: kNN score (0-1, weighted share of the 10 nearest labeled items carrying it); component/label: votes of the 5 nearest labeled items plus linked items",
+    "add_label": "type: kNN score (0-1, weighted share of the 10 nearest labeled items carrying it); component/label: votes of the 5 nearest labeled items plus linked items; 'title' = the title's own prefix (BUG:, ENH:...) or the component's name in the title",
 }
 
 
@@ -88,9 +88,9 @@ def main(path):
 
     has_sug = db.execute("select 1 from sqlite_master where name='suggested'").fetchone()
     for n, ax, lab, sc, src in db.execute("select number, axis, label, score, source from suggested order by number") if has_sug else []:
-        conf = measured(ax, sc)
+        conf = sc if src == "title" else measured(ax, sc)
         if n in is_open and conf is not None:
-            sig = f"{sc:g} votes" if src == "vote" else f"{sc:.2f}"
+            sig = "title" if src == "title" else f"{sc:g} votes" if src == "vote" else f"{sc:.2f}"
             add("add_label", n, None, lab, f"gh {'pr' if info[n][0] == 'pr' else 'issue'} edit {n} -R {repo} --add-label {shlex.quote(lab)}",
                 conf, sig, "likely" if conf >= 0.8 else "check")
 
@@ -121,7 +121,9 @@ def main(path):
                 lo, hi = bins[i][0], bins[i + 1][0] if i + 1 < len(bins) else None
                 return f"{lo:g}+" if hi is None else f"{lo:g}" if hi - lo == 1 else f"{lo:g}-{hi:g}"
             test = " This repo: " + "; ".join(f"{ax} {span(bins, i)}{' votes' if ax != 'type' else ''}: {p:.0%} matched"
-                                              for ax, bins in cal.items() for i, (lo, p) in enumerate(bins) if p is not None) + "."
+                                              for ax, bins in cal.items() if isinstance(bins, list) for i, (lo, p) in enumerate(bins) if p is not None) + "."
+            if cal.get("title"):
+                test += " Title rules: " + ", ".join(f"{k.split(':', 1)[-1].strip()} {p:.0%}" for k, p in sorted(cal["title"].items())) + "."
         md += [f"## {title} ({len(rows)})", "", f"{head}Evidence: {how}.{test}{borrowed}", "", f"Confidence: {MEANS[kind]}.", "",
                "| Confidence | Item | Proposal |" if level else "| Level | Confidence | Item | Proposal |", "|---|---|---|" if level else "|---|---|---|---|"]
         sh += [f"# --- {title} ({len(rows)})"]

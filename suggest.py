@@ -22,6 +22,8 @@ K = 10  # numpy, at confidence >= 0.5: K=3 0.85 coverage / 0.84 precision, 5 0.8
 KC, MIN_VOTES = 5, 2  # component vote; numpy: finds 73%, 36% of items without a component get one. KC=7 m=3 or KC=10 m=3 lie on the same curve
 VAGUE = re.compile(r"(?i):\s*other$")  # "component: Other" says nothing; never suggested
 MIN_LABEL_PRECISION, MIN_LABEL_TRIES = 0.5, 10  # other repos: a label is suggested only if the hidden-label test got it right this often
+TITLE_PRECISION, TITLE_TRIES = 0.85, 20  # a title prefix ("BUG:") or a component named in the title is used only if it carries that label this often
+PREFIX = re.compile(r"^\s*\[?([A-Za-z]{2,6})(?:[,/+ ]{1,3}[A-Za-z]{2,6}){0,3}\]?\s*:")  # bounded: an unbounded (a+)+ backtracks for minutes
 
 
 def load(db):
@@ -141,6 +143,37 @@ def generic(db, a, rows, nums, E, labels, is_open):
     print(db.execute("select label, count(*) from suggested group by 1 order by 2 desc").fetchall())
 
 
+def prefix(title):
+    m = PREFIX.match(title or "")
+    return m.group(1).upper() if m else None
+
+
+def title_rules(titles, truth_t, truth_c, comps, learn):
+    """Learned from the labeled items in `learn`: prefix -> type label, and component -> regex for its name in a title.
+    Each rule is kept only if it carried the label in >= TITLE_PRECISION of >= TITLE_TRIES items (exact match: a lower bound);
+    component names are measured on items that have some component label, since most items have none."""
+    by = collections.defaultdict(collections.Counter)
+    for i in learn:
+        if truth_t[i] and prefix(titles[i]):
+            by[prefix(titles[i])].update(truth_t[i])
+    seen = collections.Counter(prefix(titles[i]) for i in learn if truth_t[i] and prefix(titles[i]))
+    types = {}
+    for pre, c in by.items():
+        lab, k = c.most_common(1)[0]
+        if seen[pre] >= TITLE_TRIES and k / seen[pre] >= TITLE_PRECISION:
+            types[pre] = (lab, round(k / seen[pre], 2))
+    names = {}
+    for c in comps:
+        s = c.split(":", 1)[1].strip()
+        last = s.split(".")[-1]
+        alts = {s.replace("numpy.", "")} | ({last} if len(last) > 3 and not last.startswith("_") else set())
+        rx = re.compile(r"(?<![\w.])(?:np\.|numpy\.)?(?:" + "|".join(map(re.escape, sorted(alts))) + r")\b", re.I)
+        hit = [c in truth_c[i] for i in learn if truth_c[i] and rx.search(titles[i])]  # among items that have a component at all
+        if len(hit) >= TITLE_TRIES and np.mean(hit) >= TITLE_PRECISION:
+            names[c] = (rx, round(float(np.mean(hit)), 2))
+    return types, names
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("db")
@@ -170,6 +203,10 @@ def main():
     bal = rnd.sample(pos, min(600, len(pos))) + rnd.sample(neg, min(600, len(neg)))
     kn = knn_probs(E, ax_all["type"], allowed["type"], has_label, sorted(set(ev) | set(targets)))
     top = lambda i: max(kn[i].items(), key=lambda t: t[1])
+    titles = [r[1] for r in rows]
+    held = set(ev) | set(bal)
+    tt, tc = title_rules(titles, truth["type"], truth["component"], sorted(allowed["component"]),
+                         [i for i in range(n) if has_label[i] and i not in held])
 
     print(f"type, kNN leave-one-out on {len(ev)} random labeled items (top-1 in true labels):")
     e = [i for i in ev if truth["type"][i]]
@@ -178,6 +215,11 @@ def main():
         pred = [(i, p) for i, p in pred if p[0] is not None and p[1] >= t]
         hit = sum(p[0] in truth["type"][i] for i, p in pred)
         print(f"    conf>={t:.1f}: coverage {len(pred)/len(e):.2f}  precision {hit/max(1,len(pred)):.2f}")
+    guess = {i: tt[prefix(titles[i])][0] if prefix(titles[i]) in tt else top(i)[0] if top(i)[0] is not None and top(i)[1] >= 0.5 else None for i in e}
+    byp = [i for i in e if prefix(titles[i]) in tt]
+    print(f"  title prefix rules {', '.join(f'{k}->{v[0]}' for k, v in sorted(tt.items()))}: cover {len(byp)/len(e):.2f}, precision "
+          f"{np.mean([guess[i] in truth['type'][i] for i in byp]):.2f}; prefix first, else kNN >= 0.5: coverage "
+          f"{sum(g is not None for g in guess.values())/len(e):.2f}  precision {np.mean([g in truth['type'][i] for i, g in guess.items() if g]):.2f}")
 
     # component: vote count, measured on the balanced sample; tag precision rescaled to the real share of items with a component
     lv = link_votes(db, nums, truth["component"])
@@ -204,6 +246,8 @@ def main():
         right, wrong_p = sum(r for r, _ in tags) / len(bp), sum(not r and p for r, p in tags) / len(bp)
         on_neg = sum(not p for _, p in tags) / len(bn)
         calib["component"].append([lo, round(right * base_rate / max(1e-9, (right + wrong_p) * base_rate + on_neg * (1 - base_rate)), 2)])
+    calib["title"] = {pre: p for pre, (_, p) in tt.items()} | {c: p for c, (_, p) in tc.items()}
+    print("component named in the title, kept: " + ", ".join(f"{c.split(':', 1)[1].strip()} {p:.2f}" for c, (_, p) in sorted(tc.items())))
     print("calibration (exact match):", calib)
     bots = {r[0] for r in db.execute("select number from items where author like '%[bot]' or author like 'dependabot%'")}
     print(f"targets: {len(targets)} open items")
@@ -215,14 +259,21 @@ def main():
         for i in targets:
             l, p = top(i)
             typ = set(ax_all["type"][i])
-            if l is not None and p >= 0.5 and not typ:
+            pre = prefix(titles[i])
+            if not typ and pre in tt:  # the author's own "BUG:" beats the neighbors (numpy: kNN right 25% where they disagree)
+                db.execute("insert into suggested values(?,?,?,?,'title')", (nums[i], "type", tt[pre][0], tt[pre][1]))
+                typ.add(tt[pre][0])
+            elif l is not None and p >= 0.5 and not typ:
                 db.execute("insert into suggested values(?,?,?,?,'knn')", (nums[i], "type", l, float(p)))
                 typ.add(l)
             if ax_all["component"][i] or nums[i] in bots:
                 continue
+            named = {c: q for c, (rx, q) in tc.items() if rx.search(titles[i])}
+            for c, q in named.items():
+                db.execute("insert into suggested values(?,?,?,?,'title')", (nums[i], "component", c, q))
             for l, v in cv[i].items():
-                if v < MIN_VOTES or ("documentation" in l.lower() and any("documentation" in t.lower() for t in typ)):
-                    continue  # too few votes, or says the same thing as the type label
+                if v < MIN_VOTES or l in named or ("documentation" in l.lower() and any("documentation" in t.lower() for t in typ)):
+                    continue  # too few votes, already named in the title, or says the same thing as the type label
                 db.execute("insert into suggested values(?,?,?,?,'vote')", (nums[i], "component", l, float(v)))
         db.commit()
 
